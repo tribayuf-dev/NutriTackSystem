@@ -24,3 +24,10 @@ Data awal: kosong (tanpa catatan makanan, air, berat, resep, target). Akun dibua
 - Data pengguna tersimpan di browser (localStorage) per domain dan perangkat. Tidak ada server/database.
 - Untuk pindah perangkat: Settings -> Cadangan dan Pemindahan Data (ekspor, lalu impor di perangkat lain).
 - Akun login hanya ada di perangkat itu (bukan autentikasi server).
+
+## Ikon aplikasi (homescreen iPhone/Android)
+Berkas ikon: `apple-touch-icon.png` (180x180, iPhone), `icon-192.png`, `icon-512.png`, `manifest.webmanifest`.
+Upload SEMUA berkas ke akar repository bersama `index.html` (nama harus persis sama).
+Catatan iPhone: ikon dibaca saat "Add to Home Screen". Pintasan lama tidak berganti ikon; hapus lalu tambahkan ulang.
+SEBELUM menghapus pintasan lama, ekspor data dulu (Settings -> Salin Teks Cadangan), karena penyimpanan aplikasi di homescreen terpisah dari Safari
+dan ikut terhapus bersama pintasannya.

@@ -1,1 +1,1461 @@
-{"app":"NutriTrack-master","versi":1,"dihapus":[],"foods":[]}
+﻿{
+    "foods":  [
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.2,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  3,
+                                    "kalsium":  10,
+                                    "magnesium":  12,
+                                    "kalium":  35,
+                                    "vit_e":  0.04,
+                                    "vit_a":  0,
+                                    "seng":  0.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "centong"
+                                    },
+                                    {
+                                        "gram":  160,
+                                        "nama":  "mangkuk"
+                                    },
+                                    {
+                                        "gram":  200,
+                                        "nama":  "piring"
+                                    },
+                                    {
+                                        "gram":  250,
+                                        "nama":  "bungkus"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  28.6,
+                                       "gula":  0.1,
+                                       "natrium":  1,
+                                       "kalori":  130,
+                                       "lemak":  0.2,
+                                       "serat":  0.4,
+                                       "protein":  2.4
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Nasi Putih",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.5,
+                                    "vit_b12":  0,
+                                    "vit_k":  0.6,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  4,
+                                    "kalsium":  10,
+                                    "magnesium":  44,
+                                    "kalium":  79,
+                                    "vit_e":  0.1,
+                                    "vit_a":  0,
+                                    "seng":  0.6
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "centong"
+                                    },
+                                    {
+                                        "gram":  160,
+                                        "nama":  "mangkuk"
+                                    },
+                                    {
+                                        "gram":  200,
+                                        "nama":  "piring"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  23.5,
+                                       "gula":  0.4,
+                                       "natrium":  5,
+                                       "kalori":  112,
+                                       "lemak":  0.8,
+                                       "serat":  1.8,
+                                       "protein":  2.3
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "tinggi",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Nasi Merah",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.3,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  4,
+                                    "kalsium":  15,
+                                    "magnesium":  18,
+                                    "kalium":  55,
+                                    "vit_e":  0.2,
+                                    "vit_a":  0,
+                                    "seng":  0.6
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "centong"
+                                    },
+                                    {
+                                        "gram":  200,
+                                        "nama":  "piring"
+                                    },
+                                    {
+                                        "gram":  250,
+                                        "nama":  "bungkus"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  27.5,
+                                       "gula":  0.2,
+                                       "natrium":  180,
+                                       "kalori":  160,
+                                       "lemak":  4.2,
+                                       "serat":  0.5,
+                                       "protein":  3
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Nasi Uduk",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.4,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  4,
+                                    "kalsium":  14,
+                                    "magnesium":  16,
+                                    "kalium":  50,
+                                    "vit_e":  0.2,
+                                    "vit_a":  0,
+                                    "seng":  0.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "centong"
+                                    },
+                                    {
+                                        "gram":  200,
+                                        "nama":  "piring"
+                                    },
+                                    {
+                                        "gram":  250,
+                                        "nama":  "bungkus"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  26,
+                                       "gula":  0.2,
+                                       "natrium":  160,
+                                       "kalori":  150,
+                                       "lemak":  3.8,
+                                       "serat":  0.5,
+                                       "protein":  2.8
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Nasi Kuning",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.2,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  3,
+                                    "kalsium":  10,
+                                    "magnesium":  12,
+                                    "kalium":  35,
+                                    "vit_e":  0.04,
+                                    "vit_a":  0,
+                                    "seng":  0.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  50,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  150,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  32.4,
+                                       "gula":  0.1,
+                                       "natrium":  2,
+                                       "kalori":  144,
+                                       "lemak":  0.3,
+                                       "serat":  0.4,
+                                       "protein":  2.7
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Lontong / Ketupat",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0.1,
+                                    "besi":  0.6,
+                                    "vit_b12":  0.15,
+                                    "vit_k":  0.5,
+                                    "vit_c":  1,
+                                    "besi_heme_persen":  25,
+                                    "folat":  6,
+                                    "kalsium":  20,
+                                    "magnesium":  18,
+                                    "kalium":  120,
+                                    "vit_e":  0.3,
+                                    "vit_a":  10,
+                                    "seng":  0.8
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  250,
+                                        "nama":  "mangkuk"
+                                    },
+                                    {
+                                        "gram":  300,
+                                        "nama":  "porsi"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  18,
+                                       "gula":  0.5,
+                                       "natrium":  320,
+                                       "kalori":  120,
+                                       "lemak":  3,
+                                       "serat":  0.5,
+                                       "protein":  6
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "campuran",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Bubur Ayam Komplit",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "USDA",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.8,
+                                    "vit_b12":  0,
+                                    "vit_k":  1.9,
+                                    "vit_c":  13,
+                                    "besi_heme_persen":  0,
+                                    "folat":  15,
+                                    "kalsium":  12,
+                                    "magnesium":  23,
+                                    "kalium":  379,
+                                    "vit_e":  0.05,
+                                    "vit_a":  1,
+                                    "seng":  0.3
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  50,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  150,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  20.1,
+                                       "gula":  0.8,
+                                       "natrium":  4,
+                                       "kalori":  87,
+                                       "lemak":  0.1,
+                                       "serat":  1.8,
+                                       "protein":  1.9
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Kentang Rebus",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "USDA",
+                      "mikro":  {
+                                    "vit_d":  0.1,
+                                    "besi":  1,
+                                    "vit_b12":  0.34,
+                                    "vit_k":  0.3,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  40,
+                                    "folat":  4,
+                                    "kalsium":  15,
+                                    "magnesium":  29,
+                                    "kalium":  256,
+                                    "vit_e":  0.27,
+                                    "vit_a":  6,
+                                    "seng":  1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  85,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  170,
+                                        "nama":  "dada"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  0,
+                                       "gula":  0,
+                                       "natrium":  74,
+                                       "kalori":  165,
+                                       "lemak":  3.6,
+                                       "serat":  0,
+                                       "protein":  31
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Dada Ayam Rebus / Kukus",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0.1,
+                                    "besi":  1.2,
+                                    "vit_b12":  0.4,
+                                    "vit_k":  0.5,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  45,
+                                    "folat":  6,
+                                    "kalsium":  12,
+                                    "magnesium":  24,
+                                    "kalium":  230,
+                                    "vit_e":  0.3,
+                                    "vit_a":  10,
+                                    "seng":  2
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "potong"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  0,
+                                       "gula":  0,
+                                       "natrium":  85,
+                                       "kalori":  210,
+                                       "lemak":  12.5,
+                                       "serat":  0,
+                                       "protein":  24
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Paha Ayam Bakar",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan Cepat Saji",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0.2,
+                                    "besi":  1.3,
+                                    "vit_b12":  0.4,
+                                    "vit_k":  5,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  35,
+                                    "folat":  10,
+                                    "kalsium":  15,
+                                    "magnesium":  22,
+                                    "kalium":  210,
+                                    "vit_e":  1,
+                                    "vit_a":  20,
+                                    "seng":  1.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "potong"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  8,
+                                       "gula":  0,
+                                       "natrium":  430,
+                                       "kalori":  260,
+                                       "lemak":  14,
+                                       "serat":  0.3,
+                                       "protein":  24
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Ayam Goreng Tradisional",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0.1,
+                                    "besi":  2.8,
+                                    "vit_b12":  1.8,
+                                    "vit_k":  1.2,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  65,
+                                    "folat":  12,
+                                    "kalsium":  30,
+                                    "magnesium":  25,
+                                    "kalium":  320,
+                                    "vit_e":  0.5,
+                                    "vit_a":  12,
+                                    "seng":  4.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  50,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  100,
+                                        "nama":  "porsi"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  6,
+                                       "gula":  1.5,
+                                       "natrium":  450,
+                                       "kalori":  230,
+                                       "lemak":  13,
+                                       "serat":  1,
+                                       "protein":  22
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Daging Sapi Rendang",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "USDA",
+                      "mikro":  {
+                                    "vit_d":  2.2,
+                                    "besi":  1.2,
+                                    "vit_b12":  1.1,
+                                    "vit_k":  0.3,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  44,
+                                    "kalsium":  50,
+                                    "magnesium":  10,
+                                    "kalium":  126,
+                                    "vit_e":  1,
+                                    "vit_a":  160,
+                                    "seng":  1.05
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  50,
+                                        "nama":  "butir"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  1.1,
+                                       "gula":  1.1,
+                                       "natrium":  124,
+                                       "kalori":  155,
+                                       "lemak":  10.6,
+                                       "serat":  0,
+                                       "protein":  12.6
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Telur Ayam Rebus",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  2,
+                                    "besi":  1.3,
+                                    "vit_b12":  1,
+                                    "vit_k":  2,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  42,
+                                    "kalsium":  55,
+                                    "magnesium":  11,
+                                    "kalium":  135,
+                                    "vit_e":  1.2,
+                                    "vit_a":  170,
+                                    "seng":  1.1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  60,
+                                        "nama":  "butir"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  2,
+                                       "gula":  0.5,
+                                       "natrium":  250,
+                                       "kalori":  190,
+                                       "lemak":  15,
+                                       "serat":  0.2,
+                                       "protein":  11
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "hewani",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Telur Dadar",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  2.7,
+                                    "vit_b12":  0.1,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  24,
+                                    "kalsium":  111,
+                                    "magnesium":  81,
+                                    "kalium":  412,
+                                    "vit_e":  0.1,
+                                    "vit_a":  0,
+                                    "seng":  1.1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  25,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  250,
+                                        "nama":  "papan"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  7.6,
+                                       "gula":  0,
+                                       "natrium":  9,
+                                       "kalori":  192,
+                                       "lemak":  10.8,
+                                       "serat":  2.8,
+                                       "protein":  20.3
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Tempe Kedelai",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  2,
+                                    "vit_b12":  0.1,
+                                    "vit_k":  1.5,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  20,
+                                    "kalsium":  90,
+                                    "magnesium":  65,
+                                    "kalium":  340,
+                                    "vit_e":  0.8,
+                                    "vit_a":  5,
+                                    "seng":  1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  35,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  40,
+                                        "nama":  "lembar"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  16,
+                                       "gula":  0.5,
+                                       "natrium":  280,
+                                       "kalori":  230,
+                                       "lemak":  13,
+                                       "serat":  2,
+                                       "protein":  14
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Tempe Goreng Tepung / Mendoan",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  2.7,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  15,
+                                    "kalsium":  350,
+                                    "magnesium":  30,
+                                    "kalium":  121,
+                                    "vit_e":  0,
+                                    "vit_a":  0,
+                                    "seng":  1.6
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  80,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  100,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  1.9,
+                                       "gula":  0.6,
+                                       "natrium":  7,
+                                       "kalori":  76,
+                                       "lemak":  4.8,
+                                       "serat":  0.3,
+                                       "protein":  8
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Tahu Putih Kukus",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Protein",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  2.3,
+                                    "vit_b12":  0,
+                                    "vit_k":  1,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  14,
+                                    "kalsium":  280,
+                                    "magnesium":  28,
+                                    "kalium":  110,
+                                    "vit_e":  0.6,
+                                    "vit_a":  5,
+                                    "seng":  1.4
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  50,
+                                        "nama":  "potong"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  4,
+                                       "gula":  0.5,
+                                       "natrium":  120,
+                                       "kalori":  135,
+                                       "lemak":  8.5,
+                                       "serat":  0.6,
+                                       "protein":  11
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Tahu Goreng",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Sayuran",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  2.1,
+                                    "vit_b12":  0,
+                                    "vit_k":  380,
+                                    "vit_c":  25,
+                                    "besi_heme_persen":  0,
+                                    "folat":  90,
+                                    "kalsium":  95,
+                                    "magnesium":  45,
+                                    "kalium":  380,
+                                    "vit_e":  1.5,
+                                    "vit_a":  320,
+                                    "seng":  0.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  150,
+                                        "nama":  "mangkuk"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  4.5,
+                                       "gula":  0.4,
+                                       "natrium":  180,
+                                       "kalori":  28,
+                                       "lemak":  0.3,
+                                       "serat":  1.5,
+                                       "protein":  2
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "tinggi"
+                                },
+                      "nama":  "Sayur Bayam Bening",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Sayuran",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.9,
+                                    "vit_b12":  0,
+                                    "vit_k":  25,
+                                    "vit_c":  15,
+                                    "besi_heme_persen":  0,
+                                    "folat":  35,
+                                    "kalsium":  45,
+                                    "magnesium":  25,
+                                    "kalium":  190,
+                                    "vit_e":  0.5,
+                                    "vit_a":  80,
+                                    "seng":  0.4
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  200,
+                                        "nama":  "mangkuk"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  6.5,
+                                       "gula":  2,
+                                       "natrium":  260,
+                                       "kalori":  35,
+                                       "lemak":  0.5,
+                                       "serat":  1.8,
+                                       "protein":  1.8
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Sayur Asem Komplit",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Sayuran",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  1.8,
+                                    "vit_b12":  0,
+                                    "vit_k":  120,
+                                    "vit_c":  20,
+                                    "besi_heme_persen":  0,
+                                    "folat":  50,
+                                    "kalsium":  70,
+                                    "magnesium":  32,
+                                    "kalium":  280,
+                                    "vit_e":  0.8,
+                                    "vit_a":  190,
+                                    "seng":  0.6
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "porsi"
+                                    },
+                                    {
+                                        "gram":  150,
+                                        "nama":  "piring"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  4,
+                                       "gula":  0.5,
+                                       "natrium":  340,
+                                       "kalori":  60,
+                                       "lemak":  3.8,
+                                       "serat":  2,
+                                       "protein":  2.8
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Tumis Kangkung Terasi",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Buah",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.26,
+                                    "vit_b12":  0,
+                                    "vit_k":  0.5,
+                                    "vit_c":  8.7,
+                                    "besi_heme_persen":  0,
+                                    "folat":  20,
+                                    "kalsium":  5,
+                                    "magnesium":  27,
+                                    "kalium":  358,
+                                    "vit_e":  0.1,
+                                    "vit_a":  3,
+                                    "seng":  0.15
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  118,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  22.8,
+                                       "gula":  12.2,
+                                       "natrium":  1,
+                                       "kalori":  89,
+                                       "lemak":  0.3,
+                                       "serat":  2.6,
+                                       "protein":  1.1
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Pisang Ambon / Cavendish",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Buah",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.4,
+                                    "vit_b12":  0,
+                                    "vit_k":  2.6,
+                                    "vit_c":  62,
+                                    "besi_heme_persen":  0,
+                                    "folat":  38,
+                                    "kalsium":  24,
+                                    "magnesium":  10,
+                                    "kalium":  257,
+                                    "vit_e":  0.3,
+                                    "vit_a":  47,
+                                    "seng":  0.1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  150,
+                                        "nama":  "mangkuk"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  9.8,
+                                       "gula":  7.8,
+                                       "natrium":  3,
+                                       "kalori":  39,
+                                       "lemak":  0.1,
+                                       "serat":  1.8,
+                                       "protein":  0.6
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Pepaya Matang",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Buah",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.2,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  53.2,
+                                    "besi_heme_persen":  0,
+                                    "folat":  30,
+                                    "kalsium":  40,
+                                    "magnesium":  10,
+                                    "kalium":  181,
+                                    "vit_e":  0.2,
+                                    "vit_a":  11,
+                                    "seng":  0.1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  120,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  11.8,
+                                       "gula":  9.4,
+                                       "natrium":  1,
+                                       "kalori":  47,
+                                       "lemak":  0.1,
+                                       "serat":  2.4,
+                                       "protein":  0.9
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Jeruk Manis Segar",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Buah",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.3,
+                                    "vit_b12":  0,
+                                    "vit_k":  4.2,
+                                    "vit_c":  36.4,
+                                    "besi_heme_persen":  0,
+                                    "folat":  43,
+                                    "kalsium":  15,
+                                    "magnesium":  14,
+                                    "kalium":  168,
+                                    "vit_e":  0.9,
+                                    "vit_a":  54,
+                                    "seng":  0.1
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  100,
+                                        "nama":  "potong"
+                                    },
+                                    {
+                                        "gram":  200,
+                                        "nama":  "buah"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  16,
+                                       "gula":  13.5,
+                                       "natrium":  2,
+                                       "kalori":  65,
+                                       "lemak":  0.3,
+                                       "serat":  1.6,
+                                       "protein":  0.7
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Mangga Harum Manis",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  1.8,
+                                    "vit_b12":  0,
+                                    "vit_k":  40,
+                                    "vit_c":  18,
+                                    "besi_heme_persen":  0,
+                                    "folat":  55,
+                                    "kalsium":  85,
+                                    "magnesium":  45,
+                                    "kalium":  310,
+                                    "vit_e":  1.5,
+                                    "vit_a":  75,
+                                    "seng":  1.2
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  250,
+                                        "nama":  "piring"
+                                    },
+                                    {
+                                        "gram":  300,
+                                        "nama":  "porsi"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  16,
+                                       "gula":  4,
+                                       "natrium":  380,
+                                       "kalori":  145,
+                                       "lemak":  6.5,
+                                       "serat":  3,
+                                       "protein":  6.5
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "sedang",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Gado-Gado Bumbu Kacang",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0.1,
+                                    "besi":  1.6,
+                                    "vit_b12":  0.3,
+                                    "vit_k":  1.5,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  40,
+                                    "folat":  15,
+                                    "kalsium":  35,
+                                    "magnesium":  32,
+                                    "kalium":  280,
+                                    "vit_e":  1,
+                                    "vit_a":  15,
+                                    "seng":  1.4
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  15,
+                                        "nama":  "tusuk"
+                                    },
+                                    {
+                                        "gram":  150,
+                                        "nama":  "porsi"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  8,
+                                       "gula":  3.5,
+                                       "natrium":  380,
+                                       "kalori":  220,
+                                       "lemak":  12,
+                                       "serat":  1.5,
+                                       "protein":  20
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "campuran",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Sate Ayam Bumbu Kacang",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Camilan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.5,
+                                    "vit_b12":  0,
+                                    "vit_k":  2,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  5,
+                                    "kalsium":  20,
+                                    "magnesium":  8,
+                                    "kalium":  45,
+                                    "vit_e":  1.2,
+                                    "vit_a":  0,
+                                    "seng":  0.2
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  15,
+                                        "nama":  "buah"
+                                    },
+                                    {
+                                        "gram":  30,
+                                        "nama":  "bungkus"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  68,
+                                       "gula":  0.5,
+                                       "natrium":  520,
+                                       "kalori":  480,
+                                       "lemak":  22,
+                                       "serat":  0.5,
+                                       "protein":  1.5
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Kerupuk Putih / Kaleng",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  1.2,
+                                    "vit_b12":  0.3,
+                                    "vit_k":  15,
+                                    "vit_c":  30,
+                                    "besi_heme_persen":  20,
+                                    "folat":  18,
+                                    "kalsium":  60,
+                                    "magnesium":  20,
+                                    "kalium":  240,
+                                    "vit_e":  0.8,
+                                    "vit_a":  180,
+                                    "seng":  0.5
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  5,
+                                        "nama":  "sdt"
+                                    },
+                                    {
+                                        "gram":  15,
+                                        "nama":  "sdm"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  12,
+                                       "gula":  4,
+                                       "natrium":  1100,
+                                       "kalori":  110,
+                                       "lemak":  5.5,
+                                       "serat":  2.5,
+                                       "protein":  3
+                                   },
+                      "merek":  "",
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "campuran",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Sambal Terasi Matang",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Makanan",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  1.4,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  0,
+                                    "kalsium":  20,
+                                    "magnesium":  20,
+                                    "kalium":  100,
+                                    "vit_e":  0,
+                                    "vit_a":  0,
+                                    "seng":  0.3
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  6,
+                                        "nama":  "sdt"
+                                    },
+                                    {
+                                        "gram":  18,
+                                        "nama":  "sdm"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  58,
+                                       "gula":  52,
+                                       "natrium":  2400,
+                                       "kalori":  250,
+                                       "lemak":  0,
+                                       "serat":  0,
+                                       "protein":  2
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1.2,
+                      "sifat":  {
+                                    "polifenol":  false,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "nabati",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Kecap Manis Tradisional",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Minuman",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.02,
+                                    "vit_b12":  0,
+                                    "vit_k":  0,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  1,
+                                    "kalsium":  0,
+                                    "magnesium":  3,
+                                    "kalium":  37,
+                                    "vit_e":  0,
+                                    "vit_a":  0,
+                                    "seng":  0
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  150,
+                                        "nama":  "cangkir"
+                                    },
+                                    {
+                                        "gram":  240,
+                                        "nama":  "gelas"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  16,
+                                       "gula":  15.5,
+                                       "natrium":  4,
+                                       "kalori":  65,
+                                       "lemak":  0,
+                                       "serat":  0,
+                                       "protein":  0
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1.04,
+                      "sifat":  {
+                                    "polifenol":  true,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  null,
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Teh Manis",
+                      "status":  "Terverifikasi"
+                  },
+                  {
+                      "kategori":  "Minuman",
+                      "sumber":  "TKPI",
+                      "mikro":  {
+                                    "vit_d":  0,
+                                    "besi":  0.1,
+                                    "vit_b12":  0.2,
+                                    "vit_k":  0.1,
+                                    "vit_c":  0,
+                                    "besi_heme_persen":  0,
+                                    "folat":  3,
+                                    "kalsium":  45,
+                                    "magnesium":  12,
+                                    "kalium":  120,
+                                    "vit_e":  0.05,
+                                    "vit_a":  5,
+                                    "seng":  0.2
+                                },
+                      "porsi":  [
+                                    {
+                                        "gram":  150,
+                                        "nama":  "cangkir"
+                                    },
+                                    {
+                                        "gram":  240,
+                                        "nama":  "gelas"
+                                    }
+                                ],
+                      "per_100g":  {
+                                       "karbohidrat":  7,
+                                       "gula":  6.5,
+                                       "natrium":  22,
+                                       "kalori":  55,
+                                       "lemak":  2.2,
+                                       "serat":  0,
+                                       "protein":  1.6
+                                   },
+                      "merek":  "",
+                      "kepadatan":  1.02,
+                      "sifat":  {
+                                    "polifenol":  true,
+                                    "fitat":  "rendah",
+                                    "sumber_protein":  "campuran",
+                                    "oksalat":  "rendah"
+                                },
+                      "nama":  "Kopi Susu Tradisional",
+                      "status":  "Terverifikasi"
+                  }
+              ],
+    "app":  "NutriTrack-master",
+    "diekspor":  "2026-10-21T08:36:02Z",
+    "dihapus":  [
+
+                ],
+    "versi":  1
+}

@@ -20,14 +20,14 @@ const FOOD_PROMPT = `Kamu adalah asisten analisis foto makanan Indonesia yang sa
 Lihat foto ini dengan teliti. Identifikasi SETIAP jenis makanan/minuman yang terlihat di foto.
 
 Untuk setiap item makanan, berikan:
-1. nama_makanan: Nama umum dalam Bahasa Indonesia (singkat, contoh: "Nasi Putih", "Ayam Goreng Dada", "Telur Mata Sapi")
-2. estimasi_gram: Perkiraan berat dalam gram berdasarkan visual (ukuran piring, porsi, dll)
+1. nama_makanan: Nama umum dalam Bahasa Indonesia (singkat, contoh: "Nasi Putih", "Ayam Goreng Dada", "Susu Dancow")
+2. estimasi_gram: Perkiraan berat dalam gram berdasarkan visual (ukuran piring, porsi, bungkus)
 3. keyakinan: "tinggi" / "sedang" / "rendah"
 4. alias: Array nama alternatif yang sering dipakai (untuk pencarian di database)
 
 PENTING:
-- Jika ini adalah foto kemasan produk (bukan makanan siap makan), return array kosong results: []
-- Pisahkan lauk/nasi/sayur sebagai item terpisah
+- Jika ini adalah foto kemasan produk komersial (contoh: Dancow, Indomie, biskuit), sebutkan nama produk/merek tersebut dan takaran sajinya
+- Pisahkan lauk/nasi/sayur sebagai item terpisah jika berupa piring makan
 - Estimasi berat harus realistis untuk porsi normal Indonesia
 - Jika tidak bisa mendeteksi makanan sama sekali, return results: []
 
@@ -55,7 +55,7 @@ Ekstrak nilai-nilai berikut:
 - fiber: Serat pangan dalam gram (null jika tidak ada)
 - sugar: Gula dalam gram (null jika tidak ada)
 - sodium: Natrium dalam miligram (mg) — jika tertulis dalam gram, kalikan 1000
-- servingName: Nama takaran saji (contoh: "sajian", "keping", "bungkus", "cup")
+- servingName: Nama takaran saji (contoh: "sajian", "keping", "bungkus", "scoop", "cup")
 - servingGram: Berat 1 takaran saji dalam gram (angka saja, null jika tidak ada)
 - productName: Nama produk jika terlihat (null jika tidak terlihat)
 
@@ -83,33 +83,36 @@ Balas HANYA dengan JSON valid ini (tanpa markdown, tanpa komentar):
 // ─── Helper: Call Gemini API with dynamic model discovery & fallback ─────────
 
 async function callGemini(apiKey, prompt, base64Image, mimeType) {
+  // Prioritaskan model generasi terbaru (gemini-3.8-flash sesuai instruksi resmi Google untuk new users)
   const candidateModels = [
-    'gemini-2.0-flash',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+    'gemini-3-flash',
     'gemini-2.5-flash',
+    'gemini-2.0-flash',
     'gemini-1.5-flash-latest',
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-1.5-pro'
+    'gemini-1.5-flash'
   ];
 
-  let targetModels = candidateModels;
+  let targetModels = [...candidateModels];
 
-  // Coba query ListModels dari Google untuk mengetahui model mana yang aktif di akun ini
+  // Coba query ListModels dari Google untuk menemukan model generateContent aktif
   try {
     const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     if (listResp.ok) {
       const listData = await listResp.json();
       const validNames = (listData.models || [])
         .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-        .map(m => m.name.replace(/^models\//, ''));
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(m => m.includes('flash') || m.includes('gemini'));
 
-      const available = candidateModels.filter(c => validNames.includes(c));
-      if (available.length > 0) {
-        targetModels = available;
-      } else if (validNames.length > 0) {
-        const flashModel = validNames.find(v => v.includes('flash'));
-        targetModels = [flashModel || validNames[0]];
+      // Urutkan versi secara descending (misal 3.8 > 3.5 > 2.5 > 1.5)
+      validNames.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+
+      if (validNames.length > 0) {
+        // Gabungkan model yang terdaftar di depan
+        const combined = [...new Set([...validNames, ...candidateModels])];
+        targetModels = combined;
       }
     }
   } catch (e) {
@@ -132,8 +135,14 @@ async function callGemini(apiKey, prompt, base64Image, mimeType) {
     },
   };
 
+  const tried = new Set();
   let lastError = null;
-  for (const model of targetModels) {
+
+  for (let i = 0; i < targetModels.length; i++) {
+    const model = targetModels[i];
+    if (tried.has(model)) continue;
+    tried.add(model);
+
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
@@ -153,9 +162,17 @@ async function callGemini(apiKey, prompt, base64Image, mimeType) {
 
       const errText = await resp.text();
       lastError = new Error(`Gemini API (${model}) error ${resp.status}: ${errText.slice(0, 200)}`);
-      // Jika error 404 (model tidak ada), lanjutkan ke candidate model berikutnya
+
+      // Cek apakah Google memberikan rekomendasi model di pesan errornya
+      // Contoh: "Please update your code to use models/gemini-3.8-flash"
+      const recMatch = errText.match(/models\/([a-zA-Z0-9._-]+)/);
+      if (recMatch && recMatch[1] && !tried.has(recMatch[1])) {
+        targetModels.splice(i + 1, 0, recMatch[1]);
+      }
+
+      // Jika 404 (model tidak tersedia), coba model berikutnya
       if (resp.status === 404) continue;
-      // Jika error autentikasi / kuota, lempar error
+      // Jika error autentikasi / kuota / limit, lempar error
       throw lastError;
     } catch (err) {
       lastError = err;

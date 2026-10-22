@@ -907,23 +907,69 @@ function stopBcCamera(){clearTimeout(_bcTimer);_bcScanning=false;if(_zxReader){t
 async function initBcCamera(){stopBcCamera();if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){if(BCM){BCM.err='Kamera tidak didukung di browser ini. Masukkan barcode secara manual.';render()}return}
 try{const constraints={video:{facingMode:{ideal:BCM?BCM.camFacing:'environment'},width:{ideal:1280,min:640},height:{ideal:720,min:480}},audio:false};
 const stream=await navigator.mediaDevices.getUserMedia(constraints);_bcStream=stream;
-const v=document.getElementById('bc-video');if(v){v.srcObject=stream;await v.play()}
+const v=document.getElementById('bc-video');if(v){v.srcObject=stream;v.setAttribute('playsinline','true');v.setAttribute('webkit-playsinline','true');await v.play().catch(()=>{})}
 const track=stream.getVideoTracks()[0];if(track&&track.getCapabilities&&track.getCapabilities().torch){if(BCM)BCM.hasTorch=true}
 startBcDetectionLoop()}catch(err){console.error(err);if(BCM){BCM.err='Gagal mengakses kamera: '+(err.name==='NotAllowedError'?'Izin kamera ditolak. Berikan izin di browser atau gunakan input manual.':err.message);render()}}}
 
 let _zxReader=null;
 async function startBcDetectionLoop(){_bcScanning=true;
 const video=document.getElementById('bc-video');if(!video)return;
-let useNativeBD=false;
-if('BarcodeDetector' in window&&typeof BarcodeDetector.getSupportedFormats==='function'){try{const sup=await BarcodeDetector.getSupportedFormats();if(sup&&(sup.includes('ean_13')||sup.includes('upc_a')))useNativeBD=true}catch(e){}}
-if(useNativeBD){try{const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
-const checkFrame=async()=>{if(!_bcScanning||!BCM||BCM.step!=='scan')return;
-if(video.readyState>=2){try{const barcodes=await detector.detect(video);if(barcodes&&barcodes.length>0&&barcodes[0].rawValue){_bcScanning=false;onBarcodeScanned(barcodes[0].rawValue);return}}catch(e){}}
-if(_bcScanning&&BCM&&BCM.step==='scan'){requestAnimationFrame(()=>setTimeout(checkFrame,150))}};
-requestAnimationFrame(checkFrame);return}catch(e){}}
-if(window.ZXing&&window.ZXing.BrowserMultiFormatReader){try{if(!_zxReader){const hints=new Map();if(ZXing.BarcodeFormat){const fmts=[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.QR_CODE].filter(Boolean);hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,fmts)}if(ZXing.DecodeHintType&&ZXing.DecodeHintType.TRY_HARDER)hints.set(ZXing.DecodeHintType.TRY_HARDER,true);_zxReader=new ZXing.BrowserMultiFormatReader(hints)}
-_zxReader.decodeFromVideoElement(video,(result,err)=>{if(!_bcScanning||!BCM||BCM.step!=='scan')return;
-if(result&&result.getText&&result.getText()){_bcScanning=false;try{_zxReader.reset()}catch(e){}onBarcodeScanned(result.getText())}});return}catch(e){console.warn('ZXing init error:',e)}}}
+
+// 1. Jalankan ZXing decodeFromVideoElementContinuously agar loop pemindaian selalu aktif di semua browser
+if(window.ZXing&&window.ZXing.BrowserMultiFormatReader){
+  try{
+    if(!_zxReader){
+      const hints=new Map();
+      if(ZXing.BarcodeFormat){
+        const fmts=[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.QR_CODE].filter(Boolean);
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,fmts);
+      }
+      if(ZXing.DecodeHintType&&ZXing.DecodeHintType.TRY_HARDER){
+        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      }
+      _zxReader=new ZXing.BrowserMultiFormatReader(hints);
+    }
+    _zxReader.decodeFromVideoElementContinuously(video,(result,err)=>{
+      if(!_bcScanning||!BCM||BCM.step!=='scan')return;
+      if(result&&result.getText&&result.getText()){
+        _bcScanning=false;
+        try{_zxReader.reset()}catch(e){}
+        onBarcodeScanned(result.getText());
+      }
+    });
+  }catch(e){console.warn('ZXing continuous loop error:',e)}
+}
+
+// 2. Jalankan juga Native BarcodeDetector via canvas (kompatibel penuh di iOS Safari & Chrome tanpa error video playback)
+if('BarcodeDetector' in window){
+  try{
+    const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    const checkFrame=async()=>{
+      if(!_bcScanning||!BCM||BCM.step!=='scan')return;
+      if(video.readyState>=2&&video.videoWidth>0){
+        canvas.width=Math.min(640,video.videoWidth);
+        canvas.height=Math.round(canvas.width*(video.videoHeight/video.videoWidth));
+        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+        try{
+          const barcodes=await detector.detect(canvas);
+          if(barcodes&&barcodes.length>0&&barcodes[0].rawValue){
+            if(!_bcScanning)return;
+            _bcScanning=false;
+            try{if(_zxReader)_zxReader.reset()}catch(e){}
+            onBarcodeScanned(barcodes[0].rawValue);
+            return;
+          }
+        }catch(e){}
+      }
+      if(_bcScanning&&BCM&&BCM.step==='scan'){
+        requestAnimationFrame(()=>setTimeout(checkFrame,120));
+      }
+    };
+    requestAnimationFrame(checkFrame);
+  }catch(e){}
+}}
 
 async function onBarcodeScanned(rawCode){const code=String(rawCode||'').trim();if(!code)return;
 stopBcCamera();

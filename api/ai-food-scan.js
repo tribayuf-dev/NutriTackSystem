@@ -3,26 +3,15 @@
  * Endpoint: POST /api/ai-food-scan
  *
  * Menerima gambar makanan dalam format base64, lalu mengirimnya ke
- * Google Gemini 1.5 Flash (multimodal) untuk dua modus analisis:
+ * Google Gemini Multimodal API untuk dua modus analisis:
  *
  *  mode "food"  → Identifikasi jenis makanan + estimasi berat (gram)
  *  mode "label" → Baca tabel Informasi Nilai Gizi dari kemasan
- *
- * Request body (JSON):
- *   { mode: "food"|"label", image: "<base64 tanpa prefix>", mimeType: "image/jpeg"|"image/png" }
- *
- * Response (JSON):
- *   mode "food"  → { results: [{name, gram, confidence, aliases}] }
- *   mode "label" → { nutrition: {calories, protein, carbs, fat, fiber, sugar, sodium, servingName, servingGram} }
- *   Error        → { error: "pesan kesalahan" }
  */
 
 export const config = {
   api: { bodyParser: { sizeLimit: '8mb' } },
 };
-
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // ─── Prompt Templates ───────────────────────────────────────────────────────
 
@@ -91,10 +80,43 @@ Balas HANYA dengan JSON valid ini (tanpa markdown, tanpa komentar):
   "productName": "Nama Produk"
 }`;
 
-// ─── Helper: Call Gemini API ─────────────────────────────────────────────────
+// ─── Helper: Call Gemini API with dynamic model discovery & fallback ─────────
 
 async function callGemini(apiKey, prompt, base64Image, mimeType) {
-  const body = {
+  const candidateModels = [
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro'
+  ];
+
+  let targetModels = candidateModels;
+
+  // Coba query ListModels dari Google untuk mengetahui model mana yang aktif di akun ini
+  try {
+    const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    if (listResp.ok) {
+      const listData = await listResp.json();
+      const validNames = (listData.models || [])
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''));
+
+      const available = candidateModels.filter(c => validNames.includes(c));
+      if (available.length > 0) {
+        targetModels = available;
+      } else if (validNames.length > 0) {
+        const flashModel = validNames.find(v => v.includes('flash'));
+        targetModels = [flashModel || validNames[0]];
+      }
+    }
+  } catch (e) {
+    console.warn('ListModels warning:', e);
+  }
+
+  const payload = {
     contents: [
       {
         parts: [
@@ -110,26 +132,43 @@ async function callGemini(apiKey, prompt, base64Image, mimeType) {
     },
   };
 
-  const resp = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let lastError = null;
+  for (const model of targetModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
 
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Gemini API error ${resp.status}: ${errText.slice(0, 200)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (text) return text.trim();
+      }
+
+      const errText = await resp.text();
+      lastError = new Error(`Gemini API (${model}) error ${resp.status}: ${errText.slice(0, 200)}`);
+      // Jika error 404 (model tidak ada), lanjutkan ke candidate model berikutnya
+      if (resp.status === 404) continue;
+      // Jika error autentikasi / kuota, lempar error
+      throw lastError;
+    } catch (err) {
+      lastError = err;
+      if (!err.message || !err.message.includes('404')) throw err;
+    }
   }
 
-  const data = await resp.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return text.trim();
+  throw lastError || new Error('Tidak ada model Gemini yang dapat digunakan.');
 }
 
 // ─── Helper: Parse JSON response safely ──────────────────────────────────────
 
 function parseJson(text) {
-  // Strip markdown code blocks if present
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
   return JSON.parse(cleaned);
 }
@@ -137,7 +176,6 @@ function parseJson(text) {
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -147,7 +185,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Server belum dikonfigurasi (GEMINI_API_KEY tidak ada).' });
+    return res.status(500).json({ error: 'GEMINI_API_KEY belum dikonfigurasi di Environment Variables Vercel.' });
   }
 
   const { mode, image, mimeType } = req.body || {};
@@ -172,7 +210,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate & return
     if (mode === 'food') {
       const results = Array.isArray(parsed?.results) ? parsed.results : [];
       return res.status(200).json({ results });

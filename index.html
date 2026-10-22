@@ -707,19 +707,26 @@ function vAim(){
   // ── STEP: camera ──────────────────────────────────────────────────────────
   if(a.step==='camera'){
     return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)">
-    <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><div class="ic" style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb)">${MS('camera_enhance',20)}</div><b class="text-lg">AI Foto Makanan</b></div><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
-    <div class="bc-box mb-3" style="height:280px"><video id="aim-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;border-radius:12px"></video><div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-      <button class="ib" style="background:rgba(0,0,0,.65);color:#fff;border-radius:9999px;width:52px;height:52px" data-a="aimcap" title="Ambil Foto">${MS('camera',26)}</button>
-      <button class="ib" style="background:rgba(0,0,0,.5);color:#fff;border-radius:9999px" data-a="aimflip" title="Ganti Kamera">${MS('flip_camera_ios',20)}</button>
-    </div></div>
-    ${a.mode==='label'?`<div class="card p-2.5 mb-3 text-xs flex gap-2 items-start" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3)"><span style="color:#7c3aed">${MS('info',16)}</span><span>Arahkan kamera ke <b>tabel Informasi Nilai Gizi</b> pada kemasan produk, pastikan tulisan terlihat jelas dan pencahayaan cukup.</span></div>`:
-    `<div class="card p-2.5 mb-3 text-xs flex gap-2 items-start" style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.3)"><span style="color:#2563eb">${MS('info',16)}</span><span>Foto seluruh makanan di piring/mangkuk. AI akan <b>mengenali jenis dan estimasi berat</b> setiap makanan, lalu menghitung nutrisinya otomatis.</span></div>`}
+    <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><div class="ic" style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">${MS('camera_enhance',20)}</div><b class="text-lg">AI Foto Makanan</b></div><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
+    
     <div class="flex gap-2 mb-3">
-      <button class="chip ${a.mode==='food'?'on':''}" data-a="aimmode" data-v="food">${MS('restaurant',15)} Foto Makanan</button>
-      <button class="chip ${a.mode==='label'?'on':''}" data-a="aimmode" data-v="label">${MS('receipt_long',15)} Foto Tabel Gizi</button>
+      <button class="chip flex-1 justify-center ${a.mode==='food'?'on':''}" data-a="aimmode" data-v="food">${MS('restaurant',15)} Mode: Makanan Piring</button>
+      <button class="chip flex-1 justify-center ${a.mode==='label'?'on':''}" data-a="aimmode" data-v="label">${MS('receipt_long',15)} Mode: Tabel Gizi</button>
     </div>
+
+    <div style="position:relative;width:100%;height:270px;background:#000;border-radius:14px;overflow:hidden;margin-bottom:12px">
+      <video id="aim-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover"></video>
+      <div style="position:absolute;top:10px;right:10px;z-index:20">
+        <button class="ib" style="background:rgba(0,0,0,.6);color:#fff;border-radius:9999px;width:38px;height:38px;display:flex;align-items:center;justify-content:center" data-a="aimflip" title="Ganti Kamera">${MS('flip_camera_ios',20)}</button>
+      </div>
+    </div>
+
+    ${a.err?`<div class="card p-2.5 mb-3 text-xs" style="background:rgba(186,26,26,.1);color:var(--P)">${esc(a.err)}</div>`:(a.mode==='label'?`<p class="mu text-xs text-center mb-3">Arahkan kamera ke <b>tabel Informasi Nilai Gizi</b> pada kemasan, lalu tekan tombol di bawah.</p>`:`<p class="mu text-xs text-center mb-3">Arahkan kamera ke piring makanan, lalu tekan tombol di bawah.</p>`)}
+
+    <button class="btn w-full justify-center py-3 mb-3" data-a="aimcap" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-size:15px;box-shadow:0 4px 14px rgba(124,58,237,.35)">${MS('photo_camera',22)} <b>Ambil Foto Sekarang</b></button>
+
     <div class="flex gap-2">
-      <label class="gh flex-1 justify-center cursor-pointer"><span class="flex items-center gap-1.5">${MS('photo_library',16)} Pilih dari Galeri</span><input type="file" id="aim-gallery" accept="image/*" style="display:none"></label>
+      <label class="gh flex-1 justify-center cursor-pointer text-center"><span class="flex items-center justify-center gap-1.5">${MS('photo_library',16)} Pilih dari Galeri</span><input type="file" id="aim-gallery" accept="image/*" style="display:none"></label>
       <button class="gh" data-a="aimx">Batal</button>
     </div></div></div>`;
   }
@@ -775,21 +782,25 @@ function vAim(){
 }
 
 // ── AIM Camera helpers ─────────────────────────────────────────────────────
+let _aimCamFacing='environment';
 function stopAimCamera(){if(_aimStream){_aimStream.getTracks().forEach(t=>t.stop());_aimStream=null}}
 
-async function openAimScan(mode='food'){
+async function initAimCamera(){
   stopAimCamera();
-  AIM={step:'camera',mode:mode||'food',preview:'',imageData:'',mimeType:'image/jpeg',matches:[],unmatched:[],nutrition:null,err:''};
-  render();
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:960}},audio:false});
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:_aimCamFacing},width:{ideal:1280},height:{ideal:960}},audio:false});
     _aimStream=stream;
     const v=document.getElementById('aim-video');
     if(v){v.srcObject=stream;await v.play()}
   }catch(err){
-    if(AIM){AIM.err='Gagal akses kamera: '+(err.name==='NotAllowedError'?'Izin ditolak. Gunakan tombol "Pilih dari Galeri".':err.message)}
-    render();
+    if(AIM){AIM.err='Gagal akses kamera: '+(err.name==='NotAllowedError'?'Izin kamera ditolak. Gunakan tombol "Pilih dari Galeri".':err.message);render()}
   }
+}
+
+async function openAimScan(mode='food'){
+  AIM={step:'camera',mode:mode||'food',preview:'',imageData:'',mimeType:'image/jpeg',matches:[],unmatched:[],nutrition:null,err:''};
+  render();
+  await initAimCamera();
 }
 
 function captureAimPhoto(){
@@ -954,7 +965,7 @@ function route(){const r=(location.hash.slice(2)||'dash');return r}
 const th=()=>{const t=S.set.theme||'auto',r=document.documentElement;t=='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',t)};
 function normNum(){document.querySelectorAll('input[type=number]').forEach(e=>{e.type='text';e.inputMode='decimal';e.setAttribute('autocomplete','off');e.dataset.ce='';e.removeAttribute('step');e.removeAttribute('min');e.removeAttribute('max')})}
 function render(){th();const r=route();let c;if(!S.u.in){$('#app').innerHTML=login();$('#m').innerHTML='';return}
-const V={dash,journal,foods,rec,rep,weekly,monthly,wt,wat:watr,goals,profile,set};c=r.startsWith('food/')?food(r.slice(5)):(V[r]||dash)();$('#app').innerHTML=shell(c,r);$('#m').innerHTML=vModal();normNum();$('#t').innerHTML=toast?`<div class="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 card" style="padding:10px 16px;z-index:120" role="status">${toast}${TU?` <button class="pr font-semibold" style="margin-left:12px" data-a="undo">Urungkan</button>`:''}</div>`:''}
+const V={dash,journal,foods,rec,rep,weekly,monthly,wt,wat:watr,goals,profile,set};c=r.startsWith('food/')?food(r.slice(5)):(V[r]||dash)();$('#app').innerHTML=shell(c,r);$('#m').innerHTML=vModal();normNum();if(AIM&&AIM.step==='camera'&&_aimStream){const vid=document.getElementById('aim-video');if(vid&&vid.srcObject!==_aimStream){vid.srcObject=_aimStream;vid.play().catch(()=>{})}}$('#t').innerHTML=toast?`<div class="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 card" style="padding:10px 16px;z-index:120" role="status">${toast}${TU?` <button class="pr font-semibold" style="margin-left:12px" data-a="undo">Urungkan</button>`:''}</div>`:''}
 const tst=(m,u)=>{toast=m;TU=u||'';render();clearTimeout(window._tt);window._tt=setTimeout(()=>{toast='';TU='';render()},u?6000:1800)};
 const go=r=>{location.hash='#/'+r;MORE=false;window.scrollTo(0,0)};
 function okDb(){const cur=fOf(MD.fo),n=num(MD.n),gx=num(MD.gx),fo=cur||{id:MD.fo,n:MD.name,s:{},d:null},pv=(!MD.fresh&&MD.p100)?MD.p100:cur;
@@ -1081,11 +1092,8 @@ else if(a=='qs'){openBcScan();return}
 else if(a=='qai'){openAimScan('food');return}
 else if(a=='qailabel'){openAimScan('label');return}
 else if(a=='aimx'){stopAimCamera();AIM=null;render();return}
-else if(a=='aimmode'){if(AIM){AIM.mode=v;render()}return}
-else if(a=='aimflip'){
-  if(_aimStream){const tr=_aimStream.getVideoTracks()[0];const cur=tr.getSettings().facingMode||'environment';
-  stopAimCamera();
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:cur==='environment'?'user':'environment'},width:{ideal:1280},height:{ideal:960}},audio:false}).then(s=>{_aimStream=s;const v=document.getElementById('aim-video');if(v){v.srcObject=s;v.play()}}).catch(()=>{});}return}
+else if(a=='aimmode'){if(AIM){AIM.mode=v;render();const vid=document.getElementById('aim-video');if(vid&&_aimStream){vid.srcObject=_aimStream;vid.play().catch(()=>{})}}return}
+else if(a=='aimflip'){_aimCamFacing=(_aimCamFacing==='user')?'environment':'user';initAimCamera();return}
 else if(a=='aimcap'){captureAimPhoto();return}
 else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode;AIM=null;openAimScan(m)}return}
 else if(a=='aimanalyze'){runAimAnalysis();return}

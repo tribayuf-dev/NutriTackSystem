@@ -409,6 +409,8 @@ S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S
 S.cfg={...JSON.parse(JSON.stringify(CFG0)),...(S.cfg||{})};S.rcp=S.rcp||[];S.del=S.del||[];S.fimg=S.fimg||{};S.pf.g=S.pf.g||'keep';S.cf=(S.cf||[]).map(f=>({...f,cat:CM[f.cat]||f.cat,st:f.st=='Custom'?'Buatan sendiri':f.st}));S.tg=calcT(S.pf,(S.tg&&S.tg.man)||{},S.cfg);
 const save=()=>{try{if(S.bk)S.bk.dirty=(S.bk.dirty||0)+1;localStorage.setItem('nt2',JSON.stringify(S));return true}catch(e){if(typeof tst=='function')tst('Penyimpanan peramban penuh. Hapus sebagian gambar atau data.');return false}};
 let BCM=null,_bcDetector=null,_bcScanning=false,_bcStream=null,_zxLoading=false;let D=td,MD=null,CF=null,NM=null,RC=false,IM=null,XI={txt:'',res:null},XO='',XC=false,DF=null,RD=null,RT='b',DW=0,WP='w',RP={t:'w',a:addD(td,-6),b:td},B=null,MORE=false,WS=false,WK='',WDT=td,WC='',TU='',CPM=null,TWV=null,TWD=null,TWC='',toast='';
+// AIM = AI Food Scan Modal state
+let AIM=null,_aimStream=null;
 const lg=s=>S.logs.filter(l=>l.d==s),dT=s=>sum(lg(s)),wat=s=>S.water.filter(w=>w.d==s).reduce((a,w)=>a+w.ml,0);
 const rng=(a,b)=>{const o=[];for(let s=a,i=0;s<=b&&i<366;s=addD(s,1),i++){const L=lg(s);o.push({s,n:L.length,T:sum(L),w:wat(s)})}return o};
 const avg=(ds,k)=>{const l=ds.filter(d=>d.n);return l.length?l.reduce((a,d)=>a+d.T[k],0)/l.length:0};
@@ -447,12 +449,12 @@ return`<article class="card mb-4"><div class="flex items-center justify-between 
 function journal(){const L=lg(D),T=sum(L),g=S.tg,W=wat(D),rem=g.kcal-T.k,pc=r0(T.k/g.kcal*100),sd=addD(D,-new Date(D+'T12:00').getDay()),
 days=[...Array(7)].map((_,i)=>{const x=addD(sd,i),d=dT(x),n=lg(x).length,on=x==D,ok=n&&Math.abs(d.k-g.kcal)<=g.kcal*.1,fu=x>td;return`<button class="dy ${on?'on':''}" ${fu?'disabled':''} data-a="sd" data-v="${x}"><span class="text-xs font-medium" style="opacity:.75">${new Date(x+'T12:00').toLocaleDateString(curLoc(),{weekday:'short'}).toUpperCase()}</span><b class="text-xl my-0.5">${x.slice(8)}</b><span class="flex gap-1 mt-1">${n?`<i class="dt" style="background:${on?'currentColor':'var(--pc)'}"></i><i class="dt" style="background:${on?'currentColor':ok?'var(--pc)':'var(--C)'}"></i>`:'<i class="dt" style="background:var(--ln)"></i>'}</span><span class="text-xs mt-1" style="opacity:.75">${fu?tr('planned'):n?n0(d.k)+' kkal':'–'}</span></button>`}).join(''),
 mb=(l,v,t,c)=>`<div class="bn"><div class="flex justify-between text-xs font-bold" style="opacity:.85"><span>${l}</span><i class="dt" style="background:${c};width:8px;height:8px"></i></div><div class="mt-1"><b class="text-lg">${r0(v)}</b> <span class="text-xs" style="opacity:.7">/ ${t} g</span></div><div class="mt-2" style="background:rgba(255,255,255,.2);height:6px;border-radius:9999px;overflow:hidden"><div style="background:#fff;height:100%;width:${Math.min(100,v/t*100)}%"></div></div></div>`,fl=Math.min(6,Math.floor(W/(S.tg.water/6)));
-return`<section class="mb-6"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="ey flex items-center gap-2"><i class="dt" style="background:var(--pc);width:8px;height:8px"></i>${tr('personalJournal')}</div><div class="flex items-center gap-1 mt-1"><button class="sq" data-a="d" data-v="-1" aria-label="${tr('prevDay')}">${MS('chevron_left')}</button><div class="chipd">${MS('calendar_today',20,'color:var(--pr)')}<h1 class="text-xl font-bold tracking-tight">${D==td?tr('today')+', ':''}${fD(D)}</h1>${D==td?`<span class="act">${tr('active')}</span>`:''}</div><button class="sq" data-a="d" data-v="1" ${D>=td?'disabled':''} aria-label="${tr('nextDay')}">${MS('chevron_right')}</button></div></div><div class="flex flex-wrap items-center gap-2"><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="cpd">${MS('bookmark',18,'color:var(--pr)')} ${tr('copyPrev')}</button><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="qs">${MS('barcode_scanner',18,'color:var(--pr)')} ${tr('quickScan')}</button><button class="btn" data-a="add" data-m="b">${MS('add',18)} ${tr('addFood')}</button></div></div>
+return`<section class="mb-6"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="ey flex items-center gap-2"><i class="dt" style="background:var(--pc);width:8px;height:8px"></i>${tr('personalJournal')}</div><div class="flex items-center gap-1 mt-1"><button class="sq" data-a="d" data-v="-1" aria-label="${tr('prevDay')}">${MS('chevron_left')}</button><div class="chipd">${MS('calendar_today',20,'color:var(--pr)')}<h1 class="text-xl font-bold tracking-tight">${D==td?tr('today')+', ':''}${fD(D)}</h1>${D==td?`<span class="act">${tr('active')}</span>`:''}</div><button class="sq" data-a="d" data-v="1" ${D>=td?'disabled':''} aria-label="${tr('nextDay')}">${MS('chevron_right')}</button></div></div><div class="flex flex-wrap items-center gap-2"><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="cpd">${MS('bookmark',18,'color:var(--pr)')} ${tr('copyPrev')}</button><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="qs">${MS('barcode_scanner',18,'color:var(--pr)')} ${tr('quickScan')}</button><button class="gh" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="qai">${MS('camera_enhance',18)} AI Foto</button><button class="btn" data-a="add" data-m="b">${MS('add',18)} ${tr('addFood')}</button></div></div>
 <div class="grid grid-cols-7 gap-1 mt-4 p-2 card" style="padding:8px">${days}</div></section>
 <section class="mb-6"><div class="relative overflow-hidden flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 text-white" style="border-radius:16px;background:linear-gradient(90deg,#006c49,#006c4a);box-shadow:0 10px 20px rgba(0,108,73,.2)"><div style="position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(78,222,163,.2);filter:blur(48px)"></div><div class="flex items-center gap-4" style="position:relative"><div class="flex items-center justify-center" style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.15)">${MS('eco',32,"font-variation-settings:'FILL' 1")}</div><div><div class="flex items-center gap-2 text-xs font-semibold uppercase" style="letter-spacing:.06em"><span style="color:#85f8c4">${tr('dailyQuota')}</span><span style="opacity:.7">• ${tr('target')}: ${n0(g.kcal)} kkal</span></div><div class="flex items-baseline gap-2 flex-wrap"><span class="text-3xl font-black tracking-tight">${n0(Math.abs(rem))} kkal</span><span class="text-xl font-semibold" style="color:#85f8c4">${rem>=0?tr('rem'):tr('over')}</span><span class="text-sm hidden sm:inline" style="opacity:.75">• ${pc}% ${tr('ofTarget')}</span></div></div></div><div class="grid grid-cols-3 gap-2" style="position:relative">${mb(tr('prot').toUpperCase(),T.p,g.p,'#ffdad6')}${mb(tr('carb').toUpperCase(),T.c,g.c,'#ffddb8')}${mb(tr('fat').toUpperCase(),T.f,g.f,'#85f8c4')}</div></div></section>
 <div class="grid lg:grid-cols-12 gap-6 items-start"><div class="lg:col-span-8">${meals(L)}</div><div class="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-24"><div class="card"><div class="flex justify-between items-center"><div class="flex items-center gap-2"><div class="ic" style="width:32px;height:32px;border-radius:8px">${MS('water_drop',20,"font-variation-settings:'FILL' 1")}</div><h3 class="font-bold text-lg">${tr('wat')}</h3></div><span class="text-xs font-bold pr">${tr('dailyTarget')}: ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} L</span></div><div class="flex items-baseline justify-between mt-4 mb-2"><div><b class="text-3xl font-black">${(W/1000).toLocaleString(curLoc(),{minimumFractionDigits:1,maximumFractionDigits:2})}</b> <span class="mu">/ ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} Liter</span></div><b class="text-sm pr">${r0(W/g.water*100)}%</b></div><div class="grid grid-cols-6 gap-2 my-2">${[...Array(6)].map((_,i)=>i<fl?`<div class="cup" style="background:var(--pc);color:#00422b">${MS('check',18)}</div>`:`<div class="cup mu" style="background:var(--tk2)">${MS('water_bottle',18)}</div>`).join('')}</div><div class="flex gap-2 mt-2"><button class="addm flex-1 justify-center" style="color:var(--tx)" data-a="w" data-v="250">+ 250 ml</button><button class="addm flex-1 justify-center" style="color:var(--tx)" data-a="w" data-v="500">+ 500 ml</button></div><div class="mt-4"><div class="text-sm font-semibold mb-1">${tr('manualInput')}</div><div class="flex gap-2"><input class="inp" id="hq" type="text" inputmode="decimal" data-ce autocomplete="off" placeholder="${tr('amount')} (ml)"><input class="inp" id="ht" type="time" style="width:120px;flex-shrink:0" value="${new Date().toTimeString().slice(0,5)}"><button class="btn" data-a="hw">${tr('addFood').split(' ')[0]}</button></div></div><div class="mt-3" style="max-height:140px;overflow:auto">${S.water.filter(x=>x.d==D).sort((a,b)=>a.t<b.t?-1:1).map(x=>`<div class="flex justify-between items-center text-sm py-1"><span class="mu">${x.t}</span><span><b>${n0(x.ml)} ml</b><button class="ib dl" data-a="hd" data-id="${x.id}" aria-label="${tr('delete')}">${MS('delete',16)}</button></span></div>`).join('')||`<div class="mu text-xs">${tr('noFoodToday')}</div>`}</div></div></div></div>`}
 function foods(){const q=(FS.q||'').toLowerCase(),F=all().filter(f=>(f.n.toLowerCase().includes(q)||(f.br||'').toLowerCase().includes(q)||(f.bc&&f.bc.toLowerCase().includes(q)))&&(!FS.c||f.cat==FS.c)&&(!FS.b||f.br==FS.b)&&(!FS.s||f.src==FS.s)&&(!FS.t||f.st==FS.t)),sel=(k,l,o)=>`<select class="inp" style="width:auto" data-i="fs-${k}"><option value="">${l}</option>${[...new Set(o)].map(x=>`<option ${FS[k]==x?'selected':''}>${x}</option>`).join('')}</select>`;
-return hd('foods',`<button class="gh" style="display:flex;gap:6px;align-items:center" data-a="im">${MS('upload_file',18)} ${tr('importData')}</button><button class="gh" style="display:flex;gap:6px;align-items:center" data-a="xmst">${MS('download',18)} ${tr('exportMaster')}</button><button class="gh" style="display:flex;gap:6px;align-items:center" data-a="qs">${MS('barcode_scanner',18)} ${tr('scanBarcode')}</button><button class="btn" data-a="nm">${ic('plus','w-4 h-4')} ${tr('addFoodItem')}</button>`)+`<div class="card"><div class="flex flex-wrap gap-2 mb-3"><input class="inp" style="flex:1;min-width:200px" id="fq" placeholder="${tr('search')}" value="${FS.q||''}">${sel('c',tr('cat'),all().map(f=>f.cat))}${sel('b',tr('brand'),all().map(f=>f.br).filter(Boolean))}${sel('s',tr('source'),all().map(f=>f.src))}${sel('t',tr('status'),all().map(f=>f.st))}</div>${MOB()?mobList(F):''}<div style="overflow-x:auto" class="${MOB()?'hidden':''}"><table><tr><th>${tr('foodName')}<th>${tr('cat')}<th>${tr('portion')}<th>${tr('cal')}<th>${tr('prot')}<th>${tr('carb')}<th>${tr('fat')}<th>${tr('source')}<th>${tr('status')}<th></tr>${F.map(f=>`<tr class="cursor-pointer" data-a="go" data-r="food/${f.id}"><td><div class="flex items-center gap-3">${fImg(f.id,36,8)}<div><b>${f.n}</b>${f.br?`<div class="mu text-xs">${esc(f.br)}</div>`:''}</div></div><td>${f.cat}<td>100 g<td>${r0(f.k)}<td>${r1(f.p)}<td>${r1(f.c)}<td>${r1(f.f)}<td>${f.src}<td>${stB(f.st)}<td style="white-space:nowrap"><button class="ib" data-a="nme" data-id="${f.id}" aria-label="${tr('edit')}">${MS('edit',18)}</button><button class="ib dl" data-a="fd" data-id="${f.id}" aria-label="${tr('delete')}">${MS('delete',18)}</button></tr>`).join('')}</table>${F.length?'':empty(tr('noLogsPeriod'))}</div></div>`}
+return hd('foods',`<button class="gh" style="display:flex;gap:6px;align-items:center" data-a="im">${MS('upload_file',18)} ${tr('importData')}</button><button class="gh" style="display:flex;gap:6px;align-items:center" data-a="xmst">${MS('download',18)} ${tr('exportMaster')}</button><button class="gh" style="display:flex;gap:6px;align-items:center" data-a="qs">${MS('barcode_scanner',18)} ${tr('scanBarcode')}</button><button class="gh" style="display:flex;gap:6px;align-items:center;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none" data-a="qailabel">${MS('receipt_long',18)} Foto Label Gizi</button><button class="btn" data-a="nm">${ic('plus','w-4 h-4')} ${tr('addFoodItem')}</button>`)+`<div class="card"><div class="flex flex-wrap gap-2 mb-3"><input class="inp" style="flex:1;min-width:200px" id="fq" placeholder="${tr('search')}" value="${FS.q||''}">${sel('c',tr('cat'),all().map(f=>f.cat))}${sel('b',tr('brand'),all().map(f=>f.br).filter(Boolean))}${sel('s',tr('source'),all().map(f=>f.src))}${sel('t',tr('status'),all().map(f=>f.st))}</div>${MOB()?mobList(F):''}<div style="overflow-x:auto" class="${MOB()?'hidden':''}"><table><tr><th>${tr('foodName')}<th>${tr('cat')}<th>${tr('portion')}<th>${tr('cal')}<th>${tr('prot')}<th>${tr('carb')}<th>${tr('fat')}<th>${tr('source')}<th>${tr('status')}<th></tr>${F.map(f=>`<tr class="cursor-pointer" data-a="go" data-r="food/${f.id}"><td><div class="flex items-center gap-3">${fImg(f.id,36,8)}<div><b>${f.n}</b>${f.br?`<div class="mu text-xs">${esc(f.br)}</div>`:''}</div></div><td>${f.cat}<td>100 g<td>${r0(f.k)}<td>${r1(f.p)}<td>${r1(f.c)}<td>${r1(f.f)}<td>${f.src}<td>${stB(f.st)}<td style="white-space:nowrap"><button class="ib" data-a="nme" data-id="${f.id}" aria-label="${tr('edit')}">${MS('edit',18)}</button><button class="ib dl" data-a="fd" data-id="${f.id}" aria-label="${tr('delete')}">${MS('delete',18)}</button></tr>`).join('')}</table>${F.length?'':empty(tr('noLogsPeriod'))}</div></div>`}
 let FS={};
 function food(id){const f=fOf(id);if(!f)return empty('Makanan tidak ditemukan.');const m=(S.mic||{})[id]||MIC[id],r=[['Kalori',f.k,'kkal'],['Protein',f.p,'g'],['Karbohidrat',f.c,'g'],['Lemak',f.f,'g'],['Serat',f.fi,'g'],['Gula',f.su,'g'],['Natrium',f.na,'mg']],im=S.fimg[id];
 return hd(f.n,`<button class="gh" data-a="go" data-r="foods">‹ Kembali</button><button class="gh" data-a="fv" data-id="${f.id}">${S.fav.includes(f.id)?'★ Favorit':'☆ Favorit'}</button><button class="gh" data-a="nme" data-id="${f.id}">Ubah Item</button><button class="gh" style="color:var(--P)" data-a="fd" data-id="${f.id}">Hapus Item</button><button class="btn" data-a="add" data-fo="${f.id}">Tambahkan ke Jurnal</button>`)+`<div class="grid md:grid-cols-2 gap-4"><div class="card">${im?`<img src="${im}" alt="${f.n}" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:12px">`:`<div class="ic" style="width:100%;aspect-ratio:16/9;border-radius:12px;margin-bottom:12px">${MS('nutrition',48)}</div>`}<label class="gh cursor-pointer inline-flex gap-2 items-center mb-3">${MS('add_photo_alternate',18)} ${im?'Ganti Gambar':'Tambah Gambar'}<input type="file" accept="image/*" data-fid="${f.id}" style="display:none"></label><div class="mu text-sm mb-2">Ukuran Porsi: 100 g</div>${r.map(x=>`<div class="flex justify-between py-2" style="border-top:1px solid var(--ln)"><span>${x[0]}</span><b>${x[1]==null?'–':String(r1(x[1])).replace(/,0$/,'')+' '+x[2]}</b></div>`).join('')}</div><div class="card"><b>Informasi</b><div class="mt-2 text-sm">Merek: ${f.br?esc(f.br):'–'}<br>Sumber: ${f.src}<br>Status Data: ${stB(f.st)}<br>Kategori: ${f.cat}<br>Kepadatan: ${f.d?String(f.d).replace('.',',')+' g/ml':'–'}<br>Porsi: ${Object.keys(f.s).length?Object.entries(f.s).map(([a,b])=>a+' = '+n0(b)+' g').join(', '):'–'}<br>Versi data: v${f.v||1}</div><b class="block mt-4">Mikronutrien</b>${f.mi?vMi(f):m?Object.entries(m).map(([k,v])=>`<div class="flex justify-between text-sm py-1"><span>${k}</span><b>${v}</b></div>`).join(''):'<div class="mu text-sm mt-1">Data mikronutrien belum tersedia untuk makanan ini.</div>'}<p class="mu text-xs mt-3">Data contoh untuk prototipe; nilai belum diverifikasi secara independen.</p></div></div>`}
@@ -614,7 +616,7 @@ seen.add(key);out.ok.push({n:nm,cat,src:String(o.sumber||'Impor').slice(0,40),st
 function doImp(rp){const r=parseImp(IM.f,IM.txt),nw=r.ok.filter(x=>!x.rep),ex=r.ok.filter(x=>x.rep),use=rp?r.ok:nw;if(!use.length){IM.res=r;return false}S.mic=S.mic||{};S.ov=S.ov||{};let a=0,b=0;use.forEach((x,j)=>{const{mic,img,rep,d,...f}=x;let id;if(rep){id=rep;const i=S.cf.findIndex(z=>z.id==rep);if(i>=0)S.cf[i]={...S.cf[i],...f,...(d?{d}:{}),v:(S.cf[i].v||1)+1};else S.ov[rep]={...(S.ov[rep]||{}),...f,...(d?{d}:{}),v:((S.ov[rep]||{}).v||(fOf(rep)&&fOf(rep).v)||1)+1};b++}else{id='c'+Date.now()+'_'+j;S.cf.push({id,...f,d:d||null,v:1});a++}if(img)S.fimg[id]=img;if(mic)S.mic[id]=mic});IM=null;save();tst(a+' item baru diimpor'+(b?', '+b+' ditimpa':'')+(!rp&&ex.length?', '+ex.length+' yang sudah ada dilewati':'')+(r.skip.length?', '+r.skip.length+' kembar dalam file dilewati':'')+(r.bad.length?', '+r.bad.length+' bermasalah':''));return true}
 function vImp(){const r=IM.res,nw=r&&r.ok?r.ok.filter(x=>!x.rep).length:0,ei=r&&r.ok?r.ok.length-nw:0,cd=(l,v,c)=>`<div class="card" style="padding:10px;background:var(--tk)"><div class="mu text-xs">${l}</div><b class="text-xl" style="color:${c||'var(--tx)'}">${v}</b></div>`;
 return`<div class="ov"><div class="card w-full max-w-2xl overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-3"><b>Impor Data Makanan</b><button data-a="imx" aria-label="Tutup">✕</button></div><div class="flex gap-2 mb-3"><button class="chip ${IM.f=='json'?'on':''}" data-a="imt" data-v="json">JSON</button><button class="chip ${IM.f=='csv'?'on':''}" data-a="imt" data-v="csv">CSV</button></div><p class="mu text-sm mb-2">Nilai nutrisi dihitung per 100 g. Item yang namanya sudah ada di Food Database dapat dilewati atau ditimpa (pilih saat mengimpor). Item impor berstatus Belum diverifikasi, Estimasi, atau Buatan sendiri. Berkas master (food-master.json) atau Cadangan lama dikenali otomatis dan mempertahankan status serta sumber aslinya. Kolom mikronutrien (besi, kalsium, seng, magnesium, kalium, vit_a, vit_d, vit_e, vit_k, vit_c, vit_b12, folat, besi_heme_persen) dan sifat penyerapan (sumber_protein, fitat, oksalat, polifenol) bersifat opsional.</p><div class="flex flex-wrap gap-2 mb-3"><button class="gh" data-a="imu">Gunakan Template</button><button class="gh" data-a="imy">Salin Template</button><label class="gh cursor-pointer">Pilih File<input type="file" id="imf" accept=".json,.csv,.txt,text/csv,application/json" style="display:none"></label></div><textarea class="inp text-xs" rows="9" data-i="im-txt" placeholder="Tempel ${IM.f.toUpperCase()} di sini atau pilih file..." style="font-family:ui-monospace,monospace">${esc(IM.txt)}</textarea><button class="btn mt-3" data-a="imc">Periksa Data</button>${r?(r.fatal?`<div class="text-sm mt-3" style="color:var(--P)">${esc(r.fatal)}</div>`:`<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">${cd('Total baris',r.total)}${cd('Item baru',nw,'var(--pr)')}${cd('Sudah ada',ei,'var(--C)')}${cd('Bermasalah',r.bad.length,r.bad.length?'var(--P)':'')}</div>${r.skip.length?`<div class="mu text-xs mt-2">Nama kembar di dalam file (dilewati): ${esc(r.skip.slice(0,6).join(', '))}${r.skip.length>6?' dan '+(r.skip.length-6)+' lainnya':''}</div>`:''}${r.bad.slice(0,8).map(x=>`<div class="text-xs mt-1" style="color:var(--P)">${esc(x)}</div>`).join('')}${r.bad.length>8?`<div class="mu text-xs">dan ${r.bad.length-8} masalah lainnya</div>`:''}${r.note.slice(0,4).map(x=>`<div class="mu text-xs mt-1">${esc(x)}</div>`).join('')}${r.chk?`<div class="mu text-xs mt-1">${r.chk} item punya kalori yang tidak sesuai dengan protein, karbohidrat, dan lemak (tetap diimpor, mohon dicek).</div>`:''}${r.img?`<div class="mu text-xs mt-1">${r.img} gambar diabaikan (harus berupa data gambar dan kurang dari sekitar 500 KB).</div>`:''}<div class="grid sm:grid-cols-2 gap-2 mt-4"><button class="btn justify-center" data-a="imd" ${nw?'':'disabled'}>Impor ${nw} Item Baru, Lewati ${ei} yang Ada</button><button class="btn justify-center" style="background:var(--C);color:#1d1200" data-a="imr" ${r.ok.length?'':'disabled'}>Impor &amp; Timpa ${ei} yang Ada</button></div><p class="mu text-xs mt-2">Timpa mengganti kategori, sumber, status, porsi, dan nilai nutrisi item yang namanya sama. Gambar dan mikronutrien lama dipertahankan bila file tidak menyertakannya. Catatan di Food Journal tidak berubah.</p>`):''}</div></div>`}
-function vModal(){if(BCM)return vBcm();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
+function vModal(){if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
 if(DF)return cm('Hapus item makanan?','Item dihapus dari Food Database dan tidak muncul lagi saat mencatat makanan. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','dfy','dfn');if(RD)return cm('Hapus resep?','Resep dan menu terkait di Food Database akan dihapus. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','rdy','rdn');if(CF)return cm('Hapus catatan makanan?','Data yang dihapus tidak dapat dikembalikan.','Hapus','cy','cn');if(RC)return cm('Reset data?','Seluruh catatan, target, resep, dan pengaturan akan dikosongkan, dan Food Database kembali ke master awal. Akun login tetap. Disarankan mengunduh cadangan terlebih dahulu.','Reset','rcy','rcn');
 if(CPM){const c=CPM,mnm=MEALS.find(m=>m[0]==c.m)[1],tg=`<div class="grid grid-cols-2 gap-2 mt-3"><input class="inp" id="cd" type="date" max="${td}" value="${c.d}"><select class="inp" id="ctm">${MEALS.map(m=>`<option value="${m[0]}" ${m[0]==c.tm?'selected':''}>${m[1]}</option>`).join('')}</select></div>`,err=c.e?`<div class="text-sm mt-2" style="color:var(--P)">${c.e}</div>`:'';
 return`<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-2"><b>${c.t=='copy'?'Salin '+mnm:c.t=='save'?'Simpan sebagai Template':'Pakai Template'}</b><button data-a="cpx" aria-label="Tutup">✕</button></div>${c.t=='copy'?`<p class="mu text-sm">Salin semua item ${mnm} pada ${fD(D)} ke tanggal dan waktu makan tujuan.</p>${tg}${err}<button class="btn w-full justify-center mt-4" data-a="cmy">Salin</button>`:c.t=='save'?`<p class="mu text-sm">Simpan item ${mnm} hari ini sebagai template untuk dipakai ulang.</p><input class="inp mt-3" id="cn" maxlength="40" placeholder="Nama template (mis. Sarapan Biasa)" value="${esc(c.name)}">${err}<button class="btn w-full justify-center mt-4" data-a="stz">Simpan Template</button>`:`<p class="mu text-sm">Pilih tujuan, lalu template yang akan dipakai. Nilai gizi sesuai saat template disimpan.</p>${tg}${err}<div class="mt-3">${S.tpl.map(t=>{const k=t.items.reduce((a,x)=>a+(x.sn?x.sn.k:0),0);return`<div class="flex items-center gap-2 py-2" style="border-top:1px solid var(--ln)"><div class="flex-1 min-w-0"><b class="text-sm block truncate">${esc(t.name)}</b><span class="mu text-xs">${t.items.length} item · ${n0(k)} kkal</span></div><button class="btn" style="padding:6px 12px" data-a="tpy" data-id="${t.id}">Pakai</button><button class="ib dl" data-a="tpd" data-id="${t.id}" aria-label="Hapus template">${MS('delete',18)}</button></div>`}).join('')||'<div class="mu text-sm">Belum ada template.</div>'}</div>`}</div></div>`}
@@ -696,6 +698,189 @@ const BC_CATALOG={
 '8993175101019':{n:'Kusuka Keripik Singkong Original',br:'Kusuka',cat:'Camilan',k:'533',p:'2',c:'63',f:'30',fi:'5',su:'2',na:'450',servName:'bungkus',servGram:'60',src:'Katalog Produk Indonesia',img:''},
 '8996001410119':{n:'Torabika Cappuccino',br:'Mayora',cat:'Minuman',k:'440',p:'4',c:'76',f:'14',fi:'0',su:'52',na:'160',servName:'sachet',servGram:'25',src:'Katalog Produk Indonesia',img:''}
 };
+
+// ─── AI Food Scan (AIM) ────────────────────────────────────────────────────
+
+function vAim(){
+  if(!AIM)return '';
+  const a=AIM;
+  // ── STEP: camera ──────────────────────────────────────────────────────────
+  if(a.step==='camera'){
+    return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)">
+    <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><div class="ic" style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb)">${MS('camera_enhance',20)}</div><b class="text-lg">AI Foto Makanan</b></div><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
+    <div class="bc-box mb-3" style="height:280px"><video id="aim-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;border-radius:12px"></video><div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <button class="ib" style="background:rgba(0,0,0,.65);color:#fff;border-radius:9999px;width:52px;height:52px" data-a="aimcap" title="Ambil Foto">${MS('camera',26)}</button>
+      <button class="ib" style="background:rgba(0,0,0,.5);color:#fff;border-radius:9999px" data-a="aimflip" title="Ganti Kamera">${MS('flip_camera_ios',20)}</button>
+    </div></div>
+    ${a.mode==='label'?`<div class="card p-2.5 mb-3 text-xs flex gap-2 items-start" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3)"><span style="color:#7c3aed">${MS('info',16)}</span><span>Arahkan kamera ke <b>tabel Informasi Nilai Gizi</b> pada kemasan produk, pastikan tulisan terlihat jelas dan pencahayaan cukup.</span></div>`:
+    `<div class="card p-2.5 mb-3 text-xs flex gap-2 items-start" style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.3)"><span style="color:#2563eb">${MS('info',16)}</span><span>Foto seluruh makanan di piring/mangkuk. AI akan <b>mengenali jenis dan estimasi berat</b> setiap makanan, lalu menghitung nutrisinya otomatis.</span></div>`}
+    <div class="flex gap-2 mb-3">
+      <button class="chip ${a.mode==='food'?'on':''}" data-a="aimmode" data-v="food">${MS('restaurant',15)} Foto Makanan</button>
+      <button class="chip ${a.mode==='label'?'on':''}" data-a="aimmode" data-v="label">${MS('receipt_long',15)} Foto Tabel Gizi</button>
+    </div>
+    <div class="flex gap-2">
+      <label class="gh flex-1 justify-center cursor-pointer"><span class="flex items-center gap-1.5">${MS('photo_library',16)} Pilih dari Galeri</span><input type="file" id="aim-gallery" accept="image/*" style="display:none"></label>
+      <button class="gh" data-a="aimx">Batal</button>
+    </div></div></div>`;
+  }
+  // ── STEP: preview (after capture) ─────────────────────────────────────────
+  if(a.step==='preview'){
+    return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)">
+    <div class="flex justify-between items-center mb-3"><b class="text-lg">Konfirmasi Foto</b><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
+    <img src="${a.preview}" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:var(--tk);margin-bottom:12px">
+    <p class="mu text-xs text-center mb-3">Mode: <b>${a.mode==='food'?'Identifikasi Makanan':'Baca Tabel Nilai Gizi'}</b></p>
+    <div class="flex gap-2">
+      <button class="gh flex-1 justify-center" data-a="aimretake">Foto Ulang</button>
+      <button class="btn flex-1 justify-center" data-a="aimanalyze">${MS('auto_awesome',18)} Analisis Sekarang</button>
+    </div></div></div>`;
+  }
+  // ── STEP: analyzing ────────────────────────────────────────────────────────
+  if(a.step==='analyzing'){
+    return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-sm text-center py-8">
+    <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff">${MS('auto_awesome',32)}</div>
+    <b class="text-lg block mb-1">AI Sedang Menganalisis…</b>
+    <p class="mu text-sm">${a.mode==='food'?'Mengidentifikasi jenis makanan dan estimasi berat…':'Membaca nilai gizi dari kemasan…'}</p>
+    <div class="sk mt-4" style="width:75%;margin:16px auto 0"></div>
+    <div class="sk mt-2" style="width:50%;margin:0 auto"></div></div></div>`;
+  }
+  // ── STEP: food_results ─────────────────────────────────────────────────────
+  if(a.step==='food_results'){
+    const matched=a.matches||[];
+    const unmatched=a.unmatched||[];
+    return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-lg overflow-auto" style="max-height:calc(100vh - 48px)">
+    <div class="flex justify-between items-start mb-3"><div><b class="text-lg">Hasil Analisis AI</b><div class="mu text-xs mt-0.5">${matched.length+unmatched.length} item terdeteksi</div></div><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
+    ${a.preview?`<img src="${a.preview}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px">`:``}
+    ${matched.length?`<div class="font-semibold text-sm mb-2">✅ Ditemukan di Database (${matched.length} item)</div><div class="flex flex-col gap-2 mb-3">${matched.map((m,i)=>`<div class="card p-3" style="background:var(--tk)"><div class="flex items-center gap-3 mb-2">${fImg(m.food.id,40,8)}<div class="flex-1 min-w-0"><b class="truncate block">${m.food.n}</b><div class="mu text-xs">${m.food.cat} · ${r0(m.food.k)} kkal/100g</div></div></div><div class="flex gap-2 items-end"><div class="flex-1"><label class="text-xs font-semibold">Berat estimasi (g)<input class="inp mt-1" type="text" inputmode="decimal" data-ce id="aim-g-${i}" value="${m.gram}"></label></div><div class="text-right"><div class="mu text-xs">≈ ${r0(m.food.k*(m.gram/100))} kkal</div></div></div></div>`).join('')}</div>`:``}
+    ${unmatched.length?`<div class="font-semibold text-sm mb-2">⚠️ Belum Ada di Database (${unmatched.length} item)</div><div class="flex flex-col gap-2 mb-3">${unmatched.map(u=>`<div class="card p-3 flex items-center justify-between" style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3)"><div><b class="text-sm">${esc(u.name)}</b> <span class="mu text-xs">~${u.gram}g</span></div><div class="flex gap-1"><button class="gh text-xs py-1" data-a="aimqs" data-v="${esc(u.name)}">${MS('barcode_scanner',14)} Scan</button><button class="gh text-xs py-1" data-a="aimlabel">${MS('receipt_long',14)} Foto Label</button></div></div>`).join('')}</div>`:``}
+    ${a.err?`<div class="card p-3 mb-3 text-sm flex items-start gap-2" style="background:rgba(186,26,26,.08);color:var(--P)">${MS('error_outline',18)}<span>${esc(a.err)}</span></div>`:``)
+    ${matched.length?`<div class="flex gap-2"><button class="gh flex-1 justify-center" data-a="aimretake">Foto Ulang</button><button class="btn flex-1 justify-center" data-a="aimsave">${MS('add_circle',18)} Tambahkan ke Journal</button></div>`:`<div class="flex gap-2"><button class="gh flex-1 justify-center" data-a="aimretake">Foto Ulang</button><button class="gh flex-1 justify-center" data-a="aimx">Tutup</button></div>`}
+    </div></div>`;
+  }
+  // ── STEP: label_result ─────────────────────────────────────────────────────
+  if(a.step==='label_result'){
+    const n=a.nutrition||{};
+    const nu=(k,l,u,val)=>`<div class="card text-center" style="padding:10px;background:var(--tk)"><div class="mu text-xs">${l}</div><input class="text-center font-bold text-sm w-full" style="background:transparent;border:none;padding:2px 0" type="text" inputmode="decimal" data-ce id="ailn-${k}" value="${val!=null?val:''}"><div class="mu text-xs">${u}</div></div>`;
+    return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-lg overflow-auto" style="max-height:calc(100vh - 48px)">
+    <div class="flex justify-between items-start mb-3"><div><b class="text-lg">Data Gizi dari Foto Label</b><div class="mu text-xs mt-0.5">Tinjau dan simpan ke Food Database</div></div><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
+    ${a.preview?`<img src="${a.preview}" alt="" style="width:100%;max-height:130px;object-fit:contain;border-radius:10px;background:var(--tk);margin-bottom:12px">`:``}
+    <div class="mb-3"><label class="text-sm font-semibold">Nama Produk<input class="inp mt-1" id="ailn-name" value="${esc(n.productName||'')}"></label></div>
+    <div class="font-bold text-sm mb-2">Nilai Gizi per Takaran Saji</div>
+    <div class="grid grid-cols-4 gap-2 mb-3">${nu('cal','Kalori','kkal',n.calories)}${nu('prot','Protein','g',n.protein)}${nu('carb','Karbo','g',n.carbs)}${nu('fat','Lemak','g',n.fat)}${nu('fib','Serat','g',n.fiber)}${nu('sug','Gula','g',n.sugar)}${nu('sod','Natrium','mg',n.sodium)}</div>
+    <div class="grid grid-cols-2 gap-2 mb-3"><label class="text-sm font-semibold">Nama Takaran Saji<input class="inp mt-1" id="ailn-sname" value="${esc(n.servingName||'sajian')}"></label><label class="text-sm font-semibold">Berat Saji (g)<input class="inp mt-1" type="text" inputmode="decimal" data-ce id="ailn-sgram" value="${n.servingGram!=null?n.servingGram:''}"></label></div>
+    ${a.err?`<div class="card p-3 mb-3 text-sm" style="background:rgba(186,26,26,.08);color:var(--P)">${esc(a.err)}</div>`:''}
+    <div class="flex gap-2"><button class="gh flex-1 justify-center" data-a="aimretake">Foto Ulang</button><button class="btn flex-1 justify-center" data-a="aimsavelabel">${MS('save',18)} Simpan ke Database</button></div>
+    </div></div>`;
+  }
+  return '';
+}
+
+// ── AIM Camera helpers ─────────────────────────────────────────────────────
+function stopAimCamera(){if(_aimStream){_aimStream.getTracks().forEach(t=>t.stop());_aimStream=null}}
+
+async function openAimScan(mode='food'){
+  stopAimCamera();
+  AIM={step:'camera',mode:mode||'food',preview:'',imageData:'',mimeType:'image/jpeg',matches:[],unmatched:[],nutrition:null,err:''};
+  render();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:960}},audio:false});
+    _aimStream=stream;
+    const v=document.getElementById('aim-video');
+    if(v){v.srcObject=stream;await v.play()}
+  }catch(err){
+    if(AIM){AIM.err='Gagal akses kamera: '+(err.name==='NotAllowedError'?'Izin ditolak. Gunakan tombol "Pilih dari Galeri".':err.message)}
+    render();
+  }
+}
+
+function captureAimPhoto(){
+  const v=document.getElementById('aim-video');
+  if(!v||!_aimStream)return;
+  const c=document.createElement('canvas');
+  c.width=v.videoWidth||640;c.height=v.videoHeight||480;
+  c.getContext('2d').drawImage(v,0,0);
+  const dataUrl=c.toDataURL('image/jpeg',0.88);
+  const b64=dataUrl.split(',')[1];
+  stopAimCamera();
+  if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType='image/jpeg'}
+  render();
+}
+
+async function runAimAnalysis(){
+  if(!AIM||!AIM.imageData)return;
+  AIM.step='analyzing';render();
+  try{
+    const resp=await fetch('/api/ai-food-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:AIM.mode,image:AIM.imageData,mimeType:AIM.mimeType})});
+    const data=await resp.json();
+    if(data.error){AIM.step=AIM.mode==='food'?'food_results':'label_result';AIM.err=data.error;render();return}
+    if(AIM.mode==='food'){
+      const results=data.results||[];
+      const matched=[],unmatched=[];
+      results.forEach(r=>{
+        const q=(r.name||'').toLowerCase();
+        const aliases=(r.aliases||[]).map(x=>x.toLowerCase());
+        const allTerms=[q,...aliases];
+        let found=null;
+        for(const term of allTerms){
+          found=all().find(f=>f.n.toLowerCase().includes(term)||term.includes(f.n.toLowerCase().slice(0,5)));
+          if(found)break;
+        }
+        if(found){matched.push({food:found,gram:r.gram||100,name:r.name})}
+        else{unmatched.push({name:r.name,gram:r.gram||100})}
+      });
+      AIM.step='food_results';AIM.matches=matched;AIM.unmatched=unmatched;AIM.err='';
+      if(!results.length)AIM.err='AI tidak mendeteksi makanan pada foto ini. Pastikan makanan terlihat jelas dan pencahayaan cukup.';
+    } else {
+      AIM.step='label_result';AIM.nutrition=data.nutrition||{};AIM.err='';
+    }
+  }catch(e){
+    AIM.step=AIM.mode==='food'?'food_results':'label_result';
+    AIM.err='Koneksi gagal. Periksa internet lalu coba lagi.';
+  }
+  render();
+}
+
+function saveAimFoodJournal(){
+  if(!AIM||!AIM.matches||!AIM.matches.length)return;
+  const h=new Date().getHours(),mealCode=h<10?'b':h<15?'l':h<17?'s':'d';
+  let saved=0;
+  AIM.matches.forEach((m,i)=>{
+    const gInput=document.getElementById('aim-g-'+i);
+    const g=num(gInput?gInput.value:m.gram);
+    if(!(g>0))return;
+    const f=m.food;
+    const sn=snap(f,g);
+    S.logs.push({id:'n'+Date.now()+'_'+i,d:D,m:mealCode,t:new Date().toTimeString().slice(0,5),fo:f.id,n:f.n,q:g,u:'g',g,est:false,sn,p100:{k:f.k,p:f.p,c:f.c,f:f.f,fi:f.fi,su:f.su,na:f.na}});
+    saved++;
+  });
+  save();stopAimCamera();AIM=null;render();
+  tst(saved>0?saved+' item makanan berhasil ditambahkan ke Food Journal!':'Tidak ada item yang disimpan.');
+}
+
+function saveAimLabel(){
+  const nm=(document.getElementById('ailn-name')||{}).value||'';
+  if(!nm.trim()){if(AIM){AIM.err='Nama produk wajib diisi.';render()}return}
+  const gv=v=>num((document.getElementById('ailn-'+v)||{}).value);
+  const calVal=gv('cal'),protVal=gv('prot'),carbVal=gv('carb'),fatVal=gv('fat');
+  const fibVal=gv('fib'),sugVal=gv('sug'),sodVal=gv('sod');
+  const snameVal=(document.getElementById('ailn-sname')||{}).value||'sajian';
+  const sgramVal=num((document.getElementById('ailn-sgram')||{}).value);
+  // Convert per-serving to per-100g if servingGram is provided
+  const sg=sgramVal>0?sgramVal:100;
+  const factor=100/sg;
+  const k100=Number.isFinite(calVal)?Math.round(calVal*factor):0;
+  const p100=Number.isFinite(protVal)?Math.round(protVal*factor*10)/10:0;
+  const c100=Number.isFinite(carbVal)?Math.round(carbVal*factor*10)/10:0;
+  const f100=Number.isFinite(fatVal)?Math.round(fatVal*factor*10)/10:0;
+  const fi100=Number.isFinite(fibVal)?Math.round(fibVal*factor*10)/10:null;
+  const su100=Number.isFinite(sugVal)?Math.round(sugVal*factor*10)/10:null;
+  const na100=Number.isFinite(sodVal)?Math.round(sodVal*factor):null;
+  const servs={};if(sgramVal>0)servs[snameVal]=sgramVal;
+  const id='c'+Date.now();
+  const item={id,n:nm.trim(),br:'',cat:'Makanan Kemasan',k:k100,p:p100,c:c100,f:f100,fi:fi100,su:su100,na:na100,s:servs,d:null,src:'Foto Label Gizi (AI)',st:'Belum diverifikasi',v:1};
+  S.cf.push(item);save();stopAimCamera();AIM=null;
+  openM({fo:id,m:'b'});render();
+  tst('Produk berhasil disimpan ke Food Database dan siap dicatat!');
+}
 
 function vBcm(){if(!BCM)return '';const b=BCM;
 if(b.step==='loading'){return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-sm text-center py-6"><div class="ic mx-auto mb-3" style="width:56px;height:56px;border-radius:16px;background:var(--tk2);color:var(--pr);margin:0 auto 12px">${MS('barcode_scanner',32)}</div><b class="text-lg block">${tr('searchingFood')}</b><p class="mu text-sm mt-1 mb-4">Barcode <b>${esc(b.code)}</b> Open Food Facts</p><div class="sk mb-4" style="width:80%;margin:0 auto"></div><button class="gh" data-a="bcx">${tr('cancel')}</button></div></div>`}
@@ -893,6 +1078,21 @@ WS=false;WK='';save();tst(m);return}
 else if(a=='sd')D=v;
 else if(a=='cpd'){const sr=lg(addD(D,-1));if(!sr.length){tst('Tidak ada catatan di hari sebelumnya');return}sr.forEach((l,j)=>S.logs.push({...l,id:'n'+Date.now()+j,d:D}));save();tst('Catatan hari sebelumnya disalin');return}
 else if(a=='qs'){openBcScan();return}
+else if(a=='qai'){openAimScan('food');return}
+else if(a=='qailabel'){openAimScan('label');return}
+else if(a=='aimx'){stopAimCamera();AIM=null;render();return}
+else if(a=='aimmode'){if(AIM){AIM.mode=v;render()}return}
+else if(a=='aimflip'){
+  if(_aimStream){const tr=_aimStream.getVideoTracks()[0];const cur=tr.getSettings().facingMode||'environment';
+  stopAimCamera();
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:cur==='environment'?'user':'environment'},width:{ideal:1280},height:{ideal:960}},audio:false}).then(s=>{_aimStream=s;const v=document.getElementById('aim-video');if(v){v.srcObject=s;v.play()}}).catch(()=>{});}return}
+else if(a=='aimcap'){captureAimPhoto();return}
+else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode;AIM=null;openAimScan(m)}return}
+else if(a=='aimanalyze'){runAimAnalysis();return}
+else if(a=='aimsave'){saveAimFoodJournal();return}
+else if(a=='aimsavelabel'){saveAimLabel();return}
+else if(a=='aimqs'){stopAimCamera();AIM=null;openBcScan();return}
+else if(a=='aimlabel'){stopAimCamera();if(AIM){const p=AIM.preview;AIM=null;openAimScan('label');setTimeout(()=>{if(AIM&&p){AIM.preview=p;AIM.imageData=p.split(',')[1]||'';AIM.step='preview';render()}},100)}return}
 else if(a=='bcx'){stopBcCamera();BCM=null;render();return}
 else if(a=='bcy'){saveBcConfirmed();return}
 else if(a=='bcflip'){if(BCM){BCM.camFacing=BCM.camFacing=='environment'?'user':'environment';initBcCamera()}return}
@@ -914,7 +1114,9 @@ if(S.u.ph){if(em.toLowerCase()!==String(S.u.email||'').toLowerCase()||await hx(p
 else{if(pw.length<8){er.textContent='Kata sandi minimal 8 karakter untuk membuat akun di perangkat ini.';return}S.u.ph=await hx(pw);S.u.email=em;if(!S.u.name)S.u.name=em.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 S.u.in=true;save();go('dash');render()}
 async function chPw(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){tst('Kata sandi baru minimal 8 karakter');return}if(a!==b){tst('Konfirmasi kata sandi tidak sama');return}S.u.ph=await hx(a);save();tst('Kata sandi berhasil diubah')}
-document.addEventListener('change',e=>{const t=e.target;if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}if(t.type!='file'||!t.files[0])return;const f=t.files[0];if(!f.type.startsWith('image/')||f.size>5e6){tst('Pilih file gambar (maksimal 5 MB)');return}rdImg(f,u=>{if(t.id=='nmimg'){NM.img=u;render()}else if(t.id=='rcimg'){B.img=u;render()}else if(t.dataset.fid){S.fimg[t.dataset.fid]=u;save();tst('Gambar disimpan')}})});
+document.addEventListener('change',e=>{const t=e.target;if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}
+if(t.id=='aim-gallery'&&t.files[0]){const f=t.files[0];if(!f.type.startsWith('image/')||f.size>8e6){tst('Pilih file gambar (maks 8 MB)');return}const fr=new FileReader();fr.onload=ev=>{const dataUrl=ev.target.result;const b64=dataUrl.split(',')[1];stopAimCamera();if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType=f.type||'image/jpeg'}render()};fr.readAsDataURL(f);return}
+if(t.type!='file'||!t.files[0])return;const f=t.files[0];if(!f.type.startsWith('image/')||f.size>5e6){tst('Pilih file gambar (maksimal 5 MB)');return}rdImg(f,u=>{if(t.id=='nmimg'){NM.img=u;render()}else if(t.id=='rcimg'){B.img=u;render()}else if(t.dataset.fid){S.fimg[t.dataset.fid]=u;save();tst('Gambar disimpan')}})});
 document.addEventListener('input',e=>{const t=e.target,i=t.dataset.i;let f;
 if(t.id=='sq'){MD.q=t.value;render();f=$('#sq');fc(f);return}
 const dc=v=>v.replace(/[^0-9.,]/g,'');
@@ -931,8 +1133,7 @@ if(t.id=='cd'){CPM.d=t.value;CPM.okk=false;return}if(t.id=='ctm'){CPM.tm=t.value
 if(t.id=='mf'){MD.fresh=t.checked;MD.e='';render();return}
 if(t.id=='fq'){FS.q=t.value;render();f=$('#fq');fc(f);return}
 if(t.id=='bc-manual-input'){if(BCM){BCM.manualCode=t.value;BCM.err=''}return}
-if(t.id=='bc-search-q'){if(BCM){BCM.searchQ=t.value;render();const f=$('#bc-search-q');fc(f)}return}
-if(!i)return;const[k,n]=i.split('-'),th=i.split('-')[2];
+if(t.id=='bc-search-q'){if(BCM){BCM.searchQ=t.value;render();const f=$('#bc-search-q');fc(f)}return}if(!i)return;const[k,n]=i.split('-'),th=i.split('-')[2];
 if(k=='nm'){if(t.dataset.ce!==undefined&&n!='bc')t.value=dc(t.value);NM[n]=t.value;return}
 if(k=='bci'){if(BCM&&BCM.item){BCM.item[n]=t.value;BCM.err=''}return}
 if(k=='nmi'){t.value=dc(t.value);NM.mi=NM.mi||{};NM.mi[n]=t.value;return}
@@ -954,7 +1155,8 @@ const fc=f=>{if(f){f.focus();try{f.setSelectionRange(99,99)}catch(e){}}};
 function calcLd2(id){clearTimeout(window._c);window._c=setTimeout(()=>{render();const f=$('#'+(id||'mq'));if(f){fc(f)}},250)}
 const ceF=e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ce!==undefined&&typeof t.setSelectionRange=='function'){const L=t.value.length;setTimeout(()=>{try{t.setSelectionRange(L,L)}catch(_){}},0)}};
 document.addEventListener('focusin',ceF);document.addEventListener('click',ceF);document.addEventListener('touchend',ceF);
-document.addEventListener('keydown',e=>{if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e.target.id=='tq'&&e.key=='Enter'){FS.q=e.target.value;go('foods');return}if(e.target.id=='bc-manual-input'&&e.key=='Enter'){e.preventDefault();const c=e.target.value.trim();if(c){if(BCM)BCM.manualCode=c;onBarcodeScanned(c)}else{tst(tr('typeBarcodeFirst'))}return}if(e.key=='Escape'&&BCM){stopBcCamera();BCM=null;render();return}});
+document.addEventListener('keydown',e=>{if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e.target.id=='tq'&&e.key=='Enter'){FS.q=e.target.value;go('foods');return}if(e.target.id=='bc-manual-input'&&e.key=='Enter'){e.preventDefault();const c=e.target.value.trim();if(c){if(BCM)BCM.manualCode=c;onBarcodeScanned(c)}else{tst(tr('typeBarcodeFirst'))}return}if(e.key=='Escape'&&BCM){stopBcCamera();BCM=null;render();return}
+if(e.key=='Escape'&&AIM){stopAimCamera();AIM=null;render();return}});
 try{window.matchMedia('(max-width:767px)').addEventListener('change',render)}catch(e){}
 let _mb=MOB();window.addEventListener('resize',()=>{const m=MOB();if(m!==_mb){_mb=m;render()}});
 window.addEventListener('hashchange',render);render();if(FIRST)seedMaster();

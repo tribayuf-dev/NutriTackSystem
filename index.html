@@ -407,7 +407,132 @@ const FIRST=(()=>{try{return!localStorage.getItem('nt2')}catch(e){return true}})
 let S;try{S=JSON.parse(localStorage.getItem('nt2'))||init()}catch(e){S=init()}
 S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};if(S.set.bkf===undefined)S.set.bkf=7;
 S.cfg={...JSON.parse(JSON.stringify(CFG0)),...(S.cfg||{})};S.rcp=S.rcp||[];S.del=S.del||[];S.fimg=S.fimg||{};S.pf.g=S.pf.g||'keep';S.cf=(S.cf||[]).map(f=>({...f,cat:CM[f.cat]||f.cat,st:f.st=='Custom'?'Buatan sendiri':f.st}));S.tg=calcT(S.pf,(S.tg&&S.tg.man)||{},S.cfg);
-const save=()=>{try{if(S.bk)S.bk.dirty=(S.bk.dirty||0)+1;localStorage.setItem('nt2',JSON.stringify(S));return true}catch(e){if(typeof tst=='function')tst('Penyimpanan peramban penuh. Hapus sebagian gambar atau data.');return false}};
+// IndexedDB Persistent Image Store & Storage Engine
+const IDB_NAME='nutritrack_db',IDB_STORE='images';
+let _idb=null;
+function getIDB(){
+  if(_idb)return Promise.resolve(_idb);
+  return new Promise(resolve=>{
+    try{
+      if(!window.indexedDB){resolve(null);return}
+      const req=indexedDB.open(IDB_NAME,1);
+      req.onupgradeneeded=e=>{
+        const db=e.target.result;
+        if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess=e=>{_idb=e.target.result;resolve(_idb)};
+      req.onerror=()=>resolve(null);
+    }catch(e){resolve(null)}
+  });
+}
+async function idbSetImage(id,dataUrl){
+  if(!id||!dataUrl)return false;
+  const db=await getIDB();if(!db)return false;
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(dataUrl,id);
+      tx.oncomplete=()=>resolve(true);
+      tx.onerror=()=>resolve(false);
+    }catch(e){resolve(false)}
+  });
+}
+async function idbGetAllImages(){
+  const db=await getIDB();if(!db)return {};
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const store=tx.objectStore(IDB_STORE);
+      const req=store.openCursor(),res={};
+      req.onsuccess=e=>{
+        const c=e.target.result;
+        if(c){res[c.key]=c.value;c.continue()}
+        else resolve(res);
+      };
+      req.onerror=()=>resolve({});
+    }catch(e){resolve({})}
+  });
+}
+async function idbDeleteImage(id){
+  const db=await getIDB();if(!db)return false;
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(id);
+      tx.oncomplete=()=>resolve(true);
+      tx.onerror=()=>resolve(false);
+    }catch(e){resolve(false)}
+  });
+}
+function compressThumb(src,cb,maxDim=480,quality=0.72){
+  if(!src||typeof src!=='string'){if(cb)cb(src);return}
+  const im=new Image();
+  im.onload=()=>{
+    try{
+      const scale=Math.min(1,maxDim/Math.max(im.width,im.height));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.width*scale));
+      c.height=Math.max(1,Math.round(im.height*scale));
+      const ctx=c.getContext('2d');
+      ctx.imageSmoothingQuality='high';
+      ctx.drawImage(im,0,0,c.width,c.height);
+      const res=c.toDataURL('image/jpeg',quality);
+      if(cb)cb(res);
+    }catch(e){if(cb)cb(src)}
+  };
+  im.onerror=()=>{if(cb)cb(src)};
+  im.src=src;
+}
+const save=()=>{
+  try{
+    if(S.bk)S.bk.dirty=(S.bk.dirty||0)+1;
+    if(S.fimg){
+      for(const k in S.fimg){
+        const v=S.fimg[k];
+        if(typeof v==='string'&&v.startsWith('data:image/'))idbSetImage(k,v);
+      }
+    }
+    const safeS={...S};
+    const safeFimg={};
+    for(const k in (S.fimg||{})){
+      const v=S.fimg[k];
+      if(typeof v==='string'){
+        if(!v.startsWith('data:image/')||v.length<15000){
+          safeFimg[k]=v;
+        }
+      }
+    }
+    safeS.fimg=safeFimg;
+    localStorage.setItem('nt2',JSON.stringify(safeS));
+    return true;
+  }catch(e){
+    console.warn('localStorage quota reached, saving text data safely',e);
+    try{
+      const minS={...S,fimg:{}};
+      localStorage.setItem('nt2',JSON.stringify(minS));
+      return true;
+    }catch(e2){
+      console.error('Critical storage failure',e2);
+      if(typeof tst=='function')tst('Gagal menyimpan ke penyimpanan peramban.');
+      return false;
+    }
+  }
+};
+function initStorageEngine(){
+  if(S&&S.fimg){
+    for(const id in S.fimg){
+      const img=S.fimg[id];
+      if(typeof img==='string'&&img.startsWith('data:image/'))idbSetImage(id,img);
+    }
+  }
+  idbGetAllImages().then(imgs=>{
+    if(imgs&&Object.keys(imgs).length>0){
+      S.fimg={...(S.fimg||{}),...imgs};
+      render();
+    }
+  });
+  save();
+}
 let BCM=null,_bcDetector=null,_bcScanning=false,_bcStream=null,_zxLoading=false;let D=td,MD=null,CF=null,NM=null,RC=false,IM=null,XI={txt:'',res:null},XO='',XC=false,DF=null,RD=null,RT='b',DW=0,WP='w',RP={t:'w',a:addD(td,-6),b:td},B=null,MORE=false,WS=false,WK='',WDT=td,WC='',TU='',CPM=null,TWV=null,TWD=null,TWC='',toast='';
 // AIM = AI Food Scan Modal state
 let AIM=null,_aimStream=null;
@@ -429,7 +554,7 @@ const empty=(m,b='')=>`<div class="text-center py-8"><div class="mu mb-3">${m}</
 const addB=(m='')=>`<button class="btn" data-a="ga">${ic('plus','w-4 h-4')} ${tr('addFood')}</button>`;
 const dnav=()=>`<div class="flex items-center gap-2"><button class="gh" data-a="d" data-v="-1" aria-label="${tr('prevDay')}">‹ ${tr('prevDay')}</button><b class="px-2">${fD(D)}</b><button class="gh" data-a="d" data-v="1" ${D>=td?'disabled':''}>${tr('nextDay')} ›</button></div>`;
 const fImg=(id,z=40,r=10)=>{const w=Math.round(z*1.5),m=S.fimg[id];return m?`<img src="${m}" alt="" style="width:${w}px;height:${z}px;border-radius:${r}px;object-fit:cover;flex-shrink:0">`:`<div class="ic" style="width:${w}px;height:${z}px;border-radius:${r}px">${MS('nutrition',Math.round(z/2))}</div>`};
-function rdImg(f,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,1200/Math.max(im.width,im.height));c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.92))};im.src=fr.result};fr.readAsDataURL(f)}
+function rdImg(f,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,480/Math.max(im.width,im.height));c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};im.src=fr.result};fr.readAsDataURL(f)}
 async function hx(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return t}}
 const stB=s=>`<span class="bd" style="color:${s=='Terverifikasi'?'var(--pr)':'#b7791f'}">${tr(s=='Terverifikasi'?'verified':s=='Belum diverifikasi'?'unverified':s=='Estimasi'?'estimated':s=='Buatan sendiri'?'homemade':s)}</span>`;
 const MOB=()=>!!(window.matchMedia&&window.matchMedia('(max-width:767px)').matches);
@@ -947,12 +1072,15 @@ function captureAimPhoto(){
     if(AIM){AIM.err='Kamera sedang memuat, tunggu 1 detik lalu tekan tombol lagi.';render()}
     return;
   }
+  const maxDim=1024;
+  const scale=Math.min(1,maxDim/Math.max(vw,vh));
   const c=document.createElement('canvas');
-  c.width=vw;
-  c.height=vh;
+  c.width=Math.round(vw*scale);
+  c.height=Math.round(vh*scale);
   const ctx=c.getContext('2d');
-  ctx.drawImage(v,0,0,vw,vh);
-  const dataUrl=c.toDataURL('image/jpeg',0.88);
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(v,0,0,c.width,c.height);
+  const dataUrl=c.toDataURL('image/jpeg',0.75);
   const b64=dataUrl.split(',')[1];
   stopAimCamera();
   if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType='image/jpeg';AIM.err=''}
@@ -1051,6 +1179,7 @@ function saveAimFoodJournal(){
   if(!AIM||!AIM.items||!AIM.items.length)return;
   const h=new Date().getHours(),mealCode=h<10?'b':h<15?'l':h<17?'s':'d';
   let saved=0;
+  const previewImg=AIM.preview;
   AIM.items.forEach((it,i)=>{
     const g=Number(it.gram);
     if(!(g>0))return;
@@ -1064,6 +1193,37 @@ function saveAimFoodJournal(){
       su: it.nutrition.sugar_total_g||0,
       na: it.nutrition.sodium_mg||0
     };
+    if(!it.localFood && !S.cf.some(f=>f.id===foodId)){
+      const p100_k=Math.round((sn.k/g)*100);
+      const p100_p=Math.round(((sn.p/g)*100)*10)/10;
+      const p100_c=Math.round(((sn.c/g)*100)*10)/10;
+      const p100_f=Math.round(((sn.f/g)*100)*10)/10;
+      const p100_na=Math.round((sn.na/g)*100);
+      S.cf.push({
+        id: foodId,
+        n: it.name,
+        cat: 'Makanan',
+        k: p100_k,
+        p: p100_p,
+        c: p100_c,
+        f: p100_f,
+        fi: sn.fi||0,
+        su: sn.su||0,
+        na: p100_na,
+        s: { porsi: g },
+        d: null,
+        src: 'AI Scan',
+        st: 'Estimasi',
+        v: 1
+      });
+    }
+    if(previewImg && foodId.startsWith('ai_')){
+      compressThumb(previewImg, thumb=>{
+        S.fimg[foodId]=thumb;
+        idbSetImage(foodId,thumb);
+        save();
+      });
+    }
     S.logs.push({
       id:'n'+Date.now()+'_'+i,
       d:D,
@@ -1131,7 +1291,13 @@ function saveAimLabel(){
     v:1
   };
   S.cf.push(item);
-  if(AIM&&AIM.preview) S.fimg[id]=AIM.preview;
+  if(AIM&&AIM.preview){
+    compressThumb(AIM.preview, thumb=>{
+      S.fimg[id]=thumb;
+      idbSetImage(id,thumb);
+      save();
+    });
+  }
   save();
   stopAimCamera();
   AIM=null;
@@ -1282,7 +1448,25 @@ function saveBcConfirmed(){if(!BCM||!BCM.item)return;const it=BCM.item,nm=(it.n|
 if(!nm){BCM.err='Nama makanan wajib diisi.';render();return}
 const id='c'+Date.now();const servs={};if(it.servGram&&num(it.servGram)>0)servs[it.servName||'sajian']=num(it.servGram);
 const itemData={id,n:nm,br:(it.br||'').trim(),cat:it.cat||'Makanan Kemasan',k:num(it.k)||0,p:num(it.p)||0,c:num(it.c)||0,f:num(it.f)||0,fi:it.fi!==''?num(it.fi):null,su:it.su!==''?num(it.su):null,na:it.na!==''?num(it.na):null,s:servs,d:null,bc:BCM.code,src:it.src||'Open Food Facts',st:'Belum diverifikasi',v:1};
-S.cf.push(itemData);if(it.img)S.fimg[id]=it.img;save();stopBcCamera();BCM=null;openM({fo:id,m:'b'});render();tst('Item berhasil disimpan ke Food Database dan siap dicatat!');}
+S.cf.push(itemData);
+if(it.img){
+  if(typeof it.img==='string'&&it.img.startsWith('data:image/')){
+    compressThumb(it.img, thumb=>{
+      S.fimg[id]=thumb;
+      idbSetImage(id,thumb);
+      save();
+    });
+  } else {
+    S.fimg[id]=it.img;
+    idbSetImage(id,it.img);
+  }
+}
+save();
+stopBcCamera();
+BCM=null;
+openM({fo:id,m:'b'});
+render();
+tst('Item berhasil disimpan ke Food Database dan siap dicatat!');}
 
 function route(){const r=(location.hash.slice(2)||'dash');return r}
 const th=()=>{const t=S.set.theme||'auto',r=document.documentElement;t=='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',t)};
@@ -1384,21 +1568,21 @@ const MIv={};MAP.forEach(([k])=>{const sv=String((n.mi||{})[k]||'').trim();if(sv
 const fld={n:name,br:n.br.trim(),cat:n.cat,bc:(n.bc||'').trim()||null,...V,s:S2,d:dn,mi:Object.keys(MIv).length?MIv:null,ab:ABv};
 if(!n.eid)S.cf.push({id,...fld,src:'Pengguna',st:'Buatan sendiri',v:1});
 else{const i=S.cf.findIndex(z=>z.id==id);if(i>=0)S.cf[i]={...S.cf[i],...fld,v:(S.cf[i].v||1)+1};else{S.ov=S.ov||{};S.ov[id]={...(S.ov[id]||{}),...fld,st:'Belum diverifikasi',v:(cur.v||1)+1}}}
-if(n.img)S.fimg[id]=n.img;NM=null;save();tst(n.eid?'Item diperbarui (versi '+(((cur&&cur.v)||1)+1)+'). Catatan jurnal lama tidak berubah.':Math.abs(at-V.k)>.15*Math.max(V.k,1)+10?'Tersimpan. Perhatian: kalori tidak sesuai dengan protein, karbohidrat, dan lemak.':'Item makanan disimpan');return}}
+if(n.img){S.fimg[id]=n.img;if(typeof idbSetImage==='function')idbSetImage(id,n.img)}NM=null;save();tst(n.eid?'Item diperbarui (versi '+(((cur&&cur.v)||1)+1)+'). Catatan jurnal lama tidak berubah.':Math.abs(at-V.k)>.15*Math.max(V.k,1)+10?'Tersimpan. Perhatian: kalori tidak sesuai dengan protein, karbohidrat, dan lemak.':'Item makanan disimpan');return}}
 else if(a=='rf'){delete S.tg.man[v];recalc()}
 else if(a=='cfr'){S.cfg=JSON.parse(JSON.stringify(CFG0));recalc();tst('Konfigurasi dikembalikan ke default');return}
 else if(a=='pw'){chPw();return}
 else if(a=='rcn')RC=false;
 else if(a=='rcy'){const u0=S.u;S=init();S.u={...u0,in:true};RC=false;save();seedMaster();go('dash');tst('Data direset. Food Database kembali ke master awal.');return}
 else if(a=='rm')B.r.splice(+v,1);else if(a=='ra')B.r.push(['nasi',100,'g']);
-else if(a=='rs'){if(!B.n.trim()||!B.r.length){tst('Isi nama menu dan minimal satu bahan');return}const t=rtot(B.r),g=t.g;if(!(g>0)){tst('Jumlah bahan harus lebih dari nol');return}const k=100/g,fd={n:B.n.trim(),cat:'Makanan Kustom',k:t.k*k,p:t.p*k,c:t.c*k,f:t.f*k,fi:t.fi*k,su:t.su*k,na:t.na*k,s:{porsi:g},d:null,src:'Buatan sendiri',st:'Buatan sendiri'},rows=B.r.map(x=>[x[0],+x[1],x[2]]);if(B.eid){const r=S.rcp.find(x=>x.id==B.eid),f=S.cf.find(x=>x.id==r.fid);Object.assign(f,fd);r.n=fd.n;r.r=rows;if(B.img)S.fimg[r.fid]=B.img;tst('Resep diperbarui')}else{const id='c'+Date.now();S.cf.push({id,...fd});S.rcp.push({id:'r'+Date.now(),fid:id,n:fd.n,r:rows,d:td});if(B.img)S.fimg[id]=B.img;tst('Resep tersimpan di My Saved Recipes')}B=null;RT='s';save();render();return}
+else if(a=='rs'){if(!B.n.trim()||!B.r.length){tst('Isi nama menu dan minimal satu bahan');return}const t=rtot(B.r),g=t.g;if(!(g>0)){tst('Jumlah bahan harus lebih dari nol');return}const k=100/g,fd={n:B.n.trim(),cat:'Makanan Kustom',k:t.k*k,p:t.p*k,c:t.c*k,f:t.f*k,fi:t.fi*k,su:t.su*k,na:t.na*k,s:{porsi:g},d:null,src:'Buatan sendiri',st:'Buatan sendiri'},rows=B.r.map(x=>[x[0],+x[1],x[2]]);if(B.eid){const r=S.rcp.find(x=>x.id==B.eid),f=S.cf.find(x=>x.id==r.fid);Object.assign(f,fd);r.n=fd.n;r.r=rows;if(B.img){S.fimg[r.fid]=B.img;if(typeof idbSetImage==='function')idbSetImage(r.fid,B.img)}tst('Resep diperbarui')}else{const id='c'+Date.now();S.cf.push({id,...fd});S.rcp.push({id:'r'+Date.now(),fid:id,n:fd.n,r:rows,d:td});if(B.img){S.fimg[id]=B.img;if(typeof idbSetImage==='function')idbSetImage(id,B.img)}tst('Resep tersimpan di My Saved Recipes')}B=null;RT='s';save();render();return}
 else if(a=='rtb')RT=v;
 else if(a=='re'){const r=S.rcp.find(x=>x.id==id);B={n:r.n,img:S.fimg[r.fid]||'',r:r.r.map(x=>[...x]),eid:r.id};RT='b'}
 else if(a=='rnew'){B=null}
 else if(a=='rd')RD=id;else if(a=='rdn')RD=null;
 else if(a=='rdy'){const r=S.rcp.find(x=>x.id==RD);if(r){S.del.push(r.fid);S.rcp=S.rcp.filter(x=>x.id!=RD)}RD=null;save();tst('Resep dihapus');return}
 else if(a=='fd')DF=id;else if(a=='dfn')DF=null;
-else if(a=='dfy'){S.del.push(DF);DF=null;save();if(route().startsWith('food/'))go('foods');tst('Item makanan dihapus');return}
+else if(a=='dfy'){S.del.push(DF);if(S.fimg&&S.fimg[DF]){delete S.fimg[DF];if(typeof idbDeleteImage==='function')idbDeleteImage(DF)}DF=null;save();if(route().startsWith('food/'))go('foods');tst('Item makanan dihapus');return}
 else if(a=='gl'){S.pf.g=v;recalc()}
 else if(a=='gs'){S.setup=true;recalc();save();tst('Target disimpan');return}
 else if(a=='auto'){S.tg=calcT(S.pf,{},S.cfg);save()}
@@ -1448,8 +1632,8 @@ else{if(pw.length<8){er.textContent='Kata sandi minimal 8 karakter untuk membuat
 S.u.in=true;save();go('dash');render()}
 async function chPw(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){tst('Kata sandi baru minimal 8 karakter');return}if(a!==b){tst('Konfirmasi kata sandi tidak sama');return}S.u.ph=await hx(a);save();tst('Kata sandi berhasil diubah')}
 document.addEventListener('change',e=>{const t=e.target;if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}
-if(t.id=='aim-gallery'&&t.files[0]){const f=t.files[0];if(!f.type.startsWith('image/')||f.size>8e6){tst('Pilih file gambar (maks 8 MB)');return}const fr=new FileReader();fr.onload=ev=>{const dataUrl=ev.target.result;const b64=dataUrl.split(',')[1];stopAimCamera();if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType=f.type||'image/jpeg'}render()};fr.readAsDataURL(f);return}
-if(t.type!='file'||!t.files[0])return;const f=t.files[0];if(!f.type.startsWith('image/')||f.size>5e6){tst('Pilih file gambar (maksimal 5 MB)');return}rdImg(f,u=>{if(t.id=='nmimg'){NM.img=u;render()}else if(t.id=='rcimg'){B.img=u;render()}else if(t.dataset.fid){S.fimg[t.dataset.fid]=u;save();tst('Gambar disimpan')}})});
+if(t.id=='aim-gallery'&&t.files[0]){const f=t.files[0];if(!f.type.startsWith('image/')||f.size>20e6){tst('Pilih file gambar valid (maks 20 MB)');return}const fr=new FileReader();fr.onload=ev=>{const im=new Image();im.onload=()=>{const maxDim=1024;const scale=Math.min(1,maxDim/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);const ctx=c.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(im,0,0,c.width,c.height);const dataUrl=c.toDataURL('image/jpeg',0.75);const b64=dataUrl.split(',')[1];stopAimCamera();if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType='image/jpeg';AIM.err=''}render()};im.src=ev.target.result};fr.readAsDataURL(f);return}
+if(t.type!='file'||!t.files[0])return;const f=t.files[0];if(!f.type.startsWith('image/')||f.size>20e6){tst('Pilih file gambar valid (maksimal 20 MB)');return}rdImg(f,u=>{if(t.id=='nmimg'){NM.img=u;render()}else if(t.id=='rcimg'){B.img=u;render()}else if(t.dataset.fid){const fid=t.dataset.fid;S.fimg[fid]=u;idbSetImage(fid,u);save();render();tst('Gambar disimpan')}})});
 document.addEventListener('input',e=>{const t=e.target,i=t.dataset.i;let f;
 if(t.classList&&t.classList.contains('aim-gram-inp')){
   const idx=Number(t.dataset.idx);
@@ -1534,5 +1718,5 @@ document.addEventListener('keydown',e=>{if((e.target.id=='le'||e.target.id=='lp'
 if(e.key=='Escape'&&AIM){stopAimCamera();AIM=null;render();return}});
 try{window.matchMedia('(max-width:767px)').addEventListener('change',render)}catch(e){}
 let _mb=MOB();window.addEventListener('resize',()=>{const m=MOB();if(m!==_mb){_mb=m;render()}});
-window.addEventListener('hashchange',render);render();if(FIRST)seedMaster();
+window.addEventListener('hashchange',render);render();initStorageEngine();if(FIRST)seedMaster();
 </script></body></html>

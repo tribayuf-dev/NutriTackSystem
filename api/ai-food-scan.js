@@ -47,6 +47,11 @@ IKUTI PROSEDUR ANALISIS GEOMETRI & FISIKA PANGAN BERIKUT SECARA KETAT:
      * Saus / sambal / selai / kecap: densitas ~1.10 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g)
      * Minuman cair: densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
 
+5. Grounding Spasial & Segmentasi Objek (box_2d):
+   - WAJIB berikan batas koordinat bounding box visual 2D pada atribut "box_2d": [ymin, xmin, ymax, xmax] untuk setiap komponen makanan yang terdeteksi.
+   - Skala koordinat dinormalisasi dalam rentang integer 0 hingga 1000 (0 = tepi atas/kiri gambar, 1000 = tepi bawah/kanan gambar).
+   - Pastikan area box_2d menyeleksi objek makanan tersebut secara spesifik dan presisi (contoh: batas area nasi putih saja, batas potongan ayam goreng saja, atau batas sayur), bukan mencakup keseluruhan piring.
+
 KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
 {
   "scale_reference_detected": "string (contoh: Piring standar ~25cm)",
@@ -54,6 +59,7 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
   "detected_items": [
     {
       "item_name_id": "string (Nama baku Bahasa Indonesia sesuai TKPI, contoh: Nasi Putih)",
+      "box_2d": [180, 220, 580, 650],
       "food_category": "carbohydrate | animal_protein | plant_protein | vegetable | fruit | fat_sauce | beverage | snack",
       "cooking_method": "steamed_boiled | fried_deep | stir_fried | coconut_milk_curry | grilled_roasted | raw_fresh",
       "estimated_volume_cc": 142.8,
@@ -342,9 +348,23 @@ export default async function handler(req, res) {
           };
         }
 
+        let box2d = null;
+        if (Array.isArray(item.box_2d) && item.box_2d.length === 4) {
+          const [ymin, xmin, ymax, xmax] = item.box_2d.map(Number);
+          if (!isNaN(ymin) && !isNaN(xmin) && !isNaN(ymax) && !isNaN(xmax)) {
+            box2d = [
+              Math.max(0, Math.min(1000, Math.round(ymin))),
+              Math.max(0, Math.min(1000, Math.round(xmin))),
+              Math.max(0, Math.min(1000, Math.round(ymax))),
+              Math.max(0, Math.min(1000, Math.round(xmax))),
+            ];
+          }
+        }
+
         return {
           id: `item_${idx}_${Date.now()}`,
           item_name_id: itemName,
+          box_2d: box2d,
           food_category: item.food_category || 'carbohydrate',
           cooking_method: cookingMethod,
           estimated_volume_cc: item.estimated_volume_cc || 0,

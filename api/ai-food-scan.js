@@ -15,6 +15,7 @@ import {
   calculateShoelaceArea,
   calculateCentroid,
   calculateBoundingBox,
+  calculateTagAnchorPosition,
   generateFallbackPolygonFromBox,
   estimatePhysicalAreaCm2,
   calculateVolumeAndWeight,
@@ -38,10 +39,12 @@ IKUTI PROSEDUR SEGMENTASI KONTUR & FISIKA PANGAN BERIKUT SECARA KETAT:
 Identifikasi objek referensi ukuran di dalam foto (Piring makan standar Indonesia berdiameter ~24-26 cm, mangkuk berdiameter ~15-17 cm, sendok makan panjang kepala ~6 cm). Gunakan objek tersebut untuk menetapkan rasio skala piksel ke sentimeter (cm).
 
 2. Dekomposisi & Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
-- Pecah hidangan atau objek pangan di dalam foto menjadi komponen terpisah (contoh: nasi putih, ayam goreng, sambal, atau kemasan snack/makanan kemasan).
-- Untuk SETIAP item makanan yang terdeteksi, WAJIB membuat visual_segmentation.polygon_mask berupa daftar berurutan titik koordinat [[x, y], [x, y], ...] (buat 14 hingga 28 titik sudut) yang menelusuri tepian lekuk fisik asli makanan tersebut secara presisi (BUKAN kotak persegi dan DILARANG KOSONG).
-- PENTING ATURAN KOORDINAT: Setiap titik adalah pasangan [x, y] di mana x adalah koordinat horizontal (0 = tepi kiri citra, 1000 = tepi kanan citra) dan y adalah koordinat vertikal (0 = tepi atas citra, 1000 = tepi bawah citra). Pastikan koordinat menempel persis pada lekukan fisik makanan.
-- Sertakan juga box_2d dalam format [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah kontur makanan untuk penempatan label UI).
+- Pecah hidangan atau objek pangan di dalam foto menjadi komponen terpisah (contoh: nasi putih, ayam goreng, sayur, atau kemasan permen/snack/makanan utuh).
+- Batas Fisik Nyata Objek Pangan: Jika makanan dipegang dengan tangan atau berada di atas piring/sendok/meja/keyboard, telusuri tepian ASLI objek makanan tersebut secara akurat dan abaikan jari tangan, sendok, atau permukaan luar sebagai latar belakang (background).
+- Keutuhan Objek: Jika objek memiliki kemasan, lipatan, atau puntiran pembungkus (contoh: permen berbungkus dengan ujung puntiran dan badan permen), buat kontur poligon yang mencakup SATU kesatuan objek utuh melingkupi seluruh bagian makanan/kemasan tersebut dari ujung teratas hingga terbawah tanpa terpotong.
+- Untuk SETIAP item makanan yang terdeteksi, WAJIB membuat visual_segmentation.polygon_mask berupa daftar berurutan titik koordinat [[x, y], [x, y], ...] (buat 16 hingga 28 titik sudut berurutan searah jarum jam) yang menelusuri lekuk fisik asli makanan tersebut secara presisi (BUKAN kotak persegi dan DILARANG KOSONG).
+- PENTING ATURAN KOORDINAT: Setiap titik adalah pasangan [x, y] di mana x adalah koordinat horizontal (0 = tepi kiri citra, 1000 = tepi kanan citra) dan y adalah koordinat vertikal (0 = tepi atas citra, 1000 = tepi bawah citra). Pastikan seluruh titik menempel persis pada lekukan fisik makanan.
+- Sertakan juga box_2d dalam format [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah kontur makanan).
 - Berikan highlight_color_hex sesuai kategori:
   - Karbohidrat (carbohydrate): "#1A73E8" (Biru)
   - Protein Hewani (animal_protein): "#FA903E" (Oranye)
@@ -417,6 +420,7 @@ export default async function handler(req, res) {
         const areaCm2 = Number(item.estimated_area_cm2) || estimatePhysicalAreaCm2(shoelaceArea, plateDiameter);
         const heightCm = Number(item.estimated_height_cm) || 2.5;
         const volumeCc = Number(item.estimated_volume_cc) || Math.round(areaCm2 * heightCm * 10) / 10;
+        const tagAnchor = calculateTagAnchorPosition(polygonMask || box2d);
 
         return {
           id: `item_${idx}_${Date.now()}`,
@@ -427,6 +431,7 @@ export default async function handler(req, res) {
             polygon_mask: polygonMask,
             box_2d: box2d,
             centroid: centroid,
+            tag_anchor: tagAnchor,
             highlight_color_hex: highlightColor,
             label_short: labelShort,
             shoelace_area_norm: shoelaceArea,
@@ -434,6 +439,7 @@ export default async function handler(req, res) {
           polygon_mask: polygonMask,
           box_2d: box2d,
           centroid: centroid,
+          tag_anchor: tagAnchor,
           highlight_color_hex: highlightColor,
           estimated_area_cm2: areaCm2,
           estimated_height_cm: heightCm,

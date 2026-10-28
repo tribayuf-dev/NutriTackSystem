@@ -174,6 +174,7 @@ import {
   calculateShoelaceArea,
   calculateCentroid,
   calculateBoundingBox,
+  calculateTagAnchorPosition,
   generateFallbackPolygonFromBox,
   estimatePhysicalAreaCm2,
   calculateVolumeAndWeight,
@@ -239,6 +240,10 @@ assert(transposed[0][0] === 250 && transposed[0][1] === 420, `Test 6.13: normali
 const objPts = [{ x: 10, y: 20 }, { x: 30, y: 40 }, { x: 50, y: 60 }];
 const normalizedObj = normalizePolygonPoints(objPts);
 assert(normalizedObj.length === 3 && normalizedObj[1][0] === 30 && normalizedObj[1][1] === 40, 'Test 6.14: normalizePolygonPoints handles array of objects');
+
+// Test calculateTagAnchorPosition places tag OUTSIDE/ABOVE food
+const tagPos = calculateTagAnchorPosition([300, 200, 500, 400]); // ymin=300, xmin=200, ymax=500, xmax=400
+assert(tagPos.place === 'above' && tagPos.y < 300 && tagPos.anchorY === 300, `Test 6.15: calculateTagAnchorPosition places tag above food (tagY: ${tagPos.y} < 300)`);
 
 console.log('\n================================================================');
 console.log(`TEST RESULTS: ${passCount} PASSED, ${failCount} FAILED`);

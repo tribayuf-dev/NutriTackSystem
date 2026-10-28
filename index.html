@@ -910,6 +910,58 @@ function calcAimCentroid(pts) {
   return [Math.round(sx / pts.length), Math.round(sy / pts.length)];
 }
 
+function calcAimTagPosition(it) {
+  if (it.tagAnchor && typeof it.tagAnchor.x === 'number') {
+    return it.tagAnchor;
+  }
+  let bbox = it.box2d;
+  if (!bbox && Array.isArray(it.polygonMask) && it.polygonMask.length >= 3) {
+    let minX = 1000, maxX = 0, minY = 1000, maxY = 0;
+    for (const p of it.polygonMask) {
+      if (p[0] < minX) minX = p[0];
+      if (p[0] > maxX) maxX = p[0];
+      if (p[1] < minY) minY = p[1];
+      if (p[1] > maxY) maxY = p[1];
+    }
+    bbox = [minY, minX, maxY, maxX];
+  }
+
+  if (!bbox || bbox.length < 4) {
+    const c = it.centroid || [500, 500];
+    return {
+      x: c[0],
+      y: Math.max(30, c[1] - 80),
+      place: 'above',
+      anchorX: c[0],
+      anchorY: c[1],
+    };
+  }
+
+  const [ymin, xmin, ymax, xmax] = bbox;
+  const midX = Math.round((xmin + xmax) / 2);
+
+  let place = 'above';
+  let tagY = ymin - 45;
+  let anchorY = ymin;
+
+  if (ymin <= 85) {
+    place = 'below';
+    tagY = ymax + 45;
+    anchorY = ymax;
+  }
+
+  const tagX = Math.max(80, Math.min(920, midX));
+  tagY = Math.max(25, Math.min(975, tagY));
+
+  return {
+    x: tagX,
+    y: tagY,
+    place,
+    anchorX: midX,
+    anchorY,
+  };
+}
+
 function pointsToSmoothPath(pts, tension = 0.85) {
   if (!Array.isArray(pts) || pts.length < 3) return '';
   const n = pts.length;
@@ -946,11 +998,18 @@ function refineContourEdgesWithCanvas(imgSrc, items) {
         ctx.drawImage(img, 0, 0, cw, ch);
         const imgData = ctx.getImageData(0, 0, cw, ch).data;
 
-        const getLuma = (nx, ny) => {
+        const getRgb = (nx, ny) => {
           const cx = Math.max(0, Math.min(cw - 1, Math.round((nx / 1000) * cw)));
           const cy = Math.max(0, Math.min(ch - 1, Math.round((ny / 1000) * ch)));
           const idx = (cy * cw + cx) * 4;
-          return 0.299 * imgData[idx] + 0.587 * imgData[idx + 1] + 0.114 * imgData[idx + 2];
+          return [imgData[idx], imgData[idx + 1], imgData[idx + 2]];
+        };
+
+        const colorDiff = (c1, c2) => {
+          const dr = c1[0] - c2[0];
+          const dg = c1[1] - c2[1];
+          const db = c1[2] - c2[2];
+          return Math.sqrt(dr * dr + dg * dg + db * db);
         };
 
         items.forEach(it => {
@@ -972,21 +1031,21 @@ function refineContourEdgesWithCanvas(imgSrc, items) {
 
             let maxGrad = -1;
             let bestOffset = 0;
-            const stepRange = Math.max(8, Math.min(30, Math.round(dist * 0.14)));
+            const stepRange = Math.max(8, Math.min(32, Math.round(dist * 0.15)));
 
             for (let s = -stepRange; s <= stepRange; s += 3) {
               const d1 = dist + s - 3;
               const d2 = dist + s + 3;
-              const l1 = getLuma(cx + ux * d1, cy + uy * d1);
-              const l2 = getLuma(cx + ux * d2, cy + uy * d2);
-              const grad = Math.abs(l2 - l1);
-              if (grad > maxGrad && grad > 15) {
+              const c1 = getRgb(cx + ux * d1, cy + uy * d1);
+              const c2 = getRgb(cx + ux * d2, cy + uy * d2);
+              const grad = colorDiff(c1, c2);
+              if (grad > maxGrad && grad > 22) {
                 maxGrad = grad;
                 bestOffset = s;
               }
             }
 
-            if (maxGrad > 15 && Math.abs(bestOffset) <= stepRange) {
+            if (maxGrad > 22 && Math.abs(bestOffset) <= stepRange) {
               newPts.push([
                 Math.max(0, Math.min(1000, Math.round(pt[0] + ux * bestOffset))),
                 Math.max(0, Math.min(1000, Math.round(pt[1] + uy * bestOffset)))
@@ -1123,20 +1182,25 @@ function vAim(){
       
       <!-- Top HUD Header -->
       <div style="position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:35">
-        <div style="background:rgba(15,23,42,0.85);color:#38bdf8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:6px">
+        <div style="background:rgba(15,23,42,0.88);color:#38bdf8;font-size:11px;font-weight:700;padding:3.5px 10px;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:6px">
           <span style="width:6px;height:6px;border-radius:9999px;background:#38bdf8;box-shadow:0 0 6px #38bdf8"></span>
-          <span>${items.length} Kontur Lekuk Tersegmentasi</span>
+          <span>${items.length} Kontur Lekuk</span>
         </div>
-        <button data-a="aimtoggleseg" class="chip" style="pointer-events:auto;background:rgba(15,23,42,0.85);color:#fff;font-size:10.5px;padding:3px 10px;border-radius:9999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:4px">
-          ${MS(a.showBoxes===false?'visibility_off':'visibility',14)} <span>${a.showBoxes===false?'Tampilkan Kontur':'Sembunyikan Kontur'}</span>
-        </button>
+        <div class="flex items-center gap-1.5" style="pointer-events:auto">
+          <button data-a="aimtoggletags" class="chip" style="background:rgba(15,23,42,0.88);color:${a.showTags===false?'#94a3b8':'#fff'};font-size:10.5px;padding:3px 9px;border-radius:9999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:4px">
+            ${MS(a.showTags===false?'label_off':'label',14)} <span>${a.showTags===false?'Pin: Mati':'Pin: Nyala'}</span>
+          </button>
+          <button data-a="aimtoggleseg" class="chip" style="background:rgba(15,23,42,0.88);color:#fff;font-size:10.5px;padding:3px 9px;border-radius:9999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:4px">
+            ${MS(a.showBoxes===false?'visibility_off':'visibility',14)} <span>${a.showBoxes===false?'Tampilkan Kontur':'Sembunyikan'}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Tight wrapper locking overlay directly to rendered image bitmap (0 letterbox offset) -->
       <div style="position:relative;display:inline-block;max-width:100%;line-height:0">
         <img src="${a.preview}" alt="Foto Piring Makanan" style="display:block;max-height:290px;max-width:100%;width:auto;height:auto;user-select:none;margin:0 auto">
         
-        <!-- Segmentation Overlay Layer (Smooth Curved Catmull-Rom Paths + Centroid Floating Pills) -->
+        <!-- Segmentation Overlay Layer (Smooth Curved Catmull-Rom Paths + Non-Obtrusive Outside Smart Pins) -->
         ${a.showBoxes !== false && items.length ? `
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15">
           <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none">
@@ -1151,69 +1215,82 @@ function vAim(){
               const pathD = pointsToSmoothPath(poly);
               const isSelected = (a.selectedIdx === i);
               const hex = it.highlightColor || getAimColorHex(it.category, i);
+              const pos = calcAimTagPosition(it);
 
               return `
               <path
                 d="${pathD}"
                 fill="${hex}"
-                fill-opacity="${isSelected ? 0.60 : 0.35}"
+                fill-opacity="${isSelected ? 0.55 : 0.28}"
                 stroke="${hex}"
-                stroke-width="${isSelected ? 4.5 : 2.8}"
+                stroke-width="${isSelected ? 4 : 2.5}"
                 stroke-linejoin="round"
                 stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
                 filter="${isSelected ? 'url(#aim-glow)' : 'none'}"
                 class="aim-poly ${isSelected ? 'aim-poly-active' : ''}"
                 style="pointer-events:auto;cursor:pointer;transition:all .2s ease"
                 data-a="aimselectitem"
                 data-idx="${i}"
-              />`;
+              />
+              ${(a.showTags !== false) ? `
+              <!-- Anchor Beacon Dot on Top Edge of Food Contour -->
+              <circle cx="${pos.anchorX}" cy="${pos.anchorY}" r="4" fill="${hex}" />
+              <circle cx="${pos.anchorX}" cy="${pos.anchorY}" r="8" fill="${hex}" fill-opacity="0.3" />
+              <!-- Dashed Stem connecting Anchor to Floating Pin -->
+              <line x1="${pos.anchorX}" y1="${pos.anchorY}" x2="${pos.x}" y2="${pos.y}" stroke="${hex}" stroke-width="1.6" stroke-dasharray="3,3" opacity="0.85" />
+              ` : ''}`;
             }).join('')}
           </svg>
 
-          <!-- Floating Centroid Pills positioned relative to actual image pixels -->
-          ${items.map((it, i) => {
+          <!-- Floating Smart Pins positioned outside/above food contour (never blocking food center) -->
+          ${(a.showTags !== false) ? items.map((it, i) => {
             const isSelected = (a.selectedIdx === i);
             const hex = it.highlightColor || getAimColorHex(it.category, i);
-            const c = (Array.isArray(it.centroid) && it.centroid.length === 2 && !isNaN(it.centroid[0]))
-              ? it.centroid
-              : (it.polygonMask ? calcAimCentroid(it.polygonMask) : [500, 500]);
-            const cx = (c[0] / 10).toFixed(1);
-            const cy = (c[1] / 10).toFixed(1);
-            const kcal = it.nutrition?.energy_kcal || 0;
+            const pos = calcAimTagPosition(it);
+            const px = (pos.x / 10).toFixed(1);
+            const py = (pos.y / 10).toFixed(1);
+            const isAbove = (pos.place === 'above');
 
             return `
             <div data-a="aimselectitem" data-idx="${i}" style="
               position:absolute;
-              left:${cx}%;
-              top:${cy}%;
-              transform:translate(-50%, -50%);
-              background:rgba(15,23,42,0.88);
+              left:${px}%;
+              top:${py}%;
+              transform:translate(-50%, ${isAbove ? '-100%' : '0'});
+              margin-bottom:${isAbove ? '5px' : '0'};
+              margin-top:${!isAbove ? '5px' : '0'};
+              background:rgba(15,23,42,0.92);
               color:#fff;
               border:1.5px solid ${hex};
-              font-size:10px;
+              font-size:10.5px;
               font-weight:700;
-              padding:2.5px 8px;
+              padding:3px 8px;
               border-radius:9999px;
               white-space:nowrap;
-              box-shadow:${isSelected ? '0 0 14px ' + hex + ', 0 2px 8px rgba(0,0,0,0.6)' : '0 2px 8px rgba(0,0,0,0.5)'};
+              box-shadow:${isSelected ? '0 0 16px ' + hex + ', 0 4px 12px rgba(0,0,0,0.6)' : '0 2px 8px rgba(0,0,0,0.5)'};
               display:inline-flex;
               align-items:center;
-              gap:4px;
+              gap:5px;
               pointer-events:auto;
               cursor:pointer;
-              backdrop-filter:blur(6px);
+              backdrop-filter:blur(8px);
               transition:all .2s ease;
               z-index:${isSelected ? 30 : 20};
+              line-height:1.2;
+              width:max-content;
+              max-width:85%;
+              box-sizing:border-box;
             ">
-              <span style="color:${hex};font-weight:800">#${i+1}</span>
-              <span style="max-width:105px;overflow:hidden;text-overflow:ellipsis">${esc(it.name)}</span>
-              <span style="opacity:0.5">•</span>
-              <span id="aim-pin-g-${i}">${it.gram}g</span>
-              <span style="opacity:0.5">•</span>
-              <span id="aim-pin-k-${i}">${kcal} kkal</span>
+              <span style="width:6px;height:6px;border-radius:9999px;background:${hex};box-shadow:0 0 6px ${hex};flex-shrink:0"></span>
+              <span style="color:${hex};font-weight:800;font-size:11px">#${i+1}</span>
+              <span style="display:inline-block;max-width:115px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#f8fafc;font-size:10.5px">${esc(it.name)}</span>
+              <span style="background:rgba(255,255,255,0.14);padding:1px 5px;border-radius:6px;font-size:9.5px;color:#e2e8f0;font-weight:600">${it.gram}g</span>
             </div>`;
-          }).join('')}
+          }).join('') : ''}
         </div>` : ''}
+      </div>
+    </div>` : ''}
       </div>
     </div>` : ''}
 
@@ -1373,6 +1450,7 @@ async function openAimScan(mode='food', barcode=''){
     scaleRef:'',
     confidence:0.9,
     showBoxes:true,
+    showTags:true,
     selectedIdx:null,
     nutrition:null,
     needsReview:false,
@@ -1437,6 +1515,7 @@ async function runAimAnalysis(){
         const polyMask = seg.polygon_mask || item.polygon_mask || null;
         const b2d = seg.box_2d || item.box_2d || null;
         const centroid = seg.centroid || item.centroid || null;
+        const tagAnchor = seg.tag_anchor || item.tag_anchor || null;
         const hlColor = seg.highlight_color_hex || item.highlight_color_hex || getAimColorHex(item.food_category, idx);
 
         return {
@@ -1445,6 +1524,7 @@ async function runAimAnalysis(){
           polygonMask: polyMask,
           box2d: b2d,
           centroid: centroid,
+          tagAnchor: tagAnchor,
           highlightColor: hlColor,
           category: item.food_category || 'carbohydrate',
           method: item.cooking_method || 'steamed_boiled',
@@ -1467,6 +1547,7 @@ async function runAimAnalysis(){
         await refineContourEdgesWithCanvas(AIM.preview, AIM.items);
       }
       AIM.showBoxes=true;
+      AIM.showTags=true;
       AIM.selectedIdx=null;
       AIM.step='food_results';
       AIM.err='';
@@ -1944,6 +2025,7 @@ else if(a=='aimsave'){saveAimFoodJournal();return}
 else if(a=='aimsavelabel'){saveAimLabel();return}
 else if(a=='aimdelitem'){if(AIM&&AIM.items){AIM.items.splice(Number(b.dataset.idx),1);render()}return}
 else if(a=='aimtoggleseg'){if(AIM){AIM.showBoxes=(AIM.showBoxes===false?true:false);render()}return}
+else if(a=='aimtoggletags'){if(AIM){AIM.showTags=(AIM.showTags===false?true:false);render()}return}
 else if(a=='aimselectitem'){
   if(AIM){
     const idx=Number(b.dataset.idx);

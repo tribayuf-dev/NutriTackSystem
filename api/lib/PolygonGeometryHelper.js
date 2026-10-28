@@ -142,6 +142,49 @@ export function calculateBoundingBox(points) {
 }
 
 /**
+ * Hitung posisi anchor tag/badge agar berada di luar kontur makanan (tidak menutupi makanan di tengah)
+ * 
+ * @param {Array<Array<number>>|Array<number>} pointsOrBox - Polygon points atau Bounding Box [ymin, xmin, ymax, xmax]
+ * @returns {{ x: number, y: number, place: 'above'|'below', anchorX: number, anchorY: number }}
+ */
+export function calculateTagAnchorPosition(pointsOrBox) {
+  let bbox = null;
+  if (Array.isArray(pointsOrBox)) {
+    if (pointsOrBox.length === 4 && typeof pointsOrBox[0] === 'number') {
+      bbox = pointsOrBox;
+    } else if (pointsOrBox.length >= 3 && Array.isArray(pointsOrBox[0])) {
+      bbox = calculateBoundingBox(pointsOrBox);
+    }
+  }
+
+  if (!bbox) bbox = [300, 300, 700, 700];
+
+  const [ymin, xmin, ymax, xmax] = bbox;
+  const midX = Math.round((xmin + xmax) / 2);
+
+  let place = 'above';
+  let tagY = ymin - 45;
+  let anchorY = ymin;
+
+  if (ymin <= 85) {
+    place = 'below';
+    tagY = ymax + 45;
+    anchorY = ymax;
+  }
+
+  const tagX = Math.max(80, Math.min(920, midX));
+  tagY = Math.max(25, Math.min(975, tagY));
+
+  return {
+    x: tagX,
+    y: tagY,
+    place,
+    anchorX: midX,
+    anchorY,
+  };
+}
+
+/**
  * Normalisasi dan validasi koordinat titik kontur poligon.
  * Mendukung format:
  * - [[x, y], [x, y], ...]

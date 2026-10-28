@@ -11,6 +11,15 @@
 
 import { normalizeAndValidateNutritionData } from './lib/NutritionNormalizerService.js';
 import { STAPLE_FOODS_SEED, PHYSICAL_DENSITIES_SEED } from './lib/seedData.js';
+import {
+  calculateShoelaceArea,
+  calculateCentroid,
+  calculateBoundingBox,
+  generateFallbackPolygonFromBox,
+  estimatePhysicalAreaCm2,
+  calculateVolumeAndWeight,
+  getCategoryHighlightColor,
+} from './lib/PolygonGeometryHelper.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '8mb' } },
@@ -18,50 +27,68 @@ export const config = {
 
 // ─── System Prompts Standar PRD ─────────────────────────────────────────────
 
-const SYSTEM_PROMPT_FOOD_DECOMPOSITION = `Anda adalah Ahli Gizi Klinis Indonesia dan Spesialis Computer Vision Porsimetri Pangan.
+const SYSTEM_PROMPT_FOOD_DECOMPOSITION = `Anda adalah Ahli Gizi Klinis Indonesia dan Spesialis Computer Vision Instance Segmentation Porsimetri Pangan.
 
-Tugas Anda adalah menganalisis foto makanan dari pengguna dan melakukan dekomposisi setiap komponen makanan beserta estimasi berat massanya dalam satuan gram (g) dan Ukuran Rumah Tangga (URT) Indonesia.
+Tugas Anda adalah menganalisis foto makanan dari pengguna, memisahkan setiap komponen makanan dengan membuat kontur poligon (segmentation mask) yang mengikuti lekuk bentuk asli makanan, serta mengestimasi berat massanya dalam satuan gram (g) dan Ukuran Rumah Tangga (URT) Indonesia.
 
-IKUTI PROSEDUR ANALISIS GEOMETRI & FISIKA PANGAN BERIKUT SECARA KETAT:
+IKUTI PROSEDUR SEGMENTASI KONTUR & FISIKA PANGAN BERIKUT SECARA KETAT:
+
 1. Kalibrasi Referensi Skala:
-   Identifikasi objek referensi ukuran di dalam foto (Piring makan standar Indonesia berdiameter ~24-26 cm, mangkuk berdiameter ~15-17 cm, sendok makan panjang kepala ~6 cm). Gunakan objek tersebut untuk menaksir ukuran area dan tinggi makanan.
+Identifikasi objek referensi ukuran di dalam foto (Piring makan standar Indonesia berdiameter ~24-26 cm, mangkuk berdiameter ~15-17 cm, sendok makan panjang kepala ~6 cm). Gunakan objek tersebut untuk menetapkan rasio skala piksel ke sentimeter (cm).
 
-2. Dekomposisi Multi-Objek:
-   Pecah hidangan di dalam foto menjadi daftar komponen makanan tunggal yang terpisah (contoh: pisahkan antara Nasi Putih, Ayam Goreng, Tempe Goreng, Tumis Kangkung, dan Sambal).
+2. Dekomposisi & Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
+- Pecah hidangan di dalam foto menjadi daftar komponen makanan tunggal yang terpisah (contoh: pisahkan antara Nasi Putih, Ayam Goreng, Tempe Goreng, Tumis Sayur, dan Sambal).
+- Untuk setiap item makanan, buat polygon_mask berupa daftar berurutan titik koordinat [[x, y], [x, y], ...] (minimal 10 hingga 24 titik sudut) yang menelusuri tepi/lekuk bentuk asli makanan tersebut secara presisi (BUKAN kotak persegi empat).
+- Seluruh koordinat x dan y pada polygon_mask WAJIB dinormalisasi ke dalam rentang bilangan bulat 0 hingga 1000 (di mana [0, 0] adalah pojok kiri atas gambar dan [1000, 1000] adalah pojok kanan bawah gambar).
+- Sertakan juga box_2d dalam format [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah kontur makanan untuk penempatan label UI).
+- Berikan highlight_color_hex sesuai kategori:
+  - Karbohidrat (carbohydrate): "#1A73E8" (Biru)
+  - Protein Hewani (animal_protein): "#FA903E" (Oranye)
+  - Protein Nabati (plant_protein): "#FCC934" (Kuning Emas)
+  - Sayuran & Buah (vegetable / fruit): "#81C995" (Hijau Mint)
+  - Lemak, Saus, Sambal, Minuman (fat_sauce / beverage): "#C58AF9" (Ungu)
 
 3. Identifikasi Metode Pemasakan & Lemak Tersembunyi:
-   Klasifikasikan metode pemasakan setiap item ke dalam salah satu nilai berikut: steamed_boiled, fried_deep, stir_fried, coconut_milk_curry, grilled_roasted, atau raw_fresh. Jika makanan digoreng, ditumis, atau bersantan, hitung taksiran berat serapan minyak/santan dalam gram pada atribut hidden_oil_or_coconut_milk_g (acuan: 1/2 sdm minyak = 5g, 1 potong kecil/porsi santan = 30-50g).
+Klasifikasikan metode pemasakan setiap item ke dalam: steamed_boiled, fried_deep, stir_fried, coconut_milk_curry, grilled_roasted, atau raw_fresh. Jika digoreng, ditumis, atau bersantan, hitung taksiran berat serapan minyak/santan dalam gram pada atribut hidden_oil_or_coconut_milk_g (acuan: 1/2 sdm minyak = 5g, santan = 30-50g).
 
-4. Kalkulasi Volume (cm3) ke Berat Massa (gram) via Densitas Semu:
-   - Estimasi luas alas (cm2) x tinggi rata-rata (cm) untuk memperoleh estimated_volume_cc (cm3 atau ml).
-   - Kalikan volume tersebut dengan konstanta massa jenis semu (apparent_density_used dalam g/cm3) dan cocokkan dengan acuan URT Kementerian Kesehatan RI berikut:
-     * Nasi putih / nasi goreng: densitas ~0.70 g/cm3 (Acuan URT: 1 centong magiccom = 100g)
-     * Mie / spageti / bihun: densitas ~0.67 g/cm3 (Acuan URT: 1 porsi sedang = 150-240g)
-     * Roti tawar / roti panggang: densitas ~0.276 g/cm3 (Acuan URT: 1 iris = 20-25g)
-     * Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g, 2 potong sedang = 50g; 1 potong sedang tahu = 50g)
-     * Ikan / daging ayam / daging sapi / sosis: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 potong sedang ikan = 40g, 1 potong sedang ayam = 55-65g)
-     * Telur (orak-arik / dadar / rebus): densitas ~1.123 g/cm3 (Acuan URT: 1 butir = 55-60g)
-     * Sayuran daun mentah / salad / lalapan: densitas sangat rendah ~0.316 g/cm3 karena berongga udara
-     * Sayuran masak / tumis (tanpa kuah): Acuan URT 1 centong sayur = 15g, 1 gelas sayur ditiriskan = 100g
-     * Kentang goreng / kerupuk / gorengan berongga: densitas ~0.241 g/cm3
-     * Saus / sambal / selai / kecap: densitas ~1.10 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g)
-     * Minuman cair: densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
+4. Kalkulasi Luas Kontur (cm2) -> Volume (cm3) -> Berat Massa (gram):
+- Hitung luas permukaan nyata (estimated_area_cm2) dari bagian dalam kontur poligon makanan (tidak termasuk area piring kosong) dan kalikan dengan tinggi rata-rata makanan (estimated_height_cm) untuk mendapatkan estimated_volume_cc (cm3 atau ml).
+- Kalikan volume tersebut dengan konstanta massa jenis semu (apparent_density_used dalam g/cm3) dan petakan ke acuan URT Kementerian Kesehatan RI berikut:
+  - Nasi putih / nasi goreng: densitas ~0.70 g/cm3 (Acuan URT: 1 centong magiccom = 100g)
+  - Mie / spageti / bihun: densitas ~0.67 g/cm3 (Acuan URT: 1 porsi sedang = 150-240g, 1 gelas mie = 100g)
+  - Roti tawar / roti panggang: densitas ~0.276 g/cm3 (Acuan URT: 1 iris = 20-25g, 3 iris = 60-70g)
+  - Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g, 2 potong sedang = 50g; 1 potong sedang tahu = 50g)
+  - Ikan / daging ayam / daging sapi / sosis: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 potong sedang ikan = 40g, 1 potong sedang ayam = 55-65g)
+  - Telur (orak-arik / dadar / rebus): densitas ~1.123 g/cm3 (Acuan URT: 1 butir = 55-60g)
+  - Sayuran daun mentah / salad / lalapan: densitas sangat rendah ~0.316 g/cm3 karena berongga udara (jangan overestimate beratnya)
+  - Sayuran masak / tumis (tanpa kuah): Acuan URT 1 centong sayur = 15g, 1 gelas sayur ditiriskan = 100g
+  - Kentang goreng / kerupuk / gorengan berongga: densitas ~0.241 g/cm3
+  - Saus / sambal / selai / kecap: densitas ~1.10 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g, 1 sdt = 5g)
+  - Minuman cair (susu, jus, soda, kuah): densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
 
-5. Grounding Spasial & Segmentasi Objek (box_2d):
-   - WAJIB berikan batas koordinat bounding box visual 2D pada atribut "box_2d": [ymin, xmin, ymax, xmax] untuk setiap komponen makanan yang terdeteksi.
-   - Skala koordinat dinormalisasi dalam rentang integer 0 hingga 1000 (0 = tepi atas/kiri gambar, 1000 = tepi bawah/kanan gambar).
-   - Pastikan area box_2d menyeleksi objek makanan tersebut secara spesifik dan presisi (contoh: batas area nasi putih saja, batas potongan ayam goreng saja, atau batas sayur), bukan mencakup keseluruhan piring.
-
-KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
+KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT TANPA TEKS TAMBAHAN:
 {
-  "scale_reference_detected": "string (contoh: Piring standar ~25cm)",
+  "scale_reference_detected": "Piring makan bundar diameter ~25 cm",
+  "plate_diameter_cm_estimated": 25.0,
   "overall_confidence": 0.95,
   "detected_items": [
     {
-      "item_name_id": "string (Nama baku Bahasa Indonesia sesuai TKPI, contoh: Nasi Putih)",
-      "box_2d": [180, 220, 580, 650],
-      "food_category": "carbohydrate | animal_protein | plant_protein | vegetable | fruit | fat_sauce | beverage | snack",
-      "cooking_method": "steamed_boiled | fried_deep | stir_fried | coconut_milk_curry | grilled_roasted | raw_fresh",
+      "item_name_id": "Nasi Putih",
+      "food_category": "carbohydrate",
+      "cooking_method": "steamed_boiled",
+      "visual_segmentation": {
+        "polygon_mask": [
+          [210, 320], [265, 280], [340, 275], [410, 300],
+          [445, 360], [430, 440], [380, 495], [295, 510],
+          [230, 470], [195, 395]
+        ],
+        "box_2d": [275, 195, 510, 445],
+        "centroid": [320, 392],
+        "highlight_color_hex": "#1A73E8",
+        "label_short": "Nasi Putih • 100g"
+      },
+      "estimated_area_cm2": 57.1,
+      "estimated_height_cm": 2.5,
       "estimated_volume_cc": 142.8,
       "apparent_density_used": 0.70,
       "estimated_weight_g": 100.0,
@@ -348,9 +375,13 @@ export default async function handler(req, res) {
           };
         }
 
+        const seg = item.visual_segmentation || {};
+        let rawPolygon = seg.polygon_mask || item.polygon_mask;
         let box2d = null;
-        if (Array.isArray(item.box_2d) && item.box_2d.length === 4) {
-          const [ymin, xmin, ymax, xmax] = item.box_2d.map(Number);
+        const rawBox = seg.box_2d || item.box_2d;
+
+        if (Array.isArray(rawBox) && rawBox.length === 4) {
+          const [ymin, xmin, ymax, xmax] = rawBox.map(Number);
           if (!isNaN(ymin) && !isNaN(xmin) && !isNaN(ymax) && !isNaN(xmax)) {
             box2d = [
               Math.max(0, Math.min(1000, Math.round(ymin))),
@@ -361,13 +392,59 @@ export default async function handler(req, res) {
           }
         }
 
+        let polygonMask = null;
+        if (Array.isArray(rawPolygon) && rawPolygon.length >= 3) {
+          polygonMask = rawPolygon
+            .filter(pt => Array.isArray(pt) && pt.length >= 2 && !isNaN(pt[0]) && !isNaN(pt[1]))
+            .map(pt => [
+              Math.max(0, Math.min(1000, Math.round(Number(pt[0])))),
+              Math.max(0, Math.min(1000, Math.round(Number(pt[1])))),
+            ]);
+        }
+
+        // Jika polygon_mask belum tersedia, hasilkan smooth elliptical polygon dari box2d
+        if (!polygonMask || polygonMask.length < 3) {
+          polygonMask = generateFallbackPolygonFromBox(box2d || [200, 200, 800, 800], 14);
+        }
+
+        const shoelaceArea = calculateShoelaceArea(polygonMask);
+        const centroid = (Array.isArray(seg.centroid) && seg.centroid.length === 2 && !isNaN(seg.centroid[0]))
+          ? [Math.max(0, Math.min(1000, Math.round(seg.centroid[0]))), Math.max(0, Math.min(1000, Math.round(seg.centroid[1])))]
+          : calculateCentroid(polygonMask);
+
+        if (!box2d) {
+          box2d = calculateBoundingBox(polygonMask);
+        }
+
+        const categoryKey = item.food_category || 'carbohydrate';
+        const highlightColor = seg.highlight_color_hex || getCategoryHighlightColor(categoryKey);
+        const labelShort = seg.label_short || `${itemName} • ${Math.round(estWeight)}g`;
+
+        const plateDiameter = Number(step1Output.plate_diameter_cm_estimated) || 25.0;
+        const areaCm2 = Number(item.estimated_area_cm2) || estimatePhysicalAreaCm2(shoelaceArea, plateDiameter);
+        const heightCm = Number(item.estimated_height_cm) || 2.5;
+        const volumeCc = Number(item.estimated_volume_cc) || Math.round(areaCm2 * heightCm * 10) / 10;
+
         return {
           id: `item_${idx}_${Date.now()}`,
           item_name_id: itemName,
-          box_2d: box2d,
-          food_category: item.food_category || 'carbohydrate',
+          food_category: categoryKey,
           cooking_method: cookingMethod,
-          estimated_volume_cc: item.estimated_volume_cc || 0,
+          visual_segmentation: {
+            polygon_mask: polygonMask,
+            box_2d: box2d,
+            centroid: centroid,
+            highlight_color_hex: highlightColor,
+            label_short: labelShort,
+            shoelace_area_norm: shoelaceArea,
+          },
+          polygon_mask: polygonMask,
+          box_2d: box2d,
+          centroid: centroid,
+          highlight_color_hex: highlightColor,
+          estimated_area_cm2: areaCm2,
+          estimated_height_cm: heightCm,
+          estimated_volume_cc: volumeCc,
           apparent_density_used: item.apparent_density_used || 1.0,
           estimated_weight_g: estWeight,
           urt_amount: Number(item.urt_amount) || 1.0,
@@ -397,12 +474,17 @@ export default async function handler(req, res) {
         urt_label: item.urt_display_label,
         cooking_method: item.cooking_method,
         nutrition: item.nutrition,
+        polygon_mask: item.polygon_mask,
+        box_2d: item.box_2d,
+        centroid: item.centroid,
+        highlight_color_hex: item.highlight_color_hex,
       }));
 
       return res.status(200).json({
         success: true,
         mode: 'food',
         scale_reference_detected: step1Output.scale_reference_detected || 'Piring makan standar (~25 cm)',
+        plate_diameter_cm_estimated: step1Output.plate_diameter_cm_estimated || 25.0,
         overall_confidence: step1Output.overall_confidence || 0.9,
         detected_items: enrichedItems,
         summary: totalSummary,

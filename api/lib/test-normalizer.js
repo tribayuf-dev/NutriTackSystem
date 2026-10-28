@@ -167,6 +167,54 @@ const riceDensity = PHYSICAL_DENSITIES_SEED.find(d => d.category_key === 'rice_w
 assert(riceDensity && riceDensity.apparent_density_g_cc === 0.70, 'Test 5.2: Rice white density is 0.70 g/cm3');
 assert(STAPLE_FOODS_SEED.length >= 5, `Test 5.3: Staple foods seed count (${STAPLE_FOODS_SEED.length} items)`);
 
+// -----------------------------------------------------------------------------
+// Test 6: Polygon Geometry Helper (Shoelace Formula, Centroid & Porsimetry)
+// -----------------------------------------------------------------------------
+import {
+  calculateShoelaceArea,
+  calculateCentroid,
+  calculateBoundingBox,
+  generateFallbackPolygonFromBox,
+  estimatePhysicalAreaCm2,
+  calculateVolumeAndWeight,
+  getCategoryHighlightColor,
+} from './PolygonGeometryHelper.js';
+
+// Square 100x100 from (100,100) to (200,200)
+const squarePts = [[100, 100], [200, 100], [200, 200], [100, 200]];
+const sqArea = calculateShoelaceArea(squarePts);
+assert(sqArea === 10000, `Test 6.1: Shoelace area of 100x100 square is 10000 (got ${sqArea})`);
+
+const sqCentroid = calculateCentroid(squarePts);
+assert(sqCentroid[0] === 150 && sqCentroid[1] === 150, `Test 6.2: Centroid of square is [150, 150] (got [${sqCentroid}])`);
+
+const sqBbox = calculateBoundingBox(squarePts);
+assert(sqBbox[0] === 100 && sqBbox[1] === 100 && sqBbox[2] === 200 && sqBbox[3] === 200, 'Test 6.3: Bounding box matches square coordinates');
+
+const carbColor = getCategoryHighlightColor('carbohydrate');
+const protColor = getCategoryHighlightColor('animal_protein');
+assert(carbColor === '#1A73E8', `Test 6.4: Carbohydrate highlight color is #1A73E8 (got ${carbColor})`);
+assert(protColor === '#FA903E', `Test 6.5: Animal protein highlight color is #FA903E (got ${protColor})`);
+
+// Sample polygon from PRD Section 3 (Nasi Putih)
+const prdPolygon = [
+  [210, 320], [265, 280], [340, 275], [410, 300],
+  [445, 360], [430, 440], [380, 495], [295, 510],
+  [230, 470], [195, 395]
+];
+const prdAreaNorm = calculateShoelaceArea(prdPolygon);
+assert(prdAreaNorm > 30000 && prdAreaNorm < 60000, `Test 6.6: PRD sample polygon area in expected range (got ${prdAreaNorm})`);
+
+const prdCentroid = calculateCentroid(prdPolygon);
+assert(prdCentroid[0] >= 280 && prdCentroid[0] <= 360 && prdCentroid[1] >= 340 && prdCentroid[1] <= 420, `Test 6.7: PRD sample centroid in expected range (got [${prdCentroid}])`);
+
+const fallbackPts = generateFallbackPolygonFromBox([200, 200, 400, 400], 12);
+assert(fallbackPts.length === 12, `Test 6.8: Fallback polygon has 12 points (got ${fallbackPts.length})`);
+
+const porsimetry = calculateVolumeAndWeight(57.1, 2.5, 0.70);
+assert(Math.abs(porsimetry.volumeCc - 142.8) <= 0.2, `Test 6.9: Volume calculation (got ${porsimetry.volumeCc} cc)`);
+assert(Math.abs(porsimetry.weightG - 100.0) <= 0.2, `Test 6.10: Weight calculation (got ${porsimetry.weightG} g)`);
+
 console.log('\n================================================================');
 console.log(`TEST RESULTS: ${passCount} PASSED, ${failCount} FAILED`);
 console.log('================================================================');

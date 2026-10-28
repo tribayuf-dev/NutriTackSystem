@@ -74,6 +74,9 @@ details.dtl>summary{cursor:pointer;font-weight:600;font-size:14px;list-style:non
 @keyframes aimScan{0%{top:16%;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:84%;opacity:0}}
 .aim-box-active{animation:aimBoxGlow 1.2s infinite alternate ease-in-out;z-index:25!important}
 @keyframes aimBoxGlow{0%{transform:scale(1);box-shadow:0 0 8px currentColor}100%{transform:scale(1.02);box-shadow:0 0 20px currentColor,inset 0 0 10px currentColor}}
+.aim-poly{transition:fill-opacity .2s ease,stroke-width .2s ease,filter .2s ease}
+.aim-poly:hover{fill-opacity:.55!important;stroke-width:4px!important}
+.aim-poly-active{fill-opacity:.62!important;stroke-width:4.5px!important}
 </style><style id="tw">*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.inset-x-0{left:0;right:0}.inset-y-0{top:0;bottom:0}.bottom-0{bottom:0}.bottom-24{bottom:6rem}.left-0{left:0}.left-1\/2{left:50%}.right-0{right:0}.top-0{top:0}.z-40{z-index:40}.z-50{z-index:50}.col-span-2{grid-column:span 2/span 2}.my-0\.5{margin-top:.125rem;margin-bottom:.125rem}.my-2{margin-top:.5rem;margin-bottom:.5rem}.my-3{margin-top:.75rem;margin-bottom:.75rem}.-mt-3{margin-top:-.75rem}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.mr-2{margin-right:.5rem}.mt-0{margin-top:0}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.hidden{display:none}.h-16{height:4rem}.h-28{height:7rem}.h-32{height:8rem}.h-36{height:9rem}.h-4{height:1rem}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-28{width:7rem}.w-36{width:9rem}.w-4{width:1rem}.w-full{width:100%}.min-w-0{min-width:0}.max-w-2xl{max-width:42rem}.max-w-\[1320px\]{max-width:1320px}.max-w-lg{max-width:32rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.resize{resize:both}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-6{gap:1.5rem}.gap-x-4{-moz-column-gap:1rem;column-gap:1rem}.gap-y-1{row-gap:.25rem}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.overflow-auto{overflow:auto}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.rounded-lg{border-radius:.5rem}.rounded-t-md{border-top-left-radius:.375rem;border-top-right-radius:.375rem}.p-2{padding:.5rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-8{padding-left:2rem;padding-right:2rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-2{padding-bottom:.5rem}.pb-28{padding-bottom:7rem}.pb-3{padding-bottom:.75rem}.pt-3{padding-top:.75rem}.pt-4{padding-top:1rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-tight{letter-spacing:-.025em}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}@media not all and (min-width:768px){.max-md\:w-full{width:100%}}@media (min-width:640px){.sm\:inline{display:inline}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (min-width:768px){.md\:bottom-8{bottom:2rem}.md\:left-\[72px\]{left:72px}.md\:col-span-2{grid-column:span 2/span 2}.md\:ml-\[72px\]{margin-left:72px}.md\:block{display:block}.md\:flex{display:flex}.md\:hidden{display:none}.md\:w-\[72px\]{width:72px}.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.md\:flex-nowrap{flex-wrap:nowrap}.md\:px-8{padding-left:2rem;padding-right:2rem}.md\:pb-8{padding-bottom:2rem}.md\:text-3xl{font-size:1.875rem;line-height:2.25rem}}@media (min-width:1024px){.lg\:sticky{position:sticky}.lg\:left-64{left:16rem}.lg\:top-24{top:6rem}.lg\:col-span-2{grid-column:span 2/span 2}.lg\:col-span-3{grid-column:span 3/span 3}.lg\:col-span-4{grid-column:span 4/span 4}.lg\:col-span-8{grid-column:span 8/span 8}.lg\:ml-64{margin-left:16rem}.lg\:inline{display:inline}.lg\:flex{display:flex}.lg\:w-64{width:16rem}.lg\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.lg\:grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.lg\:grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))}.lg\:flex-row{flex-direction:row}.lg\:items-center{align-items:center}.lg\:justify-between{justify-content:space-between}}@media (min-width:1280px){.xl\:flex{display:flex}}</style>
 </head>
 <body><div id="app"></div><div id="m"></div><div id="t"></div>
@@ -836,14 +839,30 @@ const BC_CATALOG={
 
 // ─── AI Food Scan (AIM) ────────────────────────────────────────────────────
 
+const AIM_PRD_COLORS = {
+  carbohydrate: '#1A73E8',     // Biru (Karbohidrat)
+  animal_protein: '#FA903E',   // Oranye (Protein Hewani)
+  plant_protein: '#FCC934',    // Kuning Emas (Protein Nabati)
+  vegetable: '#81C995',        // Hijau Mint (Sayuran)
+  fruit: '#81C995',            // Hijau Mint (Buah)
+  fat_sauce: '#C58AF9',        // Ungu (Lemak, Saus, Sambal)
+  beverage: '#C58AF9',         // Ungu (Minuman)
+  snack: '#FA903E',
+};
+
 const AIM_COLORS = [
-  { stroke: '#06b6d4', bg: 'rgba(6,182,212,0.22)', text: '#0891b2', name: 'Cyan' },
-  { stroke: '#f97316', bg: 'rgba(249,115,22,0.22)', text: '#ea580c', name: 'Oranye' },
-  { stroke: '#10b981', bg: 'rgba(16,185,129,0.22)', text: '#059669', name: 'Hijau' },
-  { stroke: '#a855f7', bg: 'rgba(168,85,247,0.22)', text: '#9333ea', name: 'Ungu' },
-  { stroke: '#ef4444', bg: 'rgba(239,68,68,0.22)', text: '#dc2626', name: 'Merah' },
-  { stroke: '#eab308', bg: 'rgba(234,179,8,0.22)', text: '#ca8a04', name: 'Kuning' },
+  { stroke: '#1A73E8', bg: 'rgba(26,115,232,0.22)', text: '#1A73E8', name: 'Biru' },
+  { stroke: '#FA903E', bg: 'rgba(250,144,62,0.22)', text: '#ea580c', name: 'Oranye' },
+  { stroke: '#81C995', bg: 'rgba(129,201,149,0.22)', text: '#059669', name: 'Hijau' },
+  { stroke: '#FCC934', bg: 'rgba(252,201,52,0.22)', text: '#d97706', name: 'Kuning' },
+  { stroke: '#C58AF9', bg: 'rgba(197,138,249,0.22)', text: '#9333ea', name: 'Ungu' },
+  { stroke: '#EF4444', bg: 'rgba(239,68,68,0.22)', text: '#dc2626', name: 'Merah' },
 ];
+
+function getAimColorHex(category, idx = 0) {
+  if (category && AIM_PRD_COLORS[category]) return AIM_PRD_COLORS[category];
+  return AIM_COLORS[idx % AIM_COLORS.length].stroke;
+}
 
 function getAimDefaultBox(idx, total) {
   if (total <= 1) return [180, 180, 820, 820];
@@ -860,6 +879,35 @@ function getAimDefaultBox(idx, total) {
   const ymin = 140 + row * 400;
   const xmin = 140 + col * 400;
   return [ymin, xmin, ymin + 320, xmin + 320];
+}
+
+function getAimDefaultPolygon(idx, total) {
+  const b = getAimDefaultBox(idx, total);
+  const [ymin, xmin, ymax, xmax] = b;
+  const cx = (xmin + xmax) / 2;
+  const cy = (ymin + ymax) / 2;
+  const rx = Math.max(30, (xmax - xmin) / 2);
+  const ry = Math.max(30, (ymax - ymin) / 2);
+  const pts = [];
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * 2 * Math.PI;
+    const wobble = 1.0 + (Math.sin(angle * 3) * 0.04);
+    const px = Math.max(0, Math.min(1000, Math.round(cx + Math.cos(angle) * rx * wobble)));
+    const py = Math.max(0, Math.min(1000, Math.round(cy + Math.sin(angle) * ry * wobble)));
+    pts.push([px, py]);
+  }
+  return pts;
+}
+
+function calcAimCentroid(pts) {
+  if (!pts || !pts.length) return [500, 500];
+  let sx = 0, sy = 0;
+  for (const p of pts) {
+    sx += Number(p[0]) || 0;
+    sy += Number(p[1]) || 0;
+  }
+  return [Math.round(sx / pts.length), Math.round(sy / pts.length)];
 }
 
 function vAim(){
@@ -975,72 +1023,94 @@ function vAim(){
 
     ${a.preview ? `
     <div style="position:relative;width:100%;border-radius:12px;overflow:hidden;background:#05070d;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.15)">
-      <img src="${a.preview}" alt="Foto Piring Makanan" style="width:100%;max-height:260px;object-fit:contain;display:block;margin:0 auto;user-select:none">
+      <img src="${a.preview}" alt="Foto Piring Makanan" style="width:100%;max-height:280px;object-fit:contain;display:block;margin:0 auto;user-select:none">
       
       <!-- Top HUD Header -->
-      <div style="position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:20">
+      <div style="position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:25">
         <div style="background:rgba(15,23,42,0.85);color:#38bdf8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:6px">
           <span style="width:6px;height:6px;border-radius:9999px;background:#38bdf8;box-shadow:0 0 6px #38bdf8"></span>
-          <span>${items.length} Objek Tersegmentasi</span>
+          <span>${items.length} Kontur Lekuk Tersegmentasi</span>
         </div>
         <button data-a="aimtoggleseg" class="chip" style="pointer-events:auto;background:rgba(15,23,42,0.85);color:#fff;font-size:10.5px;padding:3px 10px;border-radius:9999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:4px">
-          ${MS(a.showBoxes===false?'visibility_off':'visibility',14)} <span>${a.showBoxes===false?'Tampilkan Seleksi':'Sembunyikan Seleksi'}</span>
+          ${MS(a.showBoxes===false?'visibility_off':'visibility',14)} <span>${a.showBoxes===false?'Tampilkan Kontur':'Sembunyikan Kontur'}</span>
         </button>
       </div>
 
-      <!-- Segmentation Overlay Layer -->
+      <!-- Segmentation Overlay Layer (SVG Polygon Masks + Centroid Floating Pills) -->
       ${a.showBoxes !== false && items.length ? `
       <div style="position:absolute;inset:0;pointer-events:none;z-index:15">
+        <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none">
+          <defs>
+            <filter id="aim-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="8" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          ${items.map((it, i) => {
+            const poly = (Array.isArray(it.polygonMask) && it.polygonMask.length >= 3) ? it.polygonMask : getAimDefaultPolygon(i, items.length);
+            const pts = poly.map(p => Math.round(p[0]) + ',' + Math.round(p[1])).join(' ');
+            const isSelected = (a.selectedIdx === i);
+            const hex = it.highlightColor || getAimColorHex(it.category, i);
+
+            return `
+            <polygon
+              points="${pts}"
+              fill="${hex}"
+              fill-opacity="${isSelected ? 0.60 : 0.35}"
+              stroke="${hex}"
+              stroke-width="${isSelected ? 4.5 : 2.8}"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+              filter="${isSelected ? 'url(#aim-glow)' : 'none'}"
+              class="aim-poly ${isSelected ? 'aim-poly-active' : ''}"
+              style="pointer-events:auto;cursor:pointer;transition:all .2s ease"
+              data-a="aimselectitem"
+              data-idx="${i}"
+            />`;
+          }).join('')}
+        </svg>
+
+        <!-- Floating Centroid Pills -->
         ${items.map((it, i) => {
-          const col = AIM_COLORS[i % AIM_COLORS.length];
-          const b2d = it.box2d || getAimDefaultBox(i, items.length);
-          const [ymin, xmin, ymax, xmax] = b2d;
-          const top = (ymin / 10).toFixed(1);
-          const left = (xmin / 10).toFixed(1);
-          const width = Math.max(10, ((xmax - xmin) / 10)).toFixed(1);
-          const height = Math.max(8, ((ymax - ymin) / 10)).toFixed(1);
           const isSelected = (a.selectedIdx === i);
+          const hex = it.highlightColor || getAimColorHex(it.category, i);
+          const c = (Array.isArray(it.centroid) && it.centroid.length === 2 && !isNaN(it.centroid[0]))
+            ? it.centroid
+            : (it.polygonMask ? calcAimCentroid(it.polygonMask) : [500, 500]);
+          const cx = (c[0] / 10).toFixed(1);
+          const cy = (c[1] / 10).toFixed(1);
+          const kcal = it.nutrition?.energy_kcal || 0;
 
           return `
-          <div data-a="aimselectitem" data-idx="${i}" class="aim-bbox ${isSelected ? 'aim-box-active' : ''}" style="
+          <div data-a="aimselectitem" data-idx="${i}" style="
             position:absolute;
-            top:${top}%;
-            left:${left}%;
-            width:${width}%;
-            height:${height}%;
-            border:2px solid ${col.stroke};
-            background:${isSelected ? col.bg.replace('0.22', '0.45') : col.bg};
-            border-radius:8px;
-            box-shadow:${isSelected ? '0 0 16px ' + col.stroke + ', inset 0 0 10px ' + col.stroke + '60' : '0 0 8px ' + col.stroke + '40'};
+            left:${cx}%;
+            top:${cy}%;
+            transform:translate(-50%, -50%);
+            background:rgba(15,23,42,0.88);
+            color:#fff;
+            border:1.5px solid ${hex};
+            font-size:10px;
+            font-weight:700;
+            padding:2.5px 8px;
+            border-radius:9999px;
+            white-space:nowrap;
+            box-shadow:${isSelected ? '0 0 14px ' + hex + ', 0 2px 8px rgba(0,0,0,0.6)' : '0 2px 8px rgba(0,0,0,0.5)'};
+            display:inline-flex;
+            align-items:center;
+            gap:4px;
             pointer-events:auto;
             cursor:pointer;
+            backdrop-filter:blur(6px);
             transition:all .2s ease;
+            z-index:${isSelected ? 30 : 20};
           ">
-            <span style="position:absolute;top:-1px;left:-1px;width:6px;height:6px;border-top:2px solid #fff;border-left:2px solid #fff;border-top-left-radius:6px;pointer-events:none"></span>
-            <span style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-top:2px solid #fff;border-right:2px solid #fff;border-top-right-radius:6px;pointer-events:none"></span>
-            <span style="position:absolute;bottom:-1px;left:-1px;width:6px;height:6px;border-bottom:2px solid #fff;border-left:2px solid #fff;border-bottom-left-radius:6px;pointer-events:none"></span>
-            <span style="position:absolute;bottom:-1px;right:-1px;width:6px;height:6px;border-bottom:2px solid #fff;border-right:2px solid #fff;border-bottom-right-radius:6px;pointer-events:none"></span>
-
-            <div id="aim-pin-${i}" style="
-              position:absolute;
-              top:-13px;
-              left:4px;
-              background:${col.stroke};
-              color:#fff;
-              font-size:10px;
-              font-weight:700;
-              padding:2px 7px;
-              border-radius:9999px;
-              white-space:nowrap;
-              box-shadow:0 2px 8px rgba(0,0,0,0.5);
-              display:inline-flex;
-              align-items:center;
-              gap:4px;
-              pointer-events:none;
-            ">
-              <span>#${i+1}</span>
-              <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis">${esc(it.name)} (${it.gram}g)</span>
-            </div>
+            <span style="color:${hex};font-weight:800">#${i+1}</span>
+            <span style="max-width:105px;overflow:hidden;text-overflow:ellipsis">${esc(it.name)}</span>
+            <span style="opacity:0.5">•</span>
+            <span id="aim-pin-g-${i}">${it.gram}g</span>
+            <span style="opacity:0.5">•</span>
+            <span id="aim-pin-k-${i}">${kcal} kkal</span>
           </div>`;
         }).join('')}
       </div>` : ''}
@@ -1057,7 +1127,7 @@ function vAim(){
     </div>
 
     ${items.length?`<div class="flex flex-col gap-2.5 mb-3">${items.map((it, i) => {
-      const col = AIM_COLORS[i % AIM_COLORS.length];
+      const hex = it.highlightColor || getAimColorHex(it.category, i);
       const isFried = it.method === 'fried_deep' || it.method === 'stir_fried';
       const isCurry = it.method === 'coconut_milk_curry';
       let methodLabel = 'Rebus/Kukus';
@@ -1067,12 +1137,12 @@ function vAim(){
       else if(it.method==='grilled_roasted') methodLabel='Bakar/Panggang';
       else if(it.method==='raw_fresh') methodLabel='Segar/Mentah';
 
-      return `<div class="card p-3 ${a.selectedIdx===i?'ring-2':''}" style="background:var(--tk);transition:all .2s;${a.selectedIdx===i?'border:2px solid '+col.stroke+';box-shadow:0 0 14px '+col.stroke+'35':''}" id="aim-card-${i}">
+      return `<div class="card p-3 ${a.selectedIdx===i?'ring-2':''}" style="background:var(--tk);transition:all .2s;${a.selectedIdx===i?'border:2px solid '+hex+';box-shadow:0 0 14px '+hex+'35':''}" id="aim-card-${i}">
         <div class="flex justify-between items-start mb-2">
           <div>
             <div class="flex items-center gap-1.5 mb-1">
-              <span class="inline-flex items-center gap-1 font-bold text-xs px-2 py-0.5 rounded-full cursor-pointer" data-a="aimselectitem" data-idx="${i}" style="background:${col.bg};color:${col.stroke};border:1px solid ${col.stroke}">
-                <span style="width:6px;height:6px;border-radius:9999px;background:${col.stroke}"></span>
+              <span class="inline-flex items-center gap-1 font-bold text-xs px-2 py-0.5 rounded-full cursor-pointer" data-a="aimselectitem" data-idx="${i}" style="background:${hex}25;color:${hex};border:1px solid ${hex}">
+                <span style="width:6px;height:6px;border-radius:9999px;background:${hex}"></span>
                 Objek #${i+1}
               </span>
               <b class="text-sm">${esc(it.name)}</b>
@@ -1262,10 +1332,19 @@ async function runAimAnalysis(){
         const urtAmt=Number(item.urt_amount)||1.0;
         const nutr=item.nutrition||{};
         const local=all().find(f=>f.n.toLowerCase()===item.item_name_id.toLowerCase()||(item.item_name_id.toLowerCase().includes(f.n.toLowerCase())&&f.n.length>3));
+        const seg = item.visual_segmentation || {};
+        const polyMask = seg.polygon_mask || item.polygon_mask || null;
+        const b2d = seg.box_2d || item.box_2d || null;
+        const centroid = seg.centroid || item.centroid || null;
+        const hlColor = seg.highlight_color_hex || item.highlight_color_hex || getAimColorHex(item.food_category, idx);
+
         return {
           id: item.id || ('ai_it_'+Date.now()+'_'+idx),
           name: item.item_name_id || 'Makanan',
-          box2d: Array.isArray(item.box_2d) && item.box_2d.length === 4 ? item.box_2d : null,
+          polygonMask: polyMask,
+          box2d: b2d,
+          centroid: centroid,
+          highlightColor: hlColor,
           category: item.food_category || 'carbohydrate',
           method: item.cooking_method || 'steamed_boiled',
           gram: estG,
@@ -1820,8 +1899,10 @@ if(t.classList&&t.classList.contains('aim-gram-inp')){
     it.nutrition.fat_total_g=Math.round(it.baseFatPer100*factor*10)/10;
     const macroSub=document.getElementById('aim-macro-'+idx);
     if(macroSub) macroSub.innerHTML=`≈ <b>${it.nutrition.energy_kcal}</b> kkal (P: ${it.nutrition.protein_g}g, K: ${it.nutrition.carb_total_g}g, L: ${it.nutrition.fat_total_g}g)`;
-    const pin=document.getElementById('aim-pin-'+idx);
-    if(pin) pin.innerHTML=`<span>#${idx+1}</span><span style="max-width:110px;overflow:hidden;text-overflow:ellipsis">${esc(it.name)} (${newG}g)</span>`;
+    const pinG=document.getElementById('aim-pin-g-'+idx);
+    const pinK=document.getElementById('aim-pin-k-'+idx);
+    if(pinG) pinG.textContent=`${newG}g`;
+    if(pinK) pinK.textContent=`${it.nutrition.energy_kcal} kkal`;
     updateAimSummaryBanner();
   }
   return;
@@ -1843,8 +1924,10 @@ if(t.classList&&t.classList.contains('aim-urt-inp')){
     it.nutrition.fat_total_g=Math.round(it.baseFatPer100*factor*10)/10;
     const macroSub=document.getElementById('aim-macro-'+idx);
     if(macroSub) macroSub.innerHTML=`≈ <b>${it.nutrition.energy_kcal}</b> kkal (P: ${it.nutrition.protein_g}g, K: ${it.nutrition.carb_total_g}g, L: ${it.nutrition.fat_total_g}g)`;
-    const pin=document.getElementById('aim-pin-'+idx);
-    if(pin) pin.innerHTML=`<span>#${idx+1}</span><span style="max-width:110px;overflow:hidden;text-overflow:ellipsis">${esc(it.name)} (${it.gram}g)</span>`;
+    const pinG=document.getElementById('aim-pin-g-'+idx);
+    const pinK=document.getElementById('aim-pin-k-'+idx);
+    if(pinG) pinG.textContent=`${it.gram}g`;
+    if(pinK) pinK.textContent=`${it.nutrition.energy_kcal} kkal`;
     updateAimSummaryBanner();
   }
   return;

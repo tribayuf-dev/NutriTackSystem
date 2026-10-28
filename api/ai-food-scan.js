@@ -19,6 +19,7 @@ import {
   estimatePhysicalAreaCm2,
   calculateVolumeAndWeight,
   getCategoryHighlightColor,
+  normalizePolygonPoints,
 } from './lib/PolygonGeometryHelper.js';
 
 export const config = {
@@ -37,16 +38,16 @@ IKUTI PROSEDUR SEGMENTASI KONTUR & FISIKA PANGAN BERIKUT SECARA KETAT:
 Identifikasi objek referensi ukuran di dalam foto (Piring makan standar Indonesia berdiameter ~24-26 cm, mangkuk berdiameter ~15-17 cm, sendok makan panjang kepala ~6 cm). Gunakan objek tersebut untuk menetapkan rasio skala piksel ke sentimeter (cm).
 
 2. Dekomposisi & Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
-- Pecah hidangan di dalam foto menjadi daftar komponen makanan tunggal yang terpisah (contoh: pisahkan antara Nasi Putih, Ayam Goreng, Tempe Goreng, Tumis Sayur, dan Sambal).
-- Untuk setiap item makanan, buat polygon_mask berupa daftar berurutan titik koordinat [[x, y], [x, y], ...] (minimal 10 hingga 24 titik sudut) yang menelusuri tepi/lekuk bentuk asli makanan tersebut secara presisi (BUKAN kotak persegi empat).
-- Seluruh koordinat x dan y pada polygon_mask WAJIB dinormalisasi ke dalam rentang bilangan bulat 0 hingga 1000 (di mana [0, 0] adalah pojok kiri atas gambar dan [1000, 1000] adalah pojok kanan bawah gambar).
+- Pecah hidangan atau objek pangan di dalam foto menjadi komponen terpisah (contoh: nasi putih, ayam goreng, sambal, atau kemasan snack/makanan kemasan).
+- Untuk SETIAP item makanan yang terdeteksi, WAJIB membuat visual_segmentation.polygon_mask berupa daftar berurutan titik koordinat [[x, y], [x, y], ...] (buat 14 hingga 28 titik sudut) yang menelusuri tepian lekuk fisik asli makanan tersebut secara presisi (BUKAN kotak persegi dan DILARANG KOSONG).
+- PENTING ATURAN KOORDINAT: Setiap titik adalah pasangan [x, y] di mana x adalah koordinat horizontal (0 = tepi kiri citra, 1000 = tepi kanan citra) dan y adalah koordinat vertikal (0 = tepi atas citra, 1000 = tepi bawah citra). Pastikan koordinat menempel persis pada lekukan fisik makanan.
 - Sertakan juga box_2d dalam format [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah kontur makanan untuk penempatan label UI).
 - Berikan highlight_color_hex sesuai kategori:
   - Karbohidrat (carbohydrate): "#1A73E8" (Biru)
   - Protein Hewani (animal_protein): "#FA903E" (Oranye)
   - Protein Nabati (plant_protein): "#FCC934" (Kuning Emas)
   - Sayuran & Buah (vegetable / fruit): "#81C995" (Hijau Mint)
-  - Lemak, Saus, Sambal, Minuman (fat_sauce / beverage): "#C58AF9" (Ungu)
+  - Lemak, Saus, Sambal, Minuman, Permen/Snack (fat_sauce / beverage / snack): "#C58AF9" (Ungu) atau "#FA903E"
 
 3. Identifikasi Metode Pemasakan & Lemak Tersembunyi:
 Klasifikasikan metode pemasakan setiap item ke dalam: steamed_boiled, fried_deep, stir_fried, coconut_milk_curry, grilled_roasted, atau raw_fresh. Jika digoreng, ditumis, atau bersantan, hitung taksiran berat serapan minyak/santan dalam gram pada atribut hidden_oil_or_coconut_milk_g (acuan: 1/2 sdm minyak = 5g, santan = 30-50g).
@@ -376,9 +377,9 @@ export default async function handler(req, res) {
         }
 
         const seg = item.visual_segmentation || {};
-        let rawPolygon = seg.polygon_mask || item.polygon_mask;
+        let rawPolygon = seg.polygon_mask || item.polygon_mask || seg.polygon || item.polygon || seg.contour || item.contour || seg.mask || item.mask || seg.points || item.points;
         let box2d = null;
-        const rawBox = seg.box_2d || item.box_2d;
+        const rawBox = seg.box_2d || item.box_2d || seg.box || item.box || seg.bbox || item.bbox;
 
         if (Array.isArray(rawBox) && rawBox.length === 4) {
           const [ymin, xmin, ymax, xmax] = rawBox.map(Number);
@@ -392,19 +393,11 @@ export default async function handler(req, res) {
           }
         }
 
-        let polygonMask = null;
-        if (Array.isArray(rawPolygon) && rawPolygon.length >= 3) {
-          polygonMask = rawPolygon
-            .filter(pt => Array.isArray(pt) && pt.length >= 2 && !isNaN(pt[0]) && !isNaN(pt[1]))
-            .map(pt => [
-              Math.max(0, Math.min(1000, Math.round(Number(pt[0])))),
-              Math.max(0, Math.min(1000, Math.round(Number(pt[1])))),
-            ]);
-        }
+        let polygonMask = normalizePolygonPoints(rawPolygon, box2d);
 
-        // Jika polygon_mask belum tersedia, hasilkan smooth elliptical polygon dari box2d
+        // Jika polygon_mask belum tersedia, hasilkan smooth organic polygon dari box2d
         if (!polygonMask || polygonMask.length < 3) {
-          polygonMask = generateFallbackPolygonFromBox(box2d || [200, 200, 800, 800], 14);
+          polygonMask = generateFallbackPolygonFromBox(box2d || [200, 200, 800, 800], 16);
         }
 
         const shoelaceArea = calculateShoelaceArea(polygonMask);

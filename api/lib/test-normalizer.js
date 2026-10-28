@@ -178,6 +178,8 @@ import {
   estimatePhysicalAreaCm2,
   calculateVolumeAndWeight,
   getCategoryHighlightColor,
+  normalizePolygonPoints,
+  pointsToSmoothPath,
 } from './PolygonGeometryHelper.js';
 
 // Square 100x100 from (100,100) to (200,200)
@@ -214,6 +216,29 @@ assert(fallbackPts.length === 12, `Test 6.8: Fallback polygon has 12 points (got
 const porsimetry = calculateVolumeAndWeight(57.1, 2.5, 0.70);
 assert(Math.abs(porsimetry.volumeCc - 142.8) <= 0.2, `Test 6.9: Volume calculation (got ${porsimetry.volumeCc} cc)`);
 assert(Math.abs(porsimetry.weightG - 100.0) <= 0.2, `Test 6.10: Weight calculation (got ${porsimetry.weightG} g)`);
+
+// Test Catmull-Rom Smooth Path Generator
+const smoothPath = pointsToSmoothPath(prdPolygon);
+assert(smoothPath.startsWith('M ') && smoothPath.includes(' C ') && smoothPath.endsWith(' Z'), 'Test 6.11: pointsToSmoothPath generates valid cubic Bezier SVG path');
+
+// Test normalizePolygonPoints with flat array
+const flatPts = [100, 200, 150, 250, 120, 280];
+const normalizedFlat = normalizePolygonPoints(flatPts);
+assert(normalizedFlat.length === 3 && normalizedFlat[0][0] === 100 && normalizedFlat[0][1] === 200, 'Test 6.12: normalizePolygonPoints handles flat array');
+
+// Test normalizePolygonPoints auto-transpose for [y, x] flipped coordinates
+// Bounding box: candy package wider than tall [ymin: 400, xmin: 200, ymax: 500, xmax: 600] (W=400, H=100)
+// Points returned as [y, x]: y in 410..490, x in 220..580
+const flippedPts = [
+  [420, 250], [430, 400], [450, 550], [480, 500], [470, 300]
+];
+const transposed = normalizePolygonPoints(flippedPts, [400, 200, 500, 600]);
+assert(transposed[0][0] === 250 && transposed[0][1] === 420, `Test 6.13: normalizePolygonPoints transposes [y, x] -> [x, y] (got [${transposed[0]}])`);
+
+// Test normalizePolygonPoints with array of objects
+const objPts = [{ x: 10, y: 20 }, { x: 30, y: 40 }, { x: 50, y: 60 }];
+const normalizedObj = normalizePolygonPoints(objPts);
+assert(normalizedObj.length === 3 && normalizedObj[1][0] === 30 && normalizedObj[1][1] === 40, 'Test 6.14: normalizePolygonPoints handles array of objects');
 
 console.log('\n================================================================');
 console.log(`TEST RESULTS: ${passCount} PASSED, ${failCount} FAILED`);

@@ -5,8 +5,10 @@
  * 1. Rumus Luas Poligon Gauss (Shoelace Formula)
  * 2. Perhitungan Titik Tengah Poligon (Centroid [cx, cy])
  * 3. Konversi Luas Kontur (cm2) ke Volume (cm3) dan Berat Massa (gram) via Densitas Semu
- * 4. Fallback Smooth Elliptical Contour Generator dari Bounding Box [ymin, xmin, ymax, xmax]
+ * 4. Fallback Smooth Organic Contour Generator dari Bounding Box [ymin, xmin, ymax, xmax]
  * 5. Standar Palet Warna Kategori Gizi PRD (Biru, Oranye, Kuning Emas, Hijau Mint, Ungu)
+ * 6. Normalisasi Robust Titik Kontur & Auto-Transpose [y, x] -> [x, y]
+ * 7. Catmull-Rom to Cubic Bezier Curve Generator untuk SVG Path Mulus
  */
 
 export const CATEGORY_COLORS = Object.freeze({
@@ -140,7 +142,130 @@ export function calculateBoundingBox(points) {
 }
 
 /**
- * Buat Fallback Polygon Mask (12-16 titik lekuk elips) dari koordinat Bounding Box [ymin, xmin, ymax, xmax]
+ * Normalisasi dan validasi koordinat titik kontur poligon.
+ * Mendukung format:
+ * - [[x, y], [x, y], ...]
+ * - [{x, y}, {x, y}, ...]
+ * - [x1, y1, x2, y2, ...]
+ * - Auto-transpose jika titik terdeteksi dalam format [y, x] berdasarkan box_2d
+ * 
+ * @param {any} rawPoints
+ * @param {Array<number>|null} box2d [ymin, xmin, ymax, xmax]
+ * @returns {Array<Array<number>>|null}
+ */
+export function normalizePolygonPoints(rawPoints, box2d = null) {
+  if (!rawPoints) return null;
+
+  let pts = [];
+
+  // 1. Unwrap jika nested array (seperti GeoJSON [[[x,y],...]])
+  let candidate = rawPoints;
+  if (Array.isArray(candidate) && candidate.length === 1 && Array.isArray(candidate[0])) {
+    candidate = candidate[0];
+  }
+
+  // 2. Parse format array of arrays atau array of objects atau flat array
+  if (Array.isArray(candidate)) {
+    if (candidate.length >= 6 && typeof candidate[0] === 'number' && typeof candidate[1] === 'number') {
+      // Flat array [x1, y1, x2, y2, ...]
+      for (let i = 0; i < candidate.length - 1; i += 2) {
+        pts.push([Number(candidate[i]), Number(candidate[i + 1])]);
+      }
+    } else {
+      for (const item of candidate) {
+        if (Array.isArray(item) && item.length >= 2) {
+          const x = Number(item[0]);
+          const y = Number(item[1]);
+          if (!isNaN(x) && !isNaN(y)) pts.push([x, y]);
+        } else if (item && typeof item === 'object') {
+          const x = Number(item.x ?? item.lng ?? item.c ?? item.X);
+          const y = Number(item.y ?? item.lat ?? item.r ?? item.Y);
+          if (!isNaN(x) && !isNaN(y)) pts.push([x, y]);
+        }
+      }
+    }
+  }
+
+  if (pts.length < 3) return null;
+
+  // Clamp seluruh titik ke rentang 0 - 1000
+  pts = pts.map(p => [
+    Math.max(0, Math.min(1000, Math.round(p[0]))),
+    Math.max(0, Math.min(1000, Math.round(p[1]))),
+  ]);
+
+  // 3. Auto-transpose check terhadap box_2d [ymin, xmin, ymax, xmax]
+  if (Array.isArray(box2d) && box2d.length === 4) {
+    const [ymin, xmin, ymax, xmax] = box2d.map(Number);
+    const boxW = Math.max(1, xmax - xmin);
+    const boxH = Math.max(1, ymax - ymin);
+
+    // Hitung bounding box aktual dari pts
+    let minX = 1000, maxX = 0, minY = 1000, maxY = 0;
+    for (const p of pts) {
+      if (p[0] < minX) minX = p[0];
+      if (p[0] > maxX) maxX = p[0];
+      if (p[1] < minY) minY = p[1];
+      if (p[1] > maxY) maxY = p[1];
+    }
+    const ptsSpreadX = Math.max(1, maxX - minX);
+    const ptsSpreadY = Math.max(1, maxY - minY);
+
+    // Cek apakah koordinat tertukar: [y, x]
+    // Kondisi 1: Aspek rasio kontur berlawanan dengan box_2d
+    const isTransposedAspectRatio = (boxW > boxH * 1.3 && ptsSpreadY > ptsSpreadX * 1.3) ||
+                                    (boxH > boxW * 1.3 && ptsSpreadX > ptsSpreadY * 1.3);
+    
+    // Kondisi 2: Center koordinat lebih cocok bila ditranspose
+    const boxCenterX = (xmin + xmax) / 2;
+    const boxCenterY = (ymin + ymax) / 2;
+    const ptsCenterX = (minX + maxX) / 2;
+    const ptsCenterY = (minY + maxY) / 2;
+    const directDiff = Math.abs(ptsCenterX - boxCenterX) + Math.abs(ptsCenterY - boxCenterY);
+    const flippedDiff = Math.abs(ptsCenterY - boxCenterX) + Math.abs(ptsCenterX - boxCenterY);
+
+    if (isTransposedAspectRatio || (flippedDiff + 60 < directDiff)) {
+      // Koordinat tertukar [y, x] -> transpose balik menjadi [x, y]
+      pts = pts.map(p => [p[1], p[0]]);
+    }
+  }
+
+  return pts;
+}
+
+/**
+ * Konversi daftar titik [x, y] menjadi SVG curved smooth path (Catmull-Rom to Cubic Bezier)
+ * Menghasilkan kurva mulus tanpa sudut kaku (d="M ... C ... Z")
+ * 
+ * @param {Array<Array<number>>} pts - Array titik [[x, y], ...]
+ * @param {number} tension - Ketegangan kurva (0.5 - 1.0, default 0.85)
+ * @returns {string} SVG Path definition string d
+ */
+export function pointsToSmoothPath(pts, tension = 0.85) {
+  if (!Array.isArray(pts) || pts.length < 3) return '';
+
+  const n = pts.length;
+  let d = `M ${Math.round(pts[0][0])} ${Math.round(pts[0][1])}`;
+
+  for (let i = 0; i < n; i++) {
+    const pPrev = pts[(i - 1 + n) % n];
+    const pCurr = pts[i];
+    const pNext = pts[(i + 1) % n];
+    const pNext2 = pts[(i + 2) % n];
+
+    const cp1x = Math.round(pCurr[0] + ((pNext[0] - pPrev[0]) / 6) * tension);
+    const cp1y = Math.round(pCurr[1] + ((pNext[1] - pPrev[1]) / 6) * tension);
+    const cp2x = Math.round(pNext[0] - ((pNext2[0] - pCurr[0]) / 6) * tension);
+    const cp2y = Math.round(pNext[1] - ((pNext2[1] - pCurr[1]) / 6) * tension);
+
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${Math.round(pNext[0])} ${Math.round(pNext[1])}`;
+  }
+
+  return `${d} Z`;
+}
+
+/**
+ * Buat Fallback Polygon Mask (14-16 titik lekuk organik) dari koordinat Bounding Box [ymin, xmin, ymax, xmax]
  * Digunakan jika AI hanya mengembalikan box_2d atau koneksi fallback
  */
 export function generateFallbackPolygonFromBox(box2d, numPoints = 14) {
@@ -154,10 +279,11 @@ export function generateFallbackPolygonFromBox(box2d, numPoints = 14) {
   const ry = Math.max(20, (ymax - ymin) / 2.0);
 
   const points = [];
-  for (let i = 0; i < numPoints; i++) {
-    const angle = (i / numPoints) * 2 * Math.PI;
-    // Berikan sedikit variasi lekuk natural (+-3%) agar tidak kaku
-    const wobble = 1.0 + (Math.sin(angle * 3) * 0.035);
+  const count = Math.max(12, Math.min(32, numPoints));
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * 2 * Math.PI;
+    // Variasi harmonik multi-frekuensi untuk kontur makanan alami organik
+    const wobble = 1.0 + (Math.sin(angle * 3) * 0.03) + (Math.cos(angle * 5) * 0.018);
     const px = Math.max(0, Math.min(1000, Math.round(cx + (Math.cos(angle) * rx * wobble))));
     const py = Math.max(0, Math.min(1000, Math.round(cy + (Math.sin(angle) * ry * wobble))));
     points.push([px, py]);

@@ -84,7 +84,7 @@ details.dtl>summary{cursor:pointer;font-weight:600;font-size:14px;list-style:non
 const $=s=>document.querySelector(s),iso=d=>d.toLocaleDateString('sv-SE'),td=iso(new Date());
 const addD=(s,n)=>{const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);return iso(d)};
 const fD=s=>new Date(s+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'long',year:'numeric'});
-const r0=Math.round,n0=x=>r0(x).toLocaleString('id-ID'),r1=x=>(Math.round(x*10)/10).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1});
+const r0=Math.round,n0=x=>Number.isFinite(x)?r0(x).toLocaleString('id-ID'):'0',r1=x=>Number.isFinite(x)?(Math.round(x*10)/10).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1}):'0,0';
 const FD=[
 ['nasi','Nasi Putih','Makanan',130,2.4,28.6,.2,.4,.1,1,{centong:100,mangkuk:160,piring:200,bungkus:250},1,'TKPI','Terverifikasi'],
 ['nasim','Nasi Merah','Makanan',112,2.3,23.5,.8,1.8,.4,5,{centong:100,mangkuk:160,piring:200},1,'TKPI','Terverifikasi'],
@@ -405,9 +405,9 @@ const streak=()=>{let n=0,x=td;if(!lg(x).length)x=addD(x,-1);while(lg(x).length&
 const NAV=[['dash','Dashboard','home'],['journal','Food Journal','book'],['foods','Food Database','db'],['rec','Recipes','pot'],['rep','Nutrition Reports','chart'],['wt','Weight Tracking','scale'],['wat','Water Tracking','drop'],['goals','Goals & Targets','target'],['profile','Profile','user'],['set','Settings','gear']];
 const ap=f=>S.ov&&S.ov[f.id]?{...f,...S.ov[f.id]}:f,all=()=>FD.concat(S.cf).filter(f=>!S.del.includes(f.id)).map(ap),fOf=i=>{const f=FD.concat(S.cf).find(x=>x.id==i);return f&&ap(f)};
 const MU={g:1,kg:1000,oz:28.3495,lb:453.592},VU={ml:1,l:1000,cangkir:240,sdm:15,sdt:5},num=v=>{const x=parseFloat(String(v==null?'':v).replace(',','.'));return Number.isFinite(x)?x:NaN};
-const toG=(fo,q,u)=>{if(!fo||!fo.s)return{g:NaN,est:true};if(fo.s[u]!==undefined)return{g:q*fo.s[u],est:true};if(MU[u])return{g:q*MU[u],est:false};if(VU[u]&&fo.d)return{g:q*VU[u]*fo.d,est:false};return{g:NaN,est:true}};
+const toG=(fo,q,u)=>{if(!fo)return{g:0,est:true};const qNum=num(q);const validQ=Number.isFinite(qNum)?qNum:0;if(validQ<=0)return{g:0,est:false};const unit=String(u||'g').trim();if(unit==='g')return{g:validQ,est:false};if(fo.s&&fo.s[unit]!==undefined)return{g:validQ*fo.s[unit],est:true};if(MU[unit])return{g:validQ*MU[unit],est:false};const dens=(Number.isFinite(fo.d)&&fo.d>0)?fo.d:1;if(VU[unit])return{g:validQ*VU[unit]*dens,est:!fo.d};return{g:validQ,est:true}};
 const un=fo=>fo?[...new Set(['g',...Object.keys(fo.s||{}),'kg','oz','lb',...(fo.d?['ml','l','cangkir','sdm','sdt']:[])])]:['g'];
-const snap=(fo,g)=>{if(!fo)return{k:0,p:0,c:0,f:0,fi:0,su:0,na:0};const r=g/100;return{k:fo.k*r,p:fo.p*r,c:fo.c*r,f:fo.f*r,fi:fo.fi*r,su:fo.su*r,na:fo.na*r}};
+const snap=(fo,g)=>{if(!fo||!Number.isFinite(g)||g<=0)return{k:0,p:0,c:0,f:0,fi:0,su:0,na:0};const r=g/100;const fn=k=>{const v=num(fo[k]);return Number.isFinite(v)?v*r:0};return{k:fn('k'),p:fn('p'),c:fn('c'),f:fn('f'),fi:fn('fi'),su:fn('su'),na:fn('na')}};
 const sum=L=>L.reduce((a,l)=>{for(const k in l.sn)a[k]=(a[k]||0)+l.sn[k];return a},{k:0,p:0,c:0,f:0,fi:0,su:0,na:0});
 const CFG0={deficit:500,surplus:250,pf:{keep:1.6,lose:1.8,gain:1.6,custom:1.6},fat:30,fiber:14,water:35,sugar:10,sodium:2000,twLoss:1,twGain:.5,floor:{m:1500,f:1200}};
 function calcT(pf,m={},c=CFG0){const gk=pf.g||'keep',bmr=10*pf.w+6.25*pf.h-5*pf.age+(pf.sex=='m'?5:-161),tdee=bmr*pf.act,fl=c.floor[pf.sex],base=gk=='lose'?tdee-c.deficit:gk=='gain'?tdee+c.surplus:tdee,rec=gk=='custom'?(m.kcal||tdee):Math.max(base,fl),k=m.kcal||rec,pg=pf.w*c.pf[gk],fk=k*c.fat/100,ck=k-pg*4-fk;
@@ -560,7 +560,7 @@ return`<svg viewBox="0 0 300 108" class="w-full" role="img" aria-label="grafik t
 const bars=(v,lb,c,t)=>{const mx=Math.max(...v,t||0,1);return`<div class="flex items-end gap-1 h-32">${v.map((x,i)=>`<div class="flex-1 flex flex-col items-center justify-end h-full"><div class="w-full rounded-t-md" style="height:${x/mx*100}%;min-height:3px;background:${x?c:'var(--tk)'}" title="${n0(x)}"></div><span class="mu" style="font-size:10px">${lb[i]}</span></div>`).join('')}</div>`};
 const tsum=(v,t,u,o={})=>{const a=v.filter(x=>x>0);if(!a.length)return'';const f=o.f||n0,av=a.reduce((p,c)=>p+c,0)/a.length,b=x=>`<b style="color:var(--tx)">${f(x)} ${u}</b>`;return`<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs mt-2"><span class="mu">Rata-rata ${b(av)}</span><span class="mu">Tertinggi ${b(Math.max(...a))}</span><span class="mu">Terendah ${b(Math.min(...a))}</span>${t?`<span class="mu">${o.max?'Batas maks':'Target'} ${b(t)} · ${o.max?'Terpakai':'Capaian'} <b style="color:var(--tx)">${r0(av/t*100)}%</b></span>`:''}</div>`};
 const bm=(l,v,t,u)=>{const p=t?v/t*100:0;return bar(l,v,t,p>100?'#ba1a1a':p>=80?'var(--C)':'var(--pc)',u)};
-const rtot=r=>r.reduce((a,[i,q,u])=>{const fo=fOf(i);if(!fo)return a;const c=toG(fo,num(q)||0,u),s=snap(fo,c.g);for(const k in s)a[k]=(a[k]||0)+s[k];a.g+=c.g;return a},{g:0,k:0,p:0,c:0,f:0,fi:0,na:0,su:0});
+const rtot=r=>(r||[]).reduce((a,[i,q,u])=>{const fo=fOf(i);if(!fo)return a;const qNum=num(q);const validQ=(Number.isFinite(qNum)&&qNum>0)?qNum:0;const validU=u||(fo.s&&Object.keys(fo.s)[0])||'g';const c=toG(fo,validQ,validU);const gramVal=(Number.isFinite(c.g)&&c.g>=0)?c.g:(validU==='g'?validQ:0);const s=snap(fo,gramVal);for(const k in s){const v=Number.isFinite(s[k])?s[k]:0;a[k]=(a[k]||0)+v}a.g+=gramVal;return a},{g:0,k:0,p:0,c:0,f:0,fi:0,na:0,su:0});
 const donut=P=>{const t=P.reduce((a,x)=>a+x.v,0)||1;let o=0;return`<svg viewBox="0 0 42 42" class="w-28 h-28" role="img" aria-label="distribusi makro"><circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--tk)" stroke-width="6"/>${P.map(x=>{const d=x.v/t*100,s=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${x.c}" stroke-width="6" stroke-dasharray="${d} ${100-d}" stroke-dashoffset="${25-o}"/>`;o+=d;return s}).join('')}</svg>`};
 const hd=(t,r='')=>{const title=tr(t);const mod=NAV.some(n=>n[1]==t||n[0]==t||tr(n[0])==title)||/^Analisis|^Analysis/.test(t);return`<div class="${mod&&!r?'hidden md:flex':'flex'} flex-wrap items-center justify-between gap-3 mb-4"><h1 class="${mod?'hidden md:block text-3xl':'text-2xl md:text-3xl'} font-bold tracking-tight">${title}</h1><div class="flex gap-2 items-center flex-wrap max-md:w-full">${r}</div></div>`};
 const empty=(m,b='')=>`<div class="text-center py-8"><div class="mu mb-3">${m}</div>${b}</div>`;
@@ -597,9 +597,9 @@ let FS={};
 function food(id){const f=fOf(id);if(!f)return empty('Makanan tidak ditemukan.');const m=(S.mic||{})[id]||MIC[id],r=[['Kalori',f.k,'kkal'],['Protein',f.p,'g'],['Karbohidrat',f.c,'g'],['Lemak',f.f,'g'],['Serat',f.fi,'g'],['Gula',f.su,'g'],['Natrium',f.na,'mg']],im=S.fimg[id];
 return hd(f.n,`<button class="gh" data-a="go" data-r="foods">‹ Kembali</button><button class="gh" data-a="fv" data-id="${f.id}">${S.fav.includes(f.id)?'★ Favorit':'☆ Favorit'}</button><button class="gh" data-a="nme" data-id="${f.id}">Ubah Item</button><button class="gh" style="color:var(--P)" data-a="fd" data-id="${f.id}">Hapus Item</button><button class="btn" data-a="add" data-fo="${f.id}">Tambahkan ke Jurnal</button>`)+`<div class="grid md:grid-cols-2 gap-4"><div class="card">${im?`<img src="${im}" alt="${f.n}" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:12px">`:`<div class="ic" style="width:100%;aspect-ratio:16/9;border-radius:12px;margin-bottom:12px">${MS('nutrition',48)}</div>`}<label class="gh cursor-pointer inline-flex gap-2 items-center mb-3">${MS('add_photo_alternate',18)} ${im?'Ganti Gambar':'Tambah Gambar'}<input type="file" accept="image/*" data-fid="${f.id}" style="display:none"></label><div class="mu text-sm mb-2">Ukuran Porsi: 100 g</div>${r.map(x=>`<div class="flex justify-between py-2" style="border-top:1px solid var(--ln)"><span>${x[0]}</span><b>${x[1]==null?'–':String(r1(x[1])).replace(/,0$/,'')+' '+x[2]}</b></div>`).join('')}</div><div class="card"><b>Informasi</b><div class="mt-2 text-sm">Merek: ${f.br?esc(f.br):'–'}<br>Sumber: ${f.src}<br>Status Data: ${stB(f.st)}<br>Kategori: ${f.cat}<br>Kepadatan: ${f.d?String(f.d).replace('.',',')+' g/ml':'–'}<br>Porsi: ${Object.keys(f.s).length?Object.entries(f.s).map(([a,b])=>a+' = '+n0(b)+' g').join(', '):'–'}<br>Versi data: v${f.v||1}</div><b class="block mt-4">Mikronutrien</b>${f.mi?vMi(f):m?Object.entries(m).map(([k,v])=>`<div class="flex justify-between text-sm py-1"><span>${k}</span><b>${v}</b></div>`).join(''):'<div class="mu text-sm mt-1">Data mikronutrien belum tersedia untuk makanan ini.</div>'}<p class="mu text-xs mt-3">Data contoh untuk prototipe; nilai belum diverifikasi secara independen.</p></div></div>`}
 function rec(){const sv=S.rcp,tabs=`<span class="flex gap-2"><button class="chip ${RT=='b'?'on':''}" data-a="rtb" data-v="b">Pembuat Resep</button><button class="chip ${RT=='s'?'on':''}" data-a="rtb" data-v="s">My Saved Recipes (${sv.length})</button></span>`;
-if(RT=='s')return hd('Recipes',tabs)+(sv.length?`<div class="grid md:grid-cols-2 gap-4">${sv.slice().reverse().map(r=>{const t=rtot(r.r);return`<div class="card"><div class="flex gap-3">${fImg(r.fid,64,14)}<div class="flex-1 min-w-0"><b class="block truncate">${r.n}</b><div class="mu text-xs">${r.r.length} bahan · ${n0(t.g)} g · disimpan ${fD(r.d)}</div><div class="text-sm mt-1"><b>${n0(t.k)}</b> kkal · P ${r1(t.p)} · K ${r1(t.c)} · L ${r1(t.f)}</div></div></div><div class="mu text-xs mt-3">${r.r.map(x=>fOf(x[0])?`${fOf(x[0]).n} ${x[1]} ${x[2]}`:'').filter(Boolean).join(', ')}</div><div class="flex gap-2 mt-3"><button class="gh" data-a="re" data-id="${r.id}">${MS('edit',16)} Edit</button><button class="gh" style="color:var(--P)" data-a="rd" data-id="${r.id}">${MS('delete',16)} Hapus</button></div></div>`}).join('')}</div>`:empty('Belum ada resep tersimpan.','<button class="btn" data-a="rtb" data-v="b">Buat Resep</button>'));
+if(RT=='s')return hd('Recipes',tabs)+(sv.length?`<div class="grid md:grid-cols-2 gap-4">${sv.slice().reverse().map(r=>{const t=rtot(r.r);return`<div class="card"><div class="flex gap-3">${fImg(r.fid,64,14)}<div class="flex-1 min-w-0"><b class="block truncate">${r.n}</b><div class="mu text-xs">${r.r.length} bahan · ${n0(t.g)} g · disimpan ${fD(r.d)}</div><div class="text-sm mt-1"><b>${n0(t.k)}</b> kkal · P ${r1(t.p)} · K ${r1(t.c)} · L ${r1(t.f)}</div></div></div><div class="mu text-xs mt-3">${r.r.map(x=>{const fo=fOf(x[0]);if(!fo)return'';const qNum=num(x[1]);const qVal=(Number.isFinite(qNum)&&qNum>0)?qNum:'–';const uVal=x[2]||'g';return`${fo.n} ${qVal} ${uVal}`}).filter(Boolean).join(', ')}</div><div class="flex gap-2 mt-3"><button class="gh" data-a="re" data-id="${r.id}">${MS('edit',16)} Edit</button><button class="gh" style="color:var(--P)" data-a="rd" data-id="${r.id}">${MS('delete',16)} Hapus</button></div></div>`}).join('')}</div>`:empty('Belum ada resep tersimpan.','<button class="btn" data-a="rtb" data-v="b">Buat Resep</button>'));
 if(!B)B={n:'Nasi Goreng',img:'',r:[['nasi',200,'g'],['telur',1,'butir'],['ayam',50,'g'],['minyak',10,'g'],['kecap',10,'ml']]};const tot=rtot(B.r),pr=o=>`<div class="grid grid-cols-5 gap-2 text-center mt-2">${[['Kalori',o.k,'kkal'],['Protein',o.p,'g'],['Karbo',o.c,'g'],['Lemak',o.f,'g'],['Serat',o.fi,'g']].map(x=>`<div class="card" style="padding:10px;background:var(--tk)"><div class="mu" style="font-size:11px">${x[0]}</div><b>${x[0]=='Kalori'?n0(x[1]):r1(x[1])}</b><div class="mu" style="font-size:10px">${x[2]}</div></div>`).join('')}</div>`;
-return hd('Recipes',tabs)+(B.eid?`<div class="card mb-4 flex items-center justify-between" style="background:var(--tk)"><b>Mengedit resep tersimpan</b><button class="gh" data-a="rnew">Batal Edit</button></div>`:'')+`<div class="grid lg:grid-cols-5 gap-4"><div class="card lg:col-span-3"><label class="text-sm font-semibold">Nama Menu<input class="inp mt-1" data-i="bn" value="${B.n}"></label><div class="flex items-center gap-3 mt-3">${B.img?`<img src="${B.img}" alt="" style="width:96px;height:64px;border-radius:12px;object-fit:cover">`:`<div class="ic" style="width:96px;height:64px;border-radius:12px">${MS('add_photo_alternate',24)}</div>`}<label class="gh cursor-pointer">Gambar Menu<input type="file" accept="image/*" id="rcimg" style="display:none"></label></div><div class="font-bold mt-4 mb-2">Bahan</div>${B.r.map((x,i)=>`<div class="flex flex-wrap md:flex-nowrap gap-2 mb-2"><select class="inp max-md:w-full" data-i="bf${i}">${all().map(f=>`<option value="${f.id}" ${f.id==x[0]?'selected':''}>${f.n}</option>`).join('')}</select><input class="inp" style="width:80px" type="number" step="any" data-i="bq${i}" value="${x[1]}"><select class="inp" style="width:100px" data-i="bu${i}">${un(fOf(x[0])).map(u=>`<option ${u==x[2]?'selected':''}>${u}</option>`).join('')}</select><button class="mu px-2" data-a="rm" data-v="${i}" aria-label="Hapus bahan">✕</button></div>`).join('')}<button class="gh" data-a="ra">+ Tambah Bahan</button></div>
+return hd('Recipes',tabs)+(B.eid?`<div class="card mb-4 flex items-center justify-between" style="background:var(--tk)"><b>Mengedit resep tersimpan</b><button class="gh" data-a="rnew">Batal Edit</button></div>`:'')+`<div class="grid lg:grid-cols-5 gap-4"><div class="card lg:col-span-3"><label class="text-sm font-semibold">Nama Menu<input class="inp mt-1" data-i="bn" value="${B.n}"></label><div class="flex items-center gap-3 mt-3">${B.img?`<img src="${B.img}" alt="" style="width:96px;height:64px;border-radius:12px;object-fit:cover">`:`<div class="ic" style="width:96px;height:64px;border-radius:12px">${MS('add_photo_alternate',24)}</div>`}<label class="gh cursor-pointer">Gambar Menu<input type="file" accept="image/*" id="rcimg" style="display:none"></label></div><div class="font-bold mt-4 mb-2">Bahan</div>${B.r.map((x,i)=>{const fo=fOf(x[0]);const units=un(fo);const curU=x[2]||units[0]||'g';const curQ=Number.isFinite(num(x[1]))?x[1]:'';return`<div class="flex flex-wrap md:flex-nowrap gap-2 mb-2"><select class="inp max-md:w-full" data-i="bf${i}">${all().map(f=>`<option value="${f.id}" ${f.id==x[0]?'selected':''}>${f.n}</option>`).join('')}</select><input class="inp" style="width:80px" type="number" step="any" min="0" data-i="bq${i}" value="${curQ}"><select class="inp" style="width:100px" data-i="bu${i}">${units.map(u=>`<option value="${u}" ${u==curU?'selected':''}>${u}</option>`).join('')}</select><button class="mu px-2" data-a="rm" data-v="${i}" aria-label="Hapus bahan">✕</button></div>`}).join('')}<button class="gh" data-a="ra">+ Tambah Bahan</button></div>
 <div class="card lg:col-span-2"><b>Total Nutrisi Menu</b>${pr(tot)}<div class="mu text-sm mt-3">Total berat bahan: ${n0(tot.g)} g</div><button class="btn w-full mt-4 justify-center" data-a="rs">${B.eid?'Perbarui Resep':'Simpan Resep'}</button><p class="mu text-xs mt-2">Resep disimpan sebagai satu menu (1 porsi = seluruh resep) di Food Database dan dapat dicatat lewat Tambah Makanan.</p></div></div>`}
 function stats(ds,tg){const s=[['Kalori','k','kkal',tg.kcal,'var(--pc)'],['Protein','p','g',tg.p,'var(--P)'],['Karbohidrat','c','g',tg.c,'var(--C)'],['Lemak','f','g',tg.f,'var(--F)'],['Serat','fi','g',tg.fi,'var(--FI)'],['Gula','su','g',tg.su,'var(--C)',1],['Natrium','na','mg',tg.na,'var(--FI)',1]];return s}
 const fmtN=x=>x>=100?n0(x):x>=10?r1(x):(Math.round(x*100)/100).toLocaleString('id-ID'),PHS={rendah:0,sedang:1,tinggi:2};
@@ -1989,10 +1989,69 @@ else if(a=='cfr'){S.cfg=JSON.parse(JSON.stringify(CFG0));recalc();tst('Konfigura
 else if(a=='pw'){chPw();return}
 else if(a=='rcn')RC=false;
 else if(a=='rcy'){const u0=S.u;S=init();S.u={...u0,in:true};RC=false;save();seedMaster();go('dash');tst('Data direset. Food Database kembali ke master awal.');return}
-else if(a=='rm')B.r.splice(+v,1);else if(a=='ra')B.r.push(['nasi',100,'g']);
-else if(a=='rs'){if(!B.n.trim()||!B.r.length){tst('Isi nama menu dan minimal satu bahan');return}const t=rtot(B.r),g=t.g;if(!(g>0)){tst('Jumlah bahan harus lebih dari nol');return}const k=100/g,fd={n:B.n.trim(),cat:'Makanan Kustom',k:t.k*k,p:t.p*k,c:t.c*k,f:t.f*k,fi:t.fi*k,su:t.su*k,na:t.na*k,s:{porsi:g},d:null,src:'Buatan sendiri',st:'Buatan sendiri'},rows=B.r.map(x=>[x[0],+x[1],x[2]]);if(B.eid){const r=S.rcp.find(x=>x.id==B.eid),f=S.cf.find(x=>x.id==r.fid);Object.assign(f,fd);r.n=fd.n;r.r=rows;if(B.img){S.fimg[r.fid]=B.img;if(typeof idbSetImage==='function')idbSetImage(r.fid,B.img)}tst('Resep diperbarui')}else{const id='c'+Date.now();S.cf.push({id,...fd});S.rcp.push({id:'r'+Date.now(),fid:id,n:fd.n,r:rows,d:td});if(B.img){S.fimg[id]=B.img;if(typeof idbSetImage==='function')idbSetImage(id,B.img)}tst('Resep tersimpan di My Saved Recipes')}B=null;RT='s';save();render();return}
+else if(a=='rm'){if(B&&B.r){for(let idx=0;idx<B.r.length;idx++){const qInp=document.querySelector(`input[data-i="bq${idx}"]`);if(qInp&&qInp.value!==''){const qNum=num(qInp.value);B.r[idx][1]=Number.isFinite(qNum)?qNum:qInp.value}}B.r.splice(+v,1)}}
+else if(a=='ra'){if(B&&B.r){for(let idx=0;idx<B.r.length;idx++){const qInp=document.querySelector(`input[data-i="bq${idx}"]`);if(qInp&&qInp.value!==''){const qNum=num(qInp.value);B.r[idx][1]=Number.isFinite(qNum)?qNum:qInp.value}}B.r.push(['nasi',100,'g'])}}
+else if(a=='rs'){
+  if(B&&B.r){
+    for(let idx=0;idx<B.r.length;idx++){
+      const foodSel=document.querySelector(`select[data-i="bf${idx}"]`);
+      const qtyInp=document.querySelector(`input[data-i="bq${idx}"]`);
+      const unitSel=document.querySelector(`select[data-i="bu${idx}"]`);
+      if(foodSel&&foodSel.value)B.r[idx][0]=foodSel.value;
+      if(qtyInp&&qtyInp.value!==''){const qNum=num(qtyInp.value);B.r[idx][1]=Number.isFinite(qNum)?qNum:0}
+      if(unitSel&&unitSel.value)B.r[idx][2]=unitSel.value;
+    }
+    const nameInp=document.querySelector('input[data-i="bn"]');
+    if(nameInp&&nameInp.value.trim())B.n=nameInp.value.trim();
+  }
+  if(!B||!B.n.trim()||!B.r.length){tst('Isi nama menu dan minimal satu bahan');return}
+  const rows=B.r.map(x=>{
+    const fo=fOf(x[0]);
+    const qNum=num(x[1]);
+    const qVal=(Number.isFinite(qNum)&&qNum>0)?qNum:0;
+    const uVal=x[2]||(fo&&fo.s&&Object.keys(fo.s)[0])||'g';
+    return[x[0],qVal,uVal];
+  });
+  const t=rtot(rows),g=Math.round(t.g*10)/10;
+  if(!(g>0)){tst('Jumlah bahan harus lebih dari nol');return}
+  const k=100/g;
+  const round1=v=>Number.isFinite(v)?Math.round(v*10)/10:0;
+  const fd={
+    n:B.n.trim(),
+    cat:'Makanan Kustom',
+    k:round1(t.k*k),
+    p:round1(t.p*k),
+    c:round1(t.c*k),
+    f:round1(t.f*k),
+    fi:round1(t.fi*k),
+    su:round1(t.su*k),
+    na:Math.round(t.na*k)||0,
+    s:{porsi:g},
+    d:null,
+    src:'Buatan sendiri',
+    st:'Buatan sendiri'
+  };
+  if(B.eid){
+    const r=S.rcp.find(x=>x.id==B.eid);
+    if(r){
+      const f=S.cf.find(x=>x.id==r.fid);
+      if(f)Object.assign(f,fd);
+      r.n=fd.n;
+      r.r=rows;
+      if(B.img){S.fimg[r.fid]=B.img;if(typeof idbSetImage==='function')idbSetImage(r.fid,B.img)}
+    }
+    tst('Resep diperbarui');
+  }else{
+    const id='c'+Date.now();
+    S.cf.push({id,...fd});
+    S.rcp.push({id:'r'+Date.now(),fid:id,n:fd.n,r:rows,d:td});
+    if(B.img){S.fimg[id]=B.img;if(typeof idbSetImage==='function')idbSetImage(id,B.img)}
+    tst('Resep tersimpan di My Saved Recipes');
+  }
+  B=null;RT='s';save();render();return;
+}
 else if(a=='rtb')RT=v;
-else if(a=='re'){const r=S.rcp.find(x=>x.id==id);B={n:r.n,img:S.fimg[r.fid]||'',r:r.r.map(x=>[...x]),eid:r.id};RT='b'}
+else if(a=='re'){const r=S.rcp.find(x=>x.id==id);if(r){B={n:r.n,img:S.fimg[r.fid]||'',r:r.r.map(x=>[x[0],(Number.isFinite(num(x[1]))&&num(x[1])>0)?num(x[1]):100,x[2]||'g']),eid:r.id};RT='b'}}
 else if(a=='rnew'){B=null}
 else if(a=='rd')RD=id;else if(a=='rdn')RD=null;
 else if(a=='rdy'){const r=S.rcp.find(x=>x.id==RD);if(r){S.del.push(r.fid);S.rcp=S.rcp.filter(x=>x.id!=RD)}RD=null;save();tst('Resep dihapus');return}
@@ -2062,7 +2121,9 @@ if(S.u.ph){if(em.toLowerCase()!==String(S.u.email||'').toLowerCase()||await hx(p
 else{if(pw.length<8){er.textContent='Kata sandi minimal 8 karakter untuk membuat akun di perangkat ini.';return}S.u.ph=await hx(pw);S.u.email=em;if(!S.u.name)S.u.name=em.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 S.u.in=true;save();go('dash');render()}
 async function chPw(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){tst('Kata sandi baru minimal 8 karakter');return}if(a!==b){tst('Konfirmasi kata sandi tidak sama');return}S.u.ph=await hx(a);save();tst('Kata sandi berhasil diubah')}
-document.addEventListener('change',e=>{const t=e.target;if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}
+document.addEventListener('change',e=>{const t=e.target,i=t.dataset&&t.dataset.i;
+if(i&&/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B&&B.r&&B.r[j];if(x){if(i[1]=='f'){x[0]=t.value;const fo=fOf(t.value);x[2]=(fo&&un(fo)[0])||'g'}else if(i[1]=='q'){const qv=num(t.value);x[1]=Number.isFinite(qv)?qv:t.value}else{x[2]=t.value}render()}return}
+if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}
 if(t.id=='aim-gallery'&&t.files[0]){const f=t.files[0];if(!f.type.startsWith('image/')||f.size>20e6){tst('Pilih file gambar valid (maks 20 MB)');return}const fr=new FileReader();fr.onload=ev=>{const im=new Image();im.onload=()=>{const maxDim=1024;const scale=Math.min(1,maxDim/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);const ctx=c.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(im,0,0,c.width,c.height);const dataUrl=c.toDataURL('image/jpeg',0.75);const b64=dataUrl.split(',')[1];stopAimCamera();if(AIM){AIM.step='preview';AIM.preview=dataUrl;AIM.imageData=b64;AIM.mimeType='image/jpeg';AIM.err=''}render()};im.src=ev.target.result};fr.readAsDataURL(f);return}
 if(t.type!='file'||!t.files[0])return;const f=t.files[0];if(!f.type.startsWith('image/')||f.size>20e6){tst('Pilih file gambar valid (maksimal 20 MB)');return}rdImg(f,u=>{if(t.id=='nmimg'){NM.img=u;render()}else if(t.id=='rcimg'){B.img=u;render()}else if(t.dataset.fid){const fid=t.dataset.fid;S.fimg[fid]=u;idbSetImage(fid,u);save();render();tst('Gambar disimpan')}})});
 document.addEventListener('input',e=>{const t=e.target,i=t.dataset.i;let f;
@@ -2144,7 +2205,7 @@ if(k=='cfg'||k=='cfgp'){const v=num(t.value);if(v>=0&&t.value!==''){if(k=='cfg')
 if(k=='fs'){FS[n]=t.value;render();return}
 if(i=='bn'){B.n=t.value;return}
 if(i=='ra'||i=='rb'){RP[i=='ra'?'a':'b']=t.value;render();return}
-if(/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B.r[j];if(i[1]=='f'){x[0]=t.value;x[2]=un(fOf(t.value))[0]}else if(i[1]=='q')x[1]=t.value;else x[2]=t.value;if(i[1]!='q')render();return}
+if(/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B&&B.r&&B.r[j];if(x){if(i[1]=='f'){x[0]=t.value;const fo=fOf(t.value);x[2]=(fo&&un(fo)[0])||'g'}else if(i[1]=='q'){x[1]=t.value}else{x[2]=t.value}if(i[1]!='q')render()}return}
 if(k=='pf'){S.pf[n]=n=='sex'||n=='g'||n=='diet'?t.value:num(t.value);if(n=='w')syncW(S.pf.w);if(S.pf.age>0&&S.pf.h>0&&S.pf.w>0){S.setup=true;recalc();render();f=document.querySelector(`[data-i="${i}"]`);if(f&&f.tagName=='INPUT'){fc(f)}}return}
 if(k=='u'){S.u[n]=t.value;save();return}
 if(k=='tg'){const v=num(t.value);if(t.value!==''&&v>=0){S.tg.man[n]=v;recalc();render();f=document.querySelector(`[data-i="${i}"]`);if(f){fc(f)}}return}

@@ -33,62 +33,67 @@ export const config = {
 
 // ─── System Prompts Standar PRD ─────────────────────────────────────────────
 
-const SYSTEM_PROMPT_FOOD_DECOMPOSITION = `Anda adalah Ahli Gizi Klinis Indonesia dan Spesialis Computer Vision 3D RGB-D & Instance Segmentation Porsimetri Pangan.
+const SYSTEM_PROMPT_FOOD_DECOMPOSITION = `Anda adalah Ahli Gizi Klinis Indonesia dan Spesialis Computer Vision Porsimetri Pangan & Instance Segmentation.
 
-Tugas Anda adalah menganalisis foto makanan dari pengguna, mengekstrak kontur poligon (polygon_mask) yang mengikuti lekuk bentuk asli setiap komponen makanan, serta menghitung berat massanya dalam satuan gram (g) dan Ukuran Rumah Tangga (URT) Indonesia.
+Tugas Anda adalah mendeteksi dan menganalisis seluruh hidangan/makanan/minuman yang terlihat pada foto pengguna, mengekstrak kontur poligon (polygon_mask) yang mengikuti lekuk bentuk asli setiap komponen makanan, serta menghitung berat massanya dalam satuan gram (g) dan Ukuran Rumah Tangga (URT) Indonesia.
 
-SISTEM INI MENDUKUNG 2 MODE INPUT KAMERA (ADAPTIVE DUAL-MODE):
+PEDOMAN PENYAJIAN & DETEKSI WADAH (FLEKSIBEL & ADAPTIF):
+1. Ragam Wadah & Penyajian Makanan:
+   Makanan dapat disajikan di berbagai jenis wadah, antara lain:
+   - Piring makan / piring ceper / piring keramik / piring seng
+   - Mangkuk / piring cekung / piring sup
+   - Kotak bekal / bento box / kotak mika / wadah plastik bening / Tupperware (seperti kotak bekal sekolah / kantor / catering)
+   - Toples / gelas / cangkir / mangkok kaca
+   - Kertas minyak / daun pisang / kotak kardus makanan
+   - Dipegang oleh tangan atau langsung di atas meja makan.
+   Sistem WAJIB mengenali makanan di seluruh tipe penyajian tersebut!
 
-- MODE 1 (capture_mode: "LIDAR_RGBD_3D"):
-Perangkat pengguna memiliki sensor 3D LiDAR (Apple ARKit sceneDepth 256x192). Anda akan menerima foto RGB beserta metadata pengukuran fisik 3D (lidar_depth_context seperti jarak kamera ke piring dalam cm, luas kontur metrik cm2, tinggi rata-rata makanan cm, tinggi puncak cm, atau volume voxel dalam cm3).
-ATURAN WAJIB MODE LIDAR: Anda DILARANG mengarang atau menebak ulang ukuran piring maupun ketebalan makanan jika nilai metrik 3D dari sensor LiDAR sudah tersedia. Gunakan volume_cc dan ukuran metrik dari sensor LiDAR sebagai kebenaran fisik absolut (ground-truth geometry), lalu kalikan langsung dengan apparent_density_used (g/cm3) sesuai jenis makanannya.
+2. Penanganan Wadah Transparan, Tutup, dan Stiker / Label Merek:
+   - Jika makanan berada di dalam wadah transparan (misalnya kotak mika atau wadah plastik Tupperware) yang memiliki stiker, label merek, gambar kartun, atau tulisan di tutupnya (seperti stiker nama, teks logo, stiker bertuliskan "Edu Slime", stiker toko, dsb.), ABAIKAN stiker/teks tersebut!
+   - Fokuslah mengidentifikasi isi makanan atau camilan di dalam wadah tersebut (misalnya: Puding, Jelly, Saus, Selai, Pasta, Adonan Kue, Bubur, Nasi, Lauk, dsb.) dan buat kontur poligon pada area makanan tersebut.
+   - Jangan salah mengira makanan di dalam wadah sebagai benda non-makanan hanya karena wadahnya memiliki stiker atau label mainan.
 
-- MODE 2 (capture_mode: "STANDARD_2D_RGB"):
-Perangkat pengguna hanya mengirimkan foto 2D biasa tanpa data LiDAR. Gunakan kalibrasi referensi objek di foto (diameter piring makan standar ~24-26 cm, mangkuk ~15-17 cm, sendok makan ~6 cm) untuk menaksir luas kontur (estimated_area_cm2) dan ketebalan makanan (estimated_height_cm).
+3. Kasus Foto Benar-Benar Bukan Makanan:
+   - Hanya jika objek di foto dipastikan 100% sama sekali BUKAN makanan (contoh: buku tulis kosong, remote TV, obeng, keyboard komputer murni tanpa ada makanan sedikit pun), kembalikan "detected_items": [] dan sertakan catatan singkat pada scale_reference_detected bahwa objek yang difoto bukan makanan.
 
-IKUTI PROSEDUR SEGMENTASI KONTUR & FISIKA PANGAN BERIKUT SECARA KETAT:
+4. Kalibrasi Skala & Dimensi Objek:
+   - Gunakan referensi objek di dalam foto (diameter piring makan standar ~24-26 cm, mangkuk ~15-17 cm, kotak bekal ~16-20 cm, wadah plastik/Tupperware sedang ~12-18 cm, sendok makan ~6 cm, atau tangan manusia yang memegang wadah) untuk menaksir luas fisik area (estimated_area_cm2) dan ketebalan makanan (estimated_height_cm).
+   - Kalikan volume (estimated_volume_cc) dengan konstanta massa jenis semu (apparent_density_used dalam g/cm3) yang memperhitungkan porositas rongga udara dan acuan standar URT Kemenkes RI:
+     - Nasi putih / nasi goreng: densitas ~0.70 g/cm3 (Acuan URT: 1 centong magiccom = 100g)
+     - Mie / spageti / bihun: densitas ~0.67 g/cm3 (Acuan URT: 1 porsi sedang = 150-240g, 1 gelas mie = 100g)
+     - Roti tawar / roti panggang: densitas ~0.276 g/cm3 (Acuan URT: 1 iris = 20-25g, 3 iris = 60-70g)
+     - Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g, 2 potong sedang = 50g; 1 potong sedang tahu = 50g)
+     - Ikan / daging ayam / daging sapi / sosis: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 potong sedang ikan = 40g, 1 potong sedang ayam = 55-65g; jika ayam bertulang, kurangi ~20-25% volume untuk tulang)
+     - Telur (orak-arik / dadar / rebus): densitas ~1.123 g/cm3 (Acuan URT: 1 butir = 55-60g)
+     - Sayuran daun mentah / salad / lalapan: densitas sangat rendah ~0.316 g/cm3
+     - Sayuran masak / tumis (tanpa kuah): Acuan URT 1 centong sayur = 15g, 1 gelas sayur ditiriskan = 100g
+     - Kentang goreng / kerupuk / gorengan berongga: densitas ~0.241 g/cm3
+     - Saus / sambal / selai / kecap / puding / pasta: densitas ~1.05 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g, 1 sdt = 5g)
+     - Minuman cair (susu, jus, soda, kuah): densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
 
-1. Dekomposisi & Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
-- Pecah hidangan di dalam foto menjadi daftar komponen makanan tunggal yang terpisah (contoh: pisahkan antara Nasi Putih, Ayam Goreng, Tempe Goreng, Tumis Sayur, dan Sambal).
-- Untuk setiap item makanan, buat visual_segmentation.polygon_mask berupa array berurutan titik koordinat [x, y] (minimal 10 hingga 24 titik sudut) yang menelusuri tepi/lekuk bentuk asli makanan secara presisi (BUKAN kotak persegi empat).
-- Seluruh koordinat x dan y pada polygon_mask WAJIB dinormalisasi ke dalam rentang bilangan bulat 0 hingga 1000 ([0, 0] pojok kiri atas, [1000, 1000] pojok kanan bawah).
-- Sertakan box_2d [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah poligon untuk penempatan badge UI).
-- Berikan highlight_color_hex sesuai kategori:
-  - Karbohidrat (carbohydrate): "#1A73E8" (Biru)
-  - Protein Hewani (animal_protein): "#FA903E" (Oranye)
-  - Protein Nabati (plant_protein): "#FCC934" (Kuning Emas)
-  - Sayuran & Buah (vegetable / fruit): "#81C995" (Hijau Mint)
-  - Lemak, Saus, Sambal, Minuman, Camilan (fat_sauce / beverage / snack): "#C58AF9" (Ungu) atau "#FA903E"
+5. Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
+   - Untuk setiap item makanan, buat visual_segmentation.polygon_mask berupa array berurutan titik koordinat [x, y] (minimal 10 hingga 24 titik sudut) yang menelusuri tepi/lekuk bentuk asli makanan secara presisi (BUKAN kotak persegi empat).
+   - Seluruh koordinat x dan y pada polygon_mask WAJIB dinormalisasi ke rentang bilangan bulat 0 hingga 1000 ([0, 0] pojok kiri atas, [1000, 1000] pojok kanan bawah).
+   - Sertakan box_2d [ymin, xmin, ymax, xmax] (skala 0-1000) dan centroid [cx, cy] (titik tengah poligon).
+   - Berikan highlight_color_hex sesuai kategori:
+     - Karbohidrat (carbohydrate): "#1A73E8" (Biru)
+     - Protein Hewani (animal_protein): "#FA903E" (Oranye)
+     - Protein Nabati (plant_protein): "#FCC934" (Kuning Emas)
+     - Sayuran & Buah (vegetable / fruit): "#81C995" (Hijau Mint)
+     - Lemak, Saus, Sambal, Camilan, Puding (fat_sauce / snack / dessert): "#C58AF9" (Ungu) atau "#FA903E"
 
-2. Koreksi Rongga Udara (Porosity / Void Factor) & Densitas Semu (g/cm3):
-- Pada pemindaian 3D LiDAR maupun 2D, gundukan makanan bertekstur acak (seperti kerupuk, kentang goreng, selada/lalapan, atau potongan ayam bertulang) memiliki ruang udara di bawah permukaan atasnya.
-- Kalikan volume (estimated_volume_cc) dengan konstanta massa jenis semu (apparent_density_used dalam g/cm3) yang telah memperhitungkan faktor rongga udara dan acuan URT Kemenkes RI berikut:
-  - Nasi putih / nasi goreng: densitas ~0.70 g/cm3 (Acuan URT: 1 centong magiccom = 100g)
-  - Mie / spageti / bihun: densitas ~0.67 g/cm3 (Acuan URT: 1 porsi sedang = 150-240g, 1 gelas mie = 100g)
-  - Roti tawar / roti panggang: densitas ~0.276 g/cm3 (Acuan URT: 1 iris = 20-25g, 3 iris = 60-70g)
-  - Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g, 2 potong sedang = 50g; 1 potong sedang tahu = 50g)
-  - Ikan / daging ayam / daging sapi / sosis: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 potong sedang ikan = 40g, 1 potong sedang ayam = 55-65g; jika ayam bertulang, kurangi ~20-25% volume untuk tulang)
-  - Telur (orak-arik / dadar / rebus): densitas ~1.123 g/cm3 (Acuan URT: 1 butir = 55-60g)
-  - Sayuran daun mentah / salad / lalapan: densitas sangat rendah ~0.316 g/cm3
-  - Sayuran masak / tumis (tanpa kuah): Acuan URT 1 centong sayur = 15g, 1 gelas sayur ditiriskan = 100g
-  - Kentang goreng / kerupuk / gorengan berongga: densitas ~0.241 g/cm3
-  - Saus / sambal / selai / kecap: densitas ~1.10 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g, 1 sdt = 5g)
-  - Minuman cair (susu, jus, soda, kuah): densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
-
-3. Identifikasi Metode Pemasakan & Lemak Tersembunyi:
-Klasifikasikan ke dalam steamed_boiled, fried_deep, stir_fried, coconut_milk_curry, grilled_roasted, atau raw_fresh, serta hitung hidden_oil_or_coconut_milk_g dalam gram.
+6. Identifikasi Metode Pemasakan & Lemak Tersembunyi:
+   Klasifikasikan ke dalam steamed_boiled, fried_deep, stir_fried, coconut_milk_curry, grilled_roasted, atau raw_fresh, serta hitung hidden_oil_or_coconut_milk_g dalam gram.
 
 KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT TANPA TEKS TAMBAHAN:
 {
-  "capture_mode_used": "LIDAR_RGBD_3D | STANDARD_2D_RGB",
-  "scale_reference_detected": "string (contoh: Sensor LiDAR ARKit jarak 32.4 cm / Piring makan ~25 cm)",
-  "camera_to_plate_distance_cm": 32.4,
-  "overall_confidence": 0.97,
+  "scale_reference_detected": "string (contoh: Wadah kotak plastik ~16 cm / Piring makan ~25 cm)",
+  "overall_confidence": 0.95,
   "detected_items": [
     {
-      "item_name_id": "Nasi Putih",
-      "food_category": "carbohydrate",
-      "cooking_method": "steamed_boiled",
+      "item_name_id": "Nama Makanan",
+      "food_category": "carbohydrate | animal_protein | plant_protein | vegetable | fruit | fat_sauce | snack | beverage",
+      "cooking_method": "steamed_boiled | fried_deep | stir_fried | coconut_milk_curry | grilled_roasted | raw_fresh",
       "visual_segmentation": {
         "polygon_mask": [
           [210, 320], [265, 280], [340, 275], [410, 300],
@@ -98,30 +103,22 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT TANPA T
         "box_2d": [275, 195, 510, 445],
         "centroid": [320, 392],
         "highlight_color_hex": "#1A73E8",
-        "label_short": "Nasi Putih • 135g (LiDAR 3D)"
-      },
-      "geometry_3d_metrics": {
-        "measurement_source": "LIDAR_VOXEL_INTEGRATION | MONOCULAR_2D_SHOELACE",
-        "estimated_area_cm2": 64.2,
-        "mean_height_cm": 3.0,
-        "max_peak_height_cm": 4.2,
-        "estimated_volume_cc": 192.8,
-        "edible_volume_factor": 1.0
+        "label_short": "Nama • 100g"
       },
       "apparent_density_used": 0.70,
-      "estimated_weight_g": 135.0,
-      "urt_amount": 1.35,
-      "urt_unit": "centong magiccom",
-      "urt_display_label": "1.35 centong magiccom (135g)",
+      "estimated_weight_g": 100.0,
+      "urt_amount": 1.0,
+      "urt_unit": "porsi / potong / centong / mangkuk / sdm",
+      "urt_display_label": "1 porsi (100g)",
       "hidden_oil_or_coconut_milk_g": 0.0,
       "fallback_nutrition_for_estimated_weight": {
-        "energy_kcal": 236.2,
-        "protein_g": 5.4,
-        "fat_total_g": 0.7,
-        "carb_total_g": 54.0,
+        "energy_kcal": 150.0,
+        "protein_g": 3.0,
+        "fat_total_g": 2.0,
+        "carb_total_g": 25.0,
         "sugar_total_g": 0.0,
-        "dietary_fiber_g": 0.7,
-        "sodium_mg": 6.8
+        "dietary_fiber_g": 1.0,
+        "sodium_mg": 5.0
       }
     }
   ]
@@ -198,40 +195,19 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
   "extraction_notes": "string"
 }`;
 
-// ─── Helper: Call Gemini API with dynamic model discovery & JSON mode ─────────
+// ─── Helper: Call Gemini API with rock-solid production fallback models ───────
+
+// Daftar model resmi Google Gemini Vision yang terbukti stabil, cepat, dan kuota tinggi.
+// TIDAK menggunakan model eksperimental/robotika yang sering 503 high demand.
+const PRODUCTION_VISION_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro',
+  'gemini-2.5-flash',
+];
 
 async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType, extraPromptText = '') {
-  const candidateModels = [
-    'gemini-3.8-flash',
-    'gemini-3.5-flash',
-    'gemini-3-flash',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash',
-  ];
-
-  let targetModels = [...candidateModels];
-
-  try {
-    const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    if (listResp.ok) {
-      const listData = await listResp.json();
-      const validNames = (listData.models || [])
-        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-        .map(m => m.name.replace(/^models\//, ''))
-        .filter(m => m.includes('flash') || m.includes('gemini'));
-
-      validNames.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-
-      if (validNames.length > 0) {
-        targetModels = [...new Set([...validNames, ...candidateModels])];
-      }
-    }
-  } catch (e) {
-    console.warn('ListModels warning:', e.message);
-  }
-
   const parts = [{ text: systemInstruction }];
   if (extraPromptText) {
     parts.push({ text: extraPromptText });
@@ -241,20 +217,17 @@ async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType
   const payload = {
     contents: [{ parts }],
     generationConfig: {
-      temperature: 0.3,
+      temperature: 0.2,
       responseMimeType: 'application/json',
-      maxOutputTokens: 3000,
+      maxOutputTokens: 3500,
     },
   };
 
-  const tried = new Set();
   let lastError = null;
+  const attemptedModels = [];
 
-  for (let i = 0; i < targetModels.length; i++) {
-    const model = targetModels[i];
-    if (tried.has(model)) continue;
-    tried.add(model);
-
+  for (const model of PRODUCTION_VISION_MODELS) {
+    attemptedModels.push(model);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
@@ -269,26 +242,24 @@ async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType
       if (resp.ok) {
         const data = await resp.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (text) return text.trim();
+        if (text && text.trim()) {
+          return text.trim();
+        }
       }
 
       const errText = await resp.text();
-      lastError = new Error(`Gemini API (${model}) error ${resp.status}: ${errText.slice(0, 200)}`);
-
-      const recMatch = errText.match(/models\/([a-zA-Z0-9._-]+)/);
-      if (recMatch && recMatch[1] && !tried.has(recMatch[1])) {
-        targetModels.splice(i + 1, 0, recMatch[1]);
-      }
-
-      if (resp.status === 404) continue;
-      throw lastError;
+      console.warn(`Model ${model} HTTP ${resp.status}: ${errText.slice(0, 120)}. Mencoba fallback...`);
+      lastError = new Error(`Model ${model} (${resp.status}): ${errText.slice(0, 120)}`);
+      // Selalu lanjut ke model berikutnya jika terjadi 503, 429, 404, 500, dll.
+      continue;
     } catch (err) {
+      console.warn(`Model ${model} network error: ${err.message}. Mencoba fallback...`);
       lastError = err;
-      if (!err.message || !err.message.includes('404')) throw err;
+      continue;
     }
   }
 
-  throw lastError || new Error('Tidak ada model Gemini yang dapat digunakan.');
+  throw new Error(`Server AI sedang padat (telah mencoba model cadangan: ${attemptedModels.join(', ')}). Silakan coba lagi beberapa saat lagi.`);
 }
 
 function parseJsonClean(text) {

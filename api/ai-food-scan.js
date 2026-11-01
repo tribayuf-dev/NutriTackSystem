@@ -197,22 +197,21 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
 
 // ─── Helper: Call Gemini API with rock-solid production fallback models ───────
 
-// Daftar model resmi Google Gemini Vision yang terbukti stabil, cepat, dan kuota tinggi.
-// TIDAK menggunakan model eksperimental/robotika yang sering 503 high demand.
-const PRODUCTION_VISION_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro',
-  'gemini-2.5-flash',
-];
-
 async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType, extraPromptText = '') {
+  // Bersihkan base64 image dan tentukan mime-type yang valid
+  const cleanBase64 = String(base64Image || '').replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
+  const cleanMimeType = (mimeType && mimeType.includes('/')) ? mimeType : 'image/jpeg';
+
   const parts = [{ text: systemInstruction }];
   if (extraPromptText) {
     parts.push({ text: extraPromptText });
   }
-  parts.push({ inline_data: { mime_type: mimeType || 'image/jpeg', data: base64Image } });
+  parts.push({
+    inline_data: {
+      mime_type: cleanMimeType,
+      data: cleanBase64,
+    },
+  });
 
   const payload = {
     contents: [{ parts }],
@@ -223,18 +222,62 @@ async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType
     },
   };
 
-  let lastError = null;
-  const attemptedModels = [];
+  // Prioritas model visi produksi yang terbukti paling stabil & berkuota tinggi
+  const PRIORITY_MODELS = [
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro',
+    'gemini-1.5-pro-latest',
+  ];
 
-  for (const model of PRODUCTION_VISION_MODELS) {
-    attemptedModels.push(model);
+  let candidateModels = [...PRIORITY_MODELS];
+
+  // Coba query ListModels dari Google untuk mendeteksi model yang aktif di akun pengguna
+  try {
+    const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (listResp.ok) {
+      const listData = await listResp.json();
+      const validNames = (listData.models || [])
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        // Saring: abaikan model eksperimental robotika yang sering 503, embedding, imagen, dsb.
+        .filter(m => !m.includes('robotics') && !m.includes('embedding') && !m.includes('aqa') && !m.includes('imagen') && !m.includes('tts'));
+
+      if (validNames.length > 0) {
+        // Susun urutan: utamakan model dari PRIORITY_MODELS yang tersedia di akun
+        const activePriority = PRIORITY_MODELS.filter(p => validNames.includes(p));
+        // Tambahkan model lain dari validNames yang ada kata flash / pro / gemini
+        const otherActive = validNames.filter(m => !activePriority.includes(m) && (m.includes('flash') || m.includes('pro') || m.includes('gemini')));
+        candidateModels = [...activePriority, ...otherActive];
+      }
+    }
+  } catch (e) {
+    console.warn('ListModels warning:', e.message);
+  }
+
+  // Jika daftar kosong, gunakan model default
+  if (!candidateModels.length) {
+    candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro'];
+  }
+
+  let lastError = null;
+  const attemptedErrors = [];
+
+  for (const model of candidateModels) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      // PENTING: Gunakan authentication key HANYA melalui query parameter ?key=
+      // DILARANG mengirimkan header 'x-goog-api-key' secara bersamaan karena memicu error 400 "Multiple authentication credentials received"
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
         },
         body: JSON.stringify(payload),
       });
@@ -248,18 +291,22 @@ async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType
       }
 
       const errText = await resp.text();
-      console.warn(`Model ${model} HTTP ${resp.status}: ${errText.slice(0, 120)}. Mencoba fallback...`);
-      lastError = new Error(`Model ${model} (${resp.status}): ${errText.slice(0, 120)}`);
-      // Selalu lanjut ke model berikutnya jika terjadi 503, 429, 404, 500, dll.
+      console.warn(`Model ${model} HTTP ${resp.status}: ${errText.slice(0, 160)}. Mencoba fallback...`);
+      lastError = new Error(`Model ${model} (${resp.status}): ${errText.slice(0, 160)}`);
+      attemptedErrors.push(`${model} [${resp.status}]`);
+      // Lanjut coba model berikutnya
       continue;
     } catch (err) {
       console.warn(`Model ${model} network error: ${err.message}. Mencoba fallback...`);
       lastError = err;
+      attemptedErrors.push(`${model} [network: ${err.message}]`);
       continue;
     }
   }
 
-  throw new Error(`Server AI sedang padat (telah mencoba model cadangan: ${attemptedModels.join(', ')}). Silakan coba lagi beberapa saat lagi.`);
+  // Jika seluruh model gagal, laporkan detail error sebenarnya (bukan pesan terselubung)
+  const detailMsg = lastError ? lastError.message : 'Semua model gagal merespons.';
+  throw new Error(`Gagal menghubungi AI Vision: ${detailMsg} (Percobaan: ${attemptedErrors.join(', ')}).`);
 }
 
 function parseJsonClean(text) {

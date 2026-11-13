@@ -208,8 +208,63 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
 
 /**
  * 1. Google Gemini Vision Call
- * Menggunakan direct model call tanpa query ListModels berlebih, dengan timeout per model.
+ * Menggunakan auto-discovery model aktif dari akun dengan caching 30 menit & fallback valid.
  */
+let _cachedGeminiModels = null;
+let _lastGeminiListFetch = 0;
+
+async function getValidGeminiModels(apiKey) {
+  const now = Date.now();
+  if (_cachedGeminiModels && (now - _lastGeminiListFetch < 30 * 60 * 1000)) {
+    return _cachedGeminiModels;
+  }
+
+  // Model prioritas dengan nama yang VALID di Google Generative Language v1beta
+  const PRIORITY_ORDER = [
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-002',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash-8b-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-pro-002',
+  ];
+
+  try {
+    const controller = new AbortController();
+    const tId = setTimeout(() => controller.abort(), 3500); // Max 3.5s timeout
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(tId);
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const validNames = (data.models || [])
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(m => !m.includes('robotics') && !m.includes('embedding') && !m.includes('aqa') && !m.includes('imagen') && !m.includes('tts'));
+
+      if (validNames.length > 0) {
+        const matched = PRIORITY_ORDER.filter(p => validNames.includes(p));
+        const rest = validNames.filter(m => !matched.includes(m) && (m.includes('flash') || m.includes('pro')));
+        _cachedGeminiModels = [...matched, ...rest];
+        _lastGeminiListFetch = now;
+        return _cachedGeminiModels;
+      }
+    }
+  } catch (err) {
+    console.warn('[Gemini] ListModels query notice:', err.message);
+  }
+
+  _cachedGeminiModels = PRIORITY_ORDER;
+  _lastGeminiListFetch = now;
+  return _cachedGeminiModels;
+}
+
 async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
   const parts = [{ text: systemInstruction }];
   if (extraPromptText) parts.push({ text: extraPromptText });
@@ -229,15 +284,10 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
     },
   };
 
-  const GEMINI_MODELS = [
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-1.5-pro',
-  ];
+  const candidateModels = await getValidGeminiModels(apiKey);
+  const attemptedErrors = [];
 
-  let lastError = null;
-  for (const model of GEMINI_MODELS) {
+  for (const model of candidateModels) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s per model
     try {
@@ -259,15 +309,21 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       }
 
       const errText = await resp.text();
-      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+      attemptedErrors.push(`${model} [${resp.status}]`);
+      console.warn(`[Gemini] Model ${model} HTTP ${resp.status}: ${errText.slice(0, 100)}`);
+      // Jika error 429 (Quota/Rate Limit), kuota per menit akun sedang habis
+      // Segera batasi percobaan agar cascade ke OpenAI/Groq dapat langsung bekerja
+      if (resp.status === 429 && attemptedErrors.length >= 2) {
+        break;
+      }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? `${model} timeout (10s)` : err.message;
-      lastError = new Error(`${model} err: ${msg}`);
+      const msg = err.name === 'AbortError' ? 'timeout 10s' : err.message;
+      attemptedErrors.push(`${model} [${msg}]`);
     }
   }
 
-  throw lastError || new Error('Seluruh model Gemini gagal merespons.');
+  throw new Error(`Model Gemini gagal: ${attemptedErrors.slice(0, 4).join(', ')}`);
 }
 
 /**
@@ -559,23 +615,24 @@ async function callVisionCascade({
   base64Image,
   mimeType,
   extraPromptText = '',
+  custom_keys = {},
 }) {
   const startTime = Date.now();
   const cleanBase64 = String(base64Image || '').replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
   const cleanMimeType = (mimeType && mimeType.includes('/')) ? mimeType : 'image/jpeg';
 
   const keys = {
-    gemini: process.env.GEMINI_API_KEY,
-    openai: process.env.OPENAI_API_KEY,
-    groq: process.env.GROQ_API_KEY,
-    anthropic: process.env.ANTHROPIC_API_KEY,
-    openrouter: process.env.OPENROUTER_API_KEY,
+    gemini: String(custom_keys?.gemini || process.env.GEMINI_API_KEY || '').trim(),
+    openai: String(custom_keys?.openai || process.env.OPENAI_API_KEY || '').trim(),
+    groq: String(custom_keys?.groq || process.env.GROQ_API_KEY || '').trim(),
+    anthropic: String(custom_keys?.anthropic || process.env.ANTHROPIC_API_KEY || '').trim(),
+    openrouter: String(custom_keys?.openrouter || process.env.OPENROUTER_API_KEY || '').trim(),
   };
 
   const availableProviders = Object.keys(keys).filter(k => !!keys[k]);
   if (availableProviders.length === 0) {
     throw new Error(
-      'Tidak ada API Key AI Vision yang dikonfigurasi. Harap pasang minimal satu dari: ' +
+      'Tidak ada API Key AI Vision yang dikonfigurasi. Harap pasang API key melalui tombol "⚙️ Kunci API" atau setel minimal satu dari: ' +
       'GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, atau ANTHROPIC_API_KEY pada Environment Variables Vercel.'
     );
   }
@@ -591,6 +648,12 @@ async function callVisionCascade({
     for (const p of availableProviders) {
       if (p !== req) providerPlan.push(p);
     }
+  } else if (req !== 'auto' && !availableProviders.includes(req)) {
+    // Pengguna secara spesifik memilih provider yang kuncinya belum diisi
+    throw new Error(
+      `Kunci API untuk ${getProviderDisplayName(req)} belum terpasang. ` +
+      `Silakan masukkan API Key di menu "⚙️ Kunci API" atau atur ${req.toUpperCase()}_API_KEY di Environment Variables Vercel.`
+    );
   } else {
     // Mode Auto: coba Gemini dulu jika tersedia, jika sibuk cascade ke OpenAI -> Groq -> Anthropic -> OpenRouter
     const defaultOrder = ['gemini', 'openai', 'groq', 'anthropic', 'openrouter'];
@@ -715,6 +778,7 @@ export default async function handler(req, res) {
     image,
     mimeType,
     provider = 'auto',
+    custom_keys = {},
     capture_mode = 'STANDARD_2D_RGB',
     depth_map_256x192 = null,
     confidence_map = null,
@@ -749,6 +813,7 @@ ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (grou
         base64Image: image,
         mimeType: mimeType,
         extraPromptText: extraContext,
+        custom_keys,
       });
 
       let step1Output;
@@ -1017,6 +1082,7 @@ ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (grou
         systemInstruction: SYSTEM_PROMPT_LABEL_OCR,
         base64Image: image,
         mimeType: mimeType,
+        custom_keys,
       });
 
       let ocrExtracted;

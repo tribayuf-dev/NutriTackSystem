@@ -756,7 +756,48 @@ seen.add(key);out.ok.push({n:nm,cat,src:String(o.sumber||'Impor').slice(0,40),st
 function doImp(rp){const r=parseImp(IM.f,IM.txt),nw=r.ok.filter(x=>!x.rep),ex=r.ok.filter(x=>x.rep),use=rp?r.ok:nw;if(!use.length){IM.res=r;return false}S.mic=S.mic||{};S.ov=S.ov||{};let a=0,b=0;use.forEach((x,j)=>{const{mic,img,rep,d,...f}=x;let id;if(rep){id=rep;const i=S.cf.findIndex(z=>z.id==rep);if(i>=0)S.cf[i]={...S.cf[i],...f,...(d?{d}:{}),v:(S.cf[i].v||1)+1};else S.ov[rep]={...(S.ov[rep]||{}),...f,...(d?{d}:{}),v:((S.ov[rep]||{}).v||(fOf(rep)&&fOf(rep).v)||1)+1};b++}else{id='c'+Date.now()+'_'+j;S.cf.push({id,...f,d:d||null,v:1});a++}if(img)S.fimg[id]=img;if(mic)S.mic[id]=mic});IM=null;save();tst(a+' item baru diimpor'+(b?', '+b+' ditimpa':'')+(!rp&&ex.length?', '+ex.length+' yang sudah ada dilewati':'')+(r.skip.length?', '+r.skip.length+' kembar dalam file dilewati':'')+(r.bad.length?', '+r.bad.length+' bermasalah':''));return true}
 function vImp(){const r=IM.res,nw=r&&r.ok?r.ok.filter(x=>!x.rep).length:0,ei=r&&r.ok?r.ok.length-nw:0,cd=(l,v,c)=>`<div class="card" style="padding:10px;background:var(--tk)"><div class="mu text-xs">${l}</div><b class="text-xl" style="color:${c||'var(--tx)'}">${v}</b></div>`;
 return`<div class="ov"><div class="card w-full max-w-2xl overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-3"><b>Impor Data Makanan</b><button data-a="imx" aria-label="Tutup">✕</button></div><div class="flex gap-2 mb-3"><button class="chip ${IM.f=='json'?'on':''}" data-a="imt" data-v="json">JSON</button><button class="chip ${IM.f=='csv'?'on':''}" data-a="imt" data-v="csv">CSV</button></div><p class="mu text-sm mb-2">Nilai nutrisi dihitung per 100 g. Item yang namanya sudah ada di Food Database dapat dilewati atau ditimpa (pilih saat mengimpor). Item impor berstatus Belum diverifikasi, Estimasi, atau Buatan sendiri. Berkas master (food-master.json) atau Cadangan lama dikenali otomatis dan mempertahankan status serta sumber aslinya. Kolom mikronutrien (besi, kalsium, seng, magnesium, kalium, vit_a, vit_d, vit_e, vit_k, vit_c, vit_b12, folat, besi_heme_persen) dan sifat penyerapan (sumber_protein, fitat, oksalat, polifenol) bersifat opsional.</p><div class="flex flex-wrap gap-2 mb-3"><button class="gh" data-a="imu">Gunakan Template</button><button class="gh" data-a="imy">Salin Template</button><label class="gh cursor-pointer">Pilih File<input type="file" id="imf" accept=".json,.csv,.txt,text/csv,application/json" style="display:none"></label></div><textarea class="inp text-xs" rows="9" data-i="im-txt" placeholder="Tempel ${IM.f.toUpperCase()} di sini atau pilih file..." style="font-family:ui-monospace,monospace">${esc(IM.txt)}</textarea><button class="btn mt-3" data-a="imc">Periksa Data</button>${r?(r.fatal?`<div class="text-sm mt-3" style="color:var(--P)">${esc(r.fatal)}</div>`:`<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">${cd('Total baris',r.total)}${cd('Item baru',nw,'var(--pr)')}${cd('Sudah ada',ei,'var(--C)')}${cd('Bermasalah',r.bad.length,r.bad.length?'var(--P)':'')}</div>${r.skip.length?`<div class="mu text-xs mt-2">Nama kembar di dalam file (dilewati): ${esc(r.skip.slice(0,6).join(', '))}${r.skip.length>6?' dan '+(r.skip.length-6)+' lainnya':''}</div>`:''}${r.bad.slice(0,8).map(x=>`<div class="text-xs mt-1" style="color:var(--P)">${esc(x)}</div>`).join('')}${r.bad.length>8?`<div class="mu text-xs">dan ${r.bad.length-8} masalah lainnya</div>`:''}${r.note.slice(0,4).map(x=>`<div class="mu text-xs mt-1">${esc(x)}</div>`).join('')}${r.chk?`<div class="mu text-xs mt-1">${r.chk} item punya kalori yang tidak sesuai dengan protein, karbohidrat, dan lemak (tetap diimpor, mohon dicek).</div>`:''}${r.img?`<div class="mu text-xs mt-1">${r.img} gambar diabaikan (harus berupa data gambar dan kurang dari sekitar 500 KB).</div>`:''}<div class="grid sm:grid-cols-2 gap-2 mt-4"><button class="btn justify-center" data-a="imd" ${nw?'':'disabled'}>Impor ${nw} Item Baru, Lewati ${ei} yang Ada</button><button class="btn justify-center" style="background:var(--C);color:#1d1200" data-a="imr" ${r.ok.length?'':'disabled'}>Impor &amp; Timpa ${ei} yang Ada</button></div><p class="mu text-xs mt-2">Timpa mengganti kategori, sumber, status, porsi, dan nilai nutrisi item yang namanya sama. Gambar dan mikronutrien lama dipertahankan bila file tidak menyertakannya. Catatan di Food Journal tidak berubah.</p>`):''}</div></div>`}
-function vModal(){if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
+let AIM_KEYS_MODAL = false;
+
+function renderAimKeysModal() {
+  if (!AIM_KEYS_MODAL) return '';
+  let k = {};
+  try { k = JSON.parse(localStorage.getItem('nutritrack_custom_ai_keys') || '{}'); } catch(e){}
+  return `<div class="ov" role="dialog" aria-modal="true" style="z-index:115">
+    <div class="card w-full max-w-sm p-4" style="border-radius:20px;max-height:calc(100vh - 48px);overflow:auto">
+      <div class="flex justify-between items-center mb-2">
+        <b class="text-base flex items-center gap-1.5">${MS('key',18)} Kunci API AI Mandiri</b>
+        <button class="ib" data-a="aimkeysx">${MS('close',18)}</button>
+      </div>
+      <p class="mu text-xs mb-3">Masukkan API key Anda sendiri jika ingin menggunakan OpenAI (GPT-4o-mini) atau Groq secara langsung tanpa bergantung pada kuota server bersama. Kunci tersimpan 100% aman di browser lokal Anda.</p>
+      
+      <div class="space-y-2.5 text-xs mb-4">
+        <div>
+          <label class="font-semibold block mb-1">OpenAI API Key (sk-…)</label>
+          <input class="inp w-full font-mono text-xs" type="password" id="aim-key-openai" value="${esc(k.openai||'')}" placeholder="sk-proj-...">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Groq API Key (gsk_…)</label>
+          <input class="inp w-full font-mono text-xs" type="password" id="aim-key-groq" value="${esc(k.groq||'')}" placeholder="gsk_...">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Google Gemini API Key (AIza…)</label>
+          <input class="inp w-full font-mono text-xs" type="password" id="aim-key-gemini" value="${esc(k.gemini||'')}" placeholder="Opsional (ganti key bawaan)">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Anthropic Claude Key (sk-ant-…)</label>
+          <input class="inp w-full font-mono text-xs" type="password" id="aim-key-anthropic" value="${esc(k.anthropic||'')}" placeholder="sk-ant-...">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="gh flex-1 justify-center" data-a="aimkeysx">Batal</button>
+        <button class="btn flex-1 justify-center" data-a="aimkeyssave" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">${MS('save',16)} <b>Simpan Kunci</b></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function vModal(){if(AIM_KEYS_MODAL)return renderAimKeysModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
 if(DF)return cm('Hapus item makanan?','Item dihapus dari Food Database dan tidak muncul lagi saat mencatat makanan. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','dfy','dfn');if(RD)return cm('Hapus resep?','Resep dan menu terkait di Food Database akan dihapus. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','rdy','rdn');if(CF)return cm('Hapus catatan makanan?','Data yang dihapus tidak dapat dikembalikan.','Hapus','cy','cn');if(RC)return cm('Reset data?','Seluruh catatan, target, resep, dan pengaturan akan dikosongkan, dan Food Database kembali ke master awal. Akun login tetap. Disarankan mengunduh cadangan terlebih dahulu.','Reset','rcy','rcn');
 if(CPM){const c=CPM,mnm=MEALS.find(m=>m[0]==c.m)[1],tg=`<div class="grid grid-cols-2 gap-2 mt-3"><input class="inp" id="cd" type="date" max="${td}" value="${c.d}"><select class="inp" id="ctm">${MEALS.map(m=>`<option value="${m[0]}" ${m[0]==c.tm?'selected':''}>${m[1]}</option>`).join('')}</select></div>`,err=c.e?`<div class="text-sm mt-2" style="color:var(--P)">${c.e}</div>`:'';
 return`<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-2"><b>${c.t=='copy'?'Salin '+mnm:c.t=='save'?'Simpan sebagai Template':'Pakai Template'}</b><button data-a="cpx" aria-label="Tutup">✕</button></div>${c.t=='copy'?`<p class="mu text-sm">Salin semua item ${mnm} pada ${fD(D)} ke tanggal dan waktu makan tujuan.</p>${tg}${err}<button class="btn w-full justify-center mt-4" data-a="cmy">Salin</button>`:c.t=='save'?`<p class="mu text-sm">Simpan item ${mnm} hari ini sebagai template untuk dipakai ulang.</p><input class="inp mt-3" id="cn" maxlength="40" placeholder="Nama template (mis. Sarapan Biasa)" value="${esc(c.name)}">${err}<button class="btn w-full justify-center mt-4" data-a="stz">Simpan Template</button>`:`<p class="mu text-sm">Pilih tujuan, lalu template yang akan dipakai. Nilai gizi sesuai saat template disimpan.</p>${tg}${err}<div class="mt-3">${S.tpl.map(t=>{const k=t.items.reduce((a,x)=>a+(x.sn?x.sn.k:0),0);return`<div class="flex items-center gap-2 py-2" style="border-top:1px solid var(--ln)"><div class="flex-1 min-w-0"><b class="text-sm block truncate">${esc(t.name)}</b><span class="mu text-xs">${t.items.length} item · ${n0(k)} kkal</span></div><button class="btn" style="padding:6px 12px" data-a="tpy" data-id="${t.id}">Pakai</button><button class="ib dl" data-a="tpd" data-id="${t.id}" aria-label="Hapus template">${MS('delete',18)}</button></div>`}).join('')||'<div class="mu text-sm">Belum ada template.</div>'}</div>`}</div></div>`}
@@ -1155,7 +1196,10 @@ function vAim(){
     <div class="card p-2.5 mb-3" style="background:var(--tk);border:1px solid rgba(124,58,237,0.18);border-radius:12px">
       <div class="flex items-center justify-between text-xs mb-1.5">
         <span class="mu font-semibold flex items-center gap-1">${MS('bolt',15)} Mesin AI Vision:</span>
-        <span class="text-[10.5px] px-2 py-0.5 rounded-full font-mono font-bold" style="background:rgba(124,58,237,0.14);color:#7c3aed">${getAimProviderName(curProv)}</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10.5px] px-2 py-0.5 rounded-full font-mono font-bold" style="background:rgba(124,58,237,0.14);color:#7c3aed">${getAimProviderName(curProv)}</span>
+          <button class="chip text-[10px] py-0.5 px-2 font-medium" data-a="aimkeysmodal" title="Atur Kunci API Pribadi">${MS('key',13)} Kunci</button>
+        </div>
       </div>
       <div class="grid grid-cols-3 gap-1 text-xs">
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='auto'?'on':''}" data-a="aimprovider" data-v="auto" title="Cascade Otomatis: Gemini → OpenAI → Groq → Claude">⚡ Auto</button>
@@ -1173,7 +1217,10 @@ function vAim(){
       <div class="flex-1">
         <b>Gagal Menganalisis:</b>
         <div class="mt-0.5 leading-relaxed">${esc(a.err)}</div>
-        <div class="mt-1.5 text-[11px] text-gray-600 dark:text-gray-300">💡 <i>Tips: Jika server AI sedang padat, Anda bisa memilih <b>⚡ Auto</b> atau <b>🧠 OpenAI</b> di atas lalu klik tombol coba lagi.</i></div>
+        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+          <button class="btn text-[11px] py-1 px-2.5 font-semibold" data-a="aimkeysmodal" style="background:#dc2626;color:#fff">${MS('key',13)} Atur Kunci API Sendiri</button>
+          <span class="text-[11px] text-gray-600 dark:text-gray-300">atau pilih mesin AI lain di atas.</span>
+        </div>
       </div>
     </div>` : `<p class="mu text-xs text-center mb-3">Mode: <b>${a.mode==='food'?'Two-Step Porsimetri Makanan (AI Vision)':'OCR Tabel Nilai Gizi BPOM'}</b></p>`}
 
@@ -1753,12 +1800,15 @@ async function runAimAnalysis(){
   render();
   startAimProgress(AIM.mode);
   try{
+    let customKeys = {};
+    try { customKeys = JSON.parse(localStorage.getItem('nutritrack_custom_ai_keys') || '{}'); } catch(e){}
     const chosenProvider = S.aiProvider || localStorage.getItem('nutritrack_ai_provider') || 'auto';
     const payload = {
       mode: AIM.mode,
       image: AIM.imageData,
       mimeType: AIM.mimeType,
-      provider: chosenProvider
+      provider: chosenProvider,
+      custom_keys: customKeys
     };
 
     const controller = new AbortController();
@@ -2382,6 +2432,20 @@ else if(a=='aimflip'){_aimCamFacing=(_aimCamFacing==='user')?'environment':'user
 else if(a=='aimcap'){captureAimPhoto();return}
 else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode,bc=AIM.barcode;AIM=null;openAimScan(m,bc)}return}
 else if(a=='aimprovider'){S.aiProvider=v;try{localStorage.setItem('nutritrack_ai_provider',v)}catch(e){}render();return}
+else if(a=='aimkeysmodal'){AIM_KEYS_MODAL=true;render();return}
+else if(a=='aimkeysx'){AIM_KEYS_MODAL=false;render();return}
+else if(a=='aimkeyssave'){
+  const op = ($('#aim-key-openai')?.value || '').trim();
+  const gr = ($('#aim-key-groq')?.value || '').trim();
+  const gm = ($('#aim-key-gemini')?.value || '').trim();
+  const an = ($('#aim-key-anthropic')?.value || '').trim();
+  const custom = { openai: op, groq: gr, gemini: gm, anthropic: an };
+  try { localStorage.setItem('nutritrack_custom_ai_keys', JSON.stringify(custom)); } catch(e){}
+  AIM_KEYS_MODAL=false;
+  tst('Kunci API tersimpan di browser!');
+  render();
+  return;
+}
 else if(a=='aimanalyze'){runAimAnalysis();return}
 else if(a=='aimsave'){saveAimFoodJournal();return}
 else if(a=='aimsavelabel'){saveAimLabel();return}

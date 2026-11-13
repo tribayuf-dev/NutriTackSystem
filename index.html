@@ -865,6 +865,17 @@ function getAimColorHex(category, idx = 0) {
   return AIM_COLORS[idx % AIM_COLORS.length].stroke;
 }
 
+function getAimProviderName(code) {
+  switch (code) {
+    case 'gemini': return 'Google Gemini';
+    case 'openai': return 'OpenAI (GPT-4o-mini)';
+    case 'groq': return 'Groq (Llama 3.2 Vision)';
+    case 'anthropic': return 'Anthropic Claude';
+    case 'openrouter': return 'OpenRouter';
+    default: return 'Auto (Cascade)';
+  }
+}
+
 function getAimDefaultBox(idx, total) {
   if (total <= 1) return [180, 180, 820, 820];
   if (total === 2) {
@@ -1134,16 +1145,34 @@ function vAim(){
   }
   // ── STEP: preview (after capture) ─────────────────────────────────────────
   if(a.step==='preview'){
+    const curProv = S.aiProvider || localStorage.getItem('nutritrack_ai_provider') || 'auto';
     return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)">
     <div class="flex justify-between items-center mb-3"><b class="text-lg">Konfirmasi Foto</b><button class="ib" data-a="aimx">${MS('close',20)}</button></div>
-    <img src="${a.preview}" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:var(--tk);margin-bottom:12px">
+    <img src="${a.preview}" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:var(--tk);margin-bottom:10px">
     
+    <!-- AI Engine Selector -->
+    <div class="card p-2.5 mb-3" style="background:var(--tk);border:1px solid rgba(124,58,237,0.18);border-radius:12px">
+      <div class="flex items-center justify-between text-xs mb-1.5">
+        <span class="mu font-semibold flex items-center gap-1">${MS('bolt',15)} Mesin AI Vision:</span>
+        <span class="text-[10.5px] px-2 py-0.5 rounded-full font-mono font-bold" style="background:rgba(124,58,237,0.14);color:#7c3aed">${getAimProviderName(curProv)}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-1 text-xs">
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='auto'?'on':''}" data-a="aimprovider" data-v="auto" title="Cascade Otomatis: Gemini → OpenAI → Groq → Claude">⚡ Auto</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='gemini'?'on':''}" data-a="aimprovider" data-v="gemini" title="Google Gemini 2.0 Flash / 1.5">🌐 Gemini</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='openai'?'on':''}" data-a="aimprovider" data-v="openai" title="OpenAI GPT-4o-mini (Cepat & Stabil)">🧠 OpenAI</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='groq'?'on':''}" data-a="aimprovider" data-v="groq" title="Groq Llama 3.2 Vision (Sub-detik)">⚡ Groq</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='anthropic'?'on':''}" data-a="aimprovider" data-v="anthropic" title="Anthropic Claude 3.5">🎭 Claude</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='openrouter'?'on':''}" data-a="aimprovider" data-v="openrouter" title="OpenRouter Multimodel">🔀 Router</button>
+      </div>
+    </div>
+
     ${a.err ? `
-    <div class="card p-3 mb-3 text-xs flex items-start gap-2" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#dc2626">
+    <div class="card p-3 mb-3 text-xs flex items-start gap-2" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#dc2626;border-radius:10px">
       ${MS('error_outline',18)}
       <div class="flex-1">
         <b>Gagal Menganalisis:</b>
-        <div class="mt-0.5">${esc(a.err)}</div>
+        <div class="mt-0.5 leading-relaxed">${esc(a.err)}</div>
+        <div class="mt-1.5 text-[11px] text-gray-600 dark:text-gray-300">💡 <i>Tips: Jika server AI sedang padat, Anda bisa memilih <b>⚡ Auto</b> atau <b>🧠 OpenAI</b> di atas lalu klik tombol coba lagi.</i></div>
       </div>
     </div>` : `<p class="mu text-xs text-center mb-3">Mode: <b>${a.mode==='food'?'Two-Step Porsimetri Makanan (AI Vision)':'OCR Tabel Nilai Gizi BPOM'}</b></p>`}
 
@@ -1156,9 +1185,11 @@ function vAim(){
   }
   // ── STEP: analyzing ────────────────────────────────────────────────────────
   if(a.step==='analyzing'){
+    const curProv = S.aiProvider || localStorage.getItem('nutritrack_ai_provider') || 'auto';
     return `<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-sm text-center py-8">
     <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff">${MS('auto_awesome',32)}</div>
     <b class="text-lg block mb-1">AI Sedang Menganalisis…</b>
+    <div class="text-xs font-mono font-medium mb-2" style="color:var(--pr)">Mesin: ${esc(getAimProviderName(curProv))}</div>
     <p class="mu text-sm">${a.mode==='food'?'Segmentasi kontur makanan, estimasi porsi, dan kalori makronutrisi…':'Mengekstrak teks ING, konversi basis 100g, dan validasi BPOM…'}</p>
     <div class="sk mt-4" style="width:75%;margin:16px auto 0"></div>
     <div class="sk mt-2" style="width:50%;margin:0 auto"></div></div></div>`;
@@ -1181,9 +1212,10 @@ function vAim(){
     <div class="flex justify-between items-start mb-2">
       <div>
         <b class="text-lg">Konfirmasi Porsimetri Makanan</b>
-        <div class="mu text-xs mt-0.5 flex items-center gap-2">
+        <div class="mu text-xs mt-0.5 flex flex-wrap items-center gap-2">
           <span>📏 ${esc(a.scaleRef || 'Piring / Wadah Standar')}</span>
           <span>• Akurasi: ~${Math.round((a.confidence || 0.9)*100)}%</span>
+          ${a.providerUsed ? `<span class="badge" style="background:rgba(124,58,237,0.12);color:#7c3aed;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600">🤖 ${esc(a.providerUsed)}${a.latencyMs ? ' • ' + (a.latencyMs/1000).toFixed(1) + 's' : ''}</span>` : ''}
         </div>
       </div>
       <button class="ib" data-a="aimx">${MS('close',20)}</button>
@@ -1388,7 +1420,10 @@ function vAim(){
     <div class="flex justify-between items-start mb-2">
       <div>
         <b class="text-lg">Tinjau Master Data Gizi BPOM</b>
-        <div class="mu text-xs mt-0.5">Otomatis dinormalisasi ke basis 100g / 100ml</div>
+        <div class="mu text-xs mt-0.5 flex flex-wrap items-center gap-2">
+          <span>Otomatis dinormalisasi ke basis 100g / 100ml</span>
+          ${a.providerUsed ? `<span class="badge" style="background:rgba(124,58,237,0.12);color:#7c3aed;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600">🤖 ${esc(a.providerUsed)}${a.latencyMs ? ' • ' + (a.latencyMs/1000).toFixed(1) + 's' : ''}</span>` : ''}
+        </div>
       </div>
       <button class="ib" data-a="aimx">${MS('close',20)}</button>
     </div>
@@ -1524,23 +1559,52 @@ async function runAimAnalysis(){
   if(!AIM||!AIM.imageData)return;
   AIM.step='analyzing';render();
   try{
+    const chosenProvider = S.aiProvider || localStorage.getItem('nutritrack_ai_provider') || 'auto';
     const payload = {
       mode: AIM.mode,
       image: AIM.imageData,
-      mimeType: AIM.mimeType
+      mimeType: AIM.mimeType,
+      provider: chosenProvider
     };
-    const resp=await fetch('/api/ai-food-scan',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    const data=await resp.json();
-    if(data.error){
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s safety timeout
+
+    let resp;
+    try {
+      resp = await fetch('/api/ai-food-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } catch(netErr) {
+      clearTimeout(timeoutId);
+      if (netErr.name === 'AbortError') {
+        throw new Error('Proses analisis melebihi batas waktu (45 detik). Coba pilih opsi AI lain seperti OpenAI atau periksa koneksi internet Anda.');
+      }
+      throw new Error('Koneksi terputus atau server tidak dapat dijangkau. Pastikan perangkat Anda terhubung ke internet.');
+    }
+    clearTimeout(timeoutId);
+
+    let data;
+    const respText = await resp.text();
+    try {
+      data = JSON.parse(respText);
+    } catch (parseErr) {
+      throw new Error(`Server AI mengembalikan respon non-JSON (${resp.status}): ${respText.slice(0, 160)}`);
+    }
+
+    if(!resp.ok || data.error){
       AIM.step='preview';
-      AIM.err=data.error;
+      AIM.err=data.error || `Terjadi kesalahan sistem AI (HTTP ${resp.status})`;
       render();
       return;
     }
+
+    AIM.providerUsed = data.provider_used || '';
+    AIM.latencyMs = data.latency_ms || 0;
+
     if(AIM.mode==='food'){
       const detected=data.detected_items||[];
       AIM.scaleRef=data.scale_reference_detected||'Piring / Wadah Standar';
@@ -1604,7 +1668,7 @@ async function runAimAnalysis(){
   }catch(e){
     console.error('AIM error:', e);
     AIM.step='preview';
-    AIM.err='Koneksi gagal atau server AI sedang sibuk. Silakan coba klik tombol analisis lagi.';
+    AIM.err=e.message || 'Koneksi gagal atau server AI sedang sibuk. Silakan coba klik tombol analisis lagi.';
   }
   render();
 }
@@ -2116,6 +2180,7 @@ else if(a=='aimmode'){if(AIM){AIM.mode=v;render();const vid=document.getElementB
 else if(a=='aimflip'){_aimCamFacing=(_aimCamFacing==='user')?'environment':'user';initAimCamera();return}
 else if(a=='aimcap'){captureAimPhoto();return}
 else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode,bc=AIM.barcode;AIM=null;openAimScan(m,bc)}return}
+else if(a=='aimprovider'){S.aiProvider=v;try{localStorage.setItem('nutritrack_ai_provider',v)}catch(e){}render();return}
 else if(a=='aimanalyze'){runAimAnalysis();return}
 else if(a=='aimsave'){saveAimFoodJournal();return}
 else if(a=='aimsavelabel'){saveAimLabel();return}

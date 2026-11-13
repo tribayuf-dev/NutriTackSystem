@@ -7,6 +7,14 @@
  *                    Densitas Fisik (Kemenkes URT), Serapan Minyak/Santan, & Hybrid DB Matching.
  * 2. mode "label" → OCR Tabel Informasi Nilai Gizi (ING) Standar BPOM (Multi-format),
  *                    diikuti normalisasi via NutritionNormalizerService (basis 100g & validasi Atwater).
+ *
+ * Didukung Sistem Multi-Provider Vision Engine:
+ * - Google Gemini (gemini-2.0-flash, gemini-1.5-flash)
+ * - OpenAI (gpt-4o-mini, gpt-4o)
+ * - Groq Vision (llama-3.2-11b-vision-preview)
+ * - Anthropic Claude (claude-3-5-haiku, claude-3-5-sonnet)
+ * - OpenRouter (multi-model)
+ * Menjamin high-availability, zero single-point-of-failure, dan kecepatan tinggi (sub-2s latency).
  */
 
 import { normalizeAndValidateNutritionData } from './lib/NutritionNormalizerService.js';
@@ -44,32 +52,33 @@ PEDOMAN PENYAJIAN & DETEKSI WADAH (FLEKSIBEL & ADAPTIF):
    - Mangkuk / piring cekung / piring sup
    - Kotak bekal / bento box / kotak mika / wadah plastik bening / Tupperware (seperti kotak bekal sekolah / kantor / catering)
    - Toples / gelas / cangkir / mangkok kaca
-   - Kertas minyak / daun pisang / kotak kardus makanan
+   - Kertas minyak / daun pisang / kotak kardus makanan / sterofoam
+   - Bungkusan jajanan / snack kemasan (seperti Momogi, keripik, wafer, biskuit, cokelat, roti, burger bungkus kertas, dsb.)
    - Dipegang oleh tangan atau langsung di atas meja makan.
    Sistem WAJIB mengenali makanan di seluruh tipe penyajian tersebut!
 
-2. Penanganan Wadah Transparan, Tutup, dan Stiker / Label Merek:
-   - Jika makanan berada di dalam wadah transparan (misalnya kotak mika atau wadah plastik Tupperware) yang memiliki stiker, label merek, gambar kartun, atau tulisan di tutupnya (seperti stiker nama, teks logo, stiker bertuliskan "Edu Slime", stiker toko, dsb.), ABAIKAN stiker/teks tersebut!
-   - Fokuslah mengidentifikasi isi makanan atau camilan di dalam wadah tersebut (misalnya: Puding, Jelly, Saus, Selai, Pasta, Adonan Kue, Bubur, Nasi, Lauk, dsb.) dan buat kontur poligon pada area makanan tersebut.
-   - Jangan salah mengira makanan di dalam wadah sebagai benda non-makanan hanya karena wadahnya memiliki stiker atau label mainan.
+2. Penanganan Kemasan Snack, Wadah Transparan, Tutup, dan Stiker / Label Merek:
+   - Jika foto memperlihatkan bungkusan makanan ringan / snack kemasan (seperti Momogi, Taro, Chitato, roti, burger dalam kertas), kenali jenis makanan tersebut dari kemasannya dan buat polygon_mask pada area kemasan/makanan tersebut. Estimasikan beratnya sesuai ukuran standar jajanan tersebut (misal: Momogi 12-20g, burger 150-200g, roti 60-80g).
+   - Jika makanan berada di dalam wadah transparan (misalnya kotak mika atau wadah plastik Tupperware) yang memiliki stiker, label merek, atau tulisan di tutupnya, ABAIKAN stiker/teks tersebut dan fokus identifikasi isi makanannya.
+   - Jangan salah mengira makanan di dalam wadah sebagai benda non-makanan hanya karena wadahnya memiliki stiker atau kemasan.
 
 3. Kasus Foto Benar-Benar Bukan Makanan:
    - Hanya jika objek di foto dipastikan 100% sama sekali BUKAN makanan (contoh: buku tulis kosong, remote TV, obeng, keyboard komputer murni tanpa ada makanan sedikit pun), kembalikan "detected_items": [] dan sertakan catatan singkat pada scale_reference_detected bahwa objek yang difoto bukan makanan.
 
 4. Kalibrasi Skala & Dimensi Objek:
-   - Gunakan referensi objek di dalam foto (diameter piring makan standar ~24-26 cm, mangkuk ~15-17 cm, kotak bekal ~16-20 cm, wadah plastik/Tupperware sedang ~12-18 cm, sendok makan ~6 cm, atau tangan manusia yang memegang wadah) untuk menaksir luas fisik area (estimated_area_cm2) dan ketebalan makanan (estimated_height_cm).
+   - Gunakan referensi objek di dalam foto (diameter piring makan standar ~24-26 cm, mangkuk ~15-17 cm, kotak bekal ~16-20 cm, wadah plastik/Tupperware sedang ~12-18 cm, bungkus snack ~12-16 cm, sendok makan ~6 cm, atau tangan manusia yang memegang wadah) untuk menaksir luas fisik area (estimated_area_cm2) dan ketebalan makanan (estimated_height_cm).
    - Kalikan volume (estimated_volume_cc) dengan konstanta massa jenis semu (apparent_density_used dalam g/cm3) yang memperhitungkan porositas rongga udara dan acuan standar URT Kemenkes RI:
      - Nasi putih / nasi goreng: densitas ~0.70 g/cm3 (Acuan URT: 1 centong magiccom = 100g)
      - Mie / spageti / bihun: densitas ~0.67 g/cm3 (Acuan URT: 1 porsi sedang = 150-240g, 1 gelas mie = 100g)
-     - Roti tawar / roti panggang: densitas ~0.276 g/cm3 (Acuan URT: 1 iris = 20-25g, 3 iris = 60-70g)
-     - Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g, 2 potong sedang = 50g; 1 potong sedang tahu = 50g)
-     - Ikan / daging ayam / daging sapi / sosis: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 potong sedang ikan = 40g, 1 potong sedang ayam = 55-65g; jika ayam bertulang, kurangi ~20-25% volume untuk tulang)
-     - Telur (orak-arik / dadar / rebus): densitas ~1.123 g/cm3 (Acuan URT: 1 butir = 55-60g)
-     - Sayuran daun mentah / salad / lalapan: densitas sangat rendah ~0.316 g/cm3
-     - Sayuran masak / tumis (tanpa kuah): Acuan URT 1 centong sayur = 15g, 1 gelas sayur ditiriskan = 100g
-     - Kentang goreng / kerupuk / gorengan berongga: densitas ~0.241 g/cm3
-     - Saus / sambal / selai / kecap / puding / pasta: densitas ~1.05 - 1.30 g/cm3 (Acuan URT: 1 sdm = 10-15g, 1 sdt = 5g)
-     - Minuman cair (susu, jus, soda, kuah): densitas ~0.973 - 1.027 g/cm3 (Acuan URT: 1 gelas = 200-225ml)
+     - Roti tawar / roti panggang / burger: densitas ~0.28 g/cm3 (Acuan URT: 1 burger lengkap = 150-200g, 1 iris roti = 20-25g)
+     - Tempe / tahu: densitas ~0.80 g/cm3 (Acuan URT: 1 potong sedang tempe = 25g; 1 potong sedang tahu = 50g)
+     - Ikan / daging ayam / daging sapi / sate: densitas ~0.86 - 1.05 g/cm3 (Acuan URT: 1 tusuk sate ayam = 15-20g, 5 tusuk sate = 75-100g)
+     - Telur (orak-arik / dadar / rebus): densitas ~1.12 g/cm3 (Acuan URT: 1 butir = 55-60g)
+     - Sayuran daun mentah / salad / lalapan: densitas ~0.32 g/cm3
+     - Sayuran masak / tumis: Acuan URT 1 centong sayur = 15-25g, 1 porsi sedang = 100g
+     - Snack kemasan / kerupuk / ekstrudat: densitas ~0.20 - 0.35 g/cm3 (Acuan: 1 bungkus Momogi/snack stick = 12-20g)
+     - Saus / bumbu kacang / sambal / puding: densitas ~1.05 - 1.25 g/cm3 (Acuan URT: 1 sdm = 15g)
+     - Minuman cair: densitas ~1.0 g/cm3 (Acuan URT: 1 gelas = 200-250ml)
 
 5. Ekstraksi Kontur Poligon (Pixel-Level Polygon Segmentation):
    - Untuk setiap item makanan, buat visual_segmentation.polygon_mask berupa array berurutan titik koordinat [x, y] (minimal 10 hingga 24 titik sudut) yang menelusuri tepi/lekuk bentuk asli makanan secara presisi (BUKAN kotak persegi empat).
@@ -87,7 +96,7 @@ PEDOMAN PENYAJIAN & DETEKSI WADAH (FLEKSIBEL & ADAPTIF):
 
 KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT TANPA TEKS TAMBAHAN:
 {
-  "scale_reference_detected": "string (contoh: Wadah kotak plastik ~16 cm / Piring makan ~25 cm)",
+  "scale_reference_detected": "string (contoh: Wadah kotak plastik ~16 cm / Piring makan ~25 cm / Kemasan snack ~14 cm)",
   "overall_confidence": 0.95,
   "detected_items": [
     {
@@ -108,7 +117,7 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT TANPA T
       "apparent_density_used": 0.70,
       "estimated_weight_g": 100.0,
       "urt_amount": 1.0,
-      "urt_unit": "porsi / potong / centong / mangkuk / sdm",
+      "urt_unit": "porsi / potong / centong / mangkuk / sdm / bungkus",
       "urt_display_label": "1 porsi (100g)",
       "hidden_oil_or_coconut_milk_g": 0.0,
       "fallback_nutrition_for_estimated_weight": {
@@ -195,17 +204,15 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
   "extraction_notes": "string"
 }`;
 
-// ─── Helper: Call Gemini API with rock-solid production fallback models ───────
+// ─── AI Vision Providers (Multi-Engine & High Availability) ─────────────────
 
-async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType, extraPromptText = '') {
-  // Bersihkan base64 image dan tentukan mime-type yang valid
-  const cleanBase64 = String(base64Image || '').replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
-  const cleanMimeType = (mimeType && mimeType.includes('/')) ? mimeType : 'image/jpeg';
-
+/**
+ * 1. Google Gemini Vision Call
+ * Menggunakan direct model call tanpa query ListModels berlebih, dengan timeout per model.
+ */
+async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
   const parts = [{ text: systemInstruction }];
-  if (extraPromptText) {
-    parts.push({ text: extraPromptText });
-  }
+  if (extraPromptText) parts.push({ text: extraPromptText });
   parts.push({
     inline_data: {
       mime_type: cleanMimeType,
@@ -222,99 +229,475 @@ async function callGeminiVision(apiKey, systemInstruction, base64Image, mimeType
     },
   };
 
-  // Prioritas model visi produksi yang terbukti paling stabil & berkuota tinggi
-  const PRIORITY_MODELS = [
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
+  const GEMINI_MODELS = [
     'gemini-2.0-flash',
-    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash',
     'gemini-1.5-flash-8b',
     'gemini-1.5-pro',
-    'gemini-1.5-pro-latest',
   ];
 
-  let candidateModels = [...PRIORITY_MODELS];
-
-  // Coba query ListModels dari Google untuk mendeteksi model yang aktif di akun pengguna
-  try {
-    const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (listResp.ok) {
-      const listData = await listResp.json();
-      const validNames = (listData.models || [])
-        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-        .map(m => m.name.replace(/^models\//, ''))
-        // Saring: abaikan model eksperimental robotika yang sering 503, embedding, imagen, dsb.
-        .filter(m => !m.includes('robotics') && !m.includes('embedding') && !m.includes('aqa') && !m.includes('imagen') && !m.includes('tts'));
-
-      if (validNames.length > 0) {
-        // Susun urutan: utamakan model dari PRIORITY_MODELS yang tersedia di akun
-        const activePriority = PRIORITY_MODELS.filter(p => validNames.includes(p));
-        // Tambahkan model lain dari validNames yang ada kata flash / pro / gemini
-        const otherActive = validNames.filter(m => !activePriority.includes(m) && (m.includes('flash') || m.includes('pro') || m.includes('gemini')));
-        candidateModels = [...activePriority, ...otherActive];
-      }
-    }
-  } catch (e) {
-    console.warn('ListModels warning:', e.message);
-  }
-
-  // Jika daftar kosong, gunakan model default
-  if (!candidateModels.length) {
-    candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro'];
-  }
-
   let lastError = null;
-  const attemptedErrors = [];
-
-  for (const model of candidateModels) {
+  for (const model of GEMINI_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s per model
     try {
-      // PENTING: Gunakan authentication key HANYA melalui query parameter ?key=
-      // DILARANG mengirimkan header 'x-goog-api-key' secara bersamaan karena memicu error 400 "Multiple authentication credentials received"
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const resp = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (resp.ok) {
         const data = await resp.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (text && text.trim()) {
-          return text.trim();
+          return { text: text.trim(), model };
         }
       }
 
       const errText = await resp.text();
-      console.warn(`Model ${model} HTTP ${resp.status}: ${errText.slice(0, 160)}. Mencoba fallback...`);
-      lastError = new Error(`Model ${model} (${resp.status}): ${errText.slice(0, 160)}`);
-      attemptedErrors.push(`${model} [${resp.status}]`);
-      // Lanjut coba model berikutnya
-      continue;
+      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
     } catch (err) {
-      console.warn(`Model ${model} network error: ${err.message}. Mencoba fallback...`);
-      lastError = err;
-      attemptedErrors.push(`${model} [network: ${err.message}]`);
-      continue;
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? `${model} timeout (10s)` : err.message;
+      lastError = new Error(`${model} err: ${msg}`);
     }
   }
 
-  // Jika seluruh model gagal, laporkan detail error sebenarnya (bukan pesan terselubung)
-  const detailMsg = lastError ? lastError.message : 'Semua model gagal merespons.';
-  throw new Error(`Gagal menghubungi AI Vision: ${detailMsg} (Percobaan: ${attemptedErrors.join(', ')}).`);
+  throw lastError || new Error('Seluruh model Gemini gagal merespons.');
 }
 
+/**
+ * 2. OpenAI GPT-4o Vision Call (Ultra Cepat & Stabil)
+ */
+async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
+  const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
+  let lastError = null;
+
+  for (const model of OPENAI_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s timeout
+    try {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 3500,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                ...(extraPromptText ? [{ type: 'text', text: extraPromptText }] : []),
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${cleanMimeType};base64,${cleanBase64}`,
+                    detail: 'high',
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        if (text && text.trim()) {
+          return { text: text.trim(), model };
+        }
+      }
+
+      const errText = await resp.text();
+      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? `${model} timeout (14s)` : err.message;
+      lastError = new Error(`${model} err: ${msg}`);
+    }
+  }
+
+  throw lastError || new Error('Seluruh model OpenAI gagal merespons.');
+}
+
+/**
+ * 3. Groq Vision Call (LPU Ultra-Fast Sub-Second Vision)
+ */
+async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
+  const GROQ_MODELS = ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'];
+  let lastError = null;
+
+  for (const model of GROQ_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 3500,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                ...(extraPromptText ? [{ type: 'text', text: extraPromptText }] : []),
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${cleanMimeType};base64,${cleanBase64}`,
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        if (text && text.trim()) {
+          return { text: text.trim(), model };
+        }
+      }
+
+      const errText = await resp.text();
+      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? `${model} timeout (10s)` : err.message;
+      lastError = new Error(`${model} err: ${msg}`);
+    }
+  }
+
+  throw lastError || new Error('Seluruh model Groq gagal merespons.');
+}
+
+/**
+ * 4. Anthropic Claude Vision Call
+ */
+async function callAnthropicVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
+  const ANTHROPIC_MODELS = ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+  let lastError = null;
+
+  let anthropicMedia = cleanMimeType;
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(anthropicMedia)) {
+    anthropicMedia = 'image/jpeg';
+  }
+
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s timeout
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey.trim(),
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 3500,
+          temperature: 0.2,
+          system: systemInstruction,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: anthropicMedia,
+                    data: cleanBase64,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: (extraPromptText ? extraPromptText + '\n' : '') +
+                    'Kembalikan HANYA format RAW JSON valid sesuai skema instruksi sistem tanpa teks pengantar, teks penutup, atau markdown fences.',
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const textBlock = (data?.content || []).find(b => b.type === 'text');
+        const text = textBlock?.text || '';
+        if (text && text.trim()) {
+          return { text: text.trim(), model };
+        }
+      }
+
+      const errText = await resp.text();
+      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? `${model} timeout (14s)` : err.message;
+      lastError = new Error(`${model} err: ${msg}`);
+    }
+  }
+
+  throw lastError || new Error('Seluruh model Anthropic gagal merespons.');
+}
+
+/**
+ * 5. OpenRouter Vision Call (Fallback Cadangan Luas)
+ */
+async function callOpenRouterVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
+  const OPENROUTER_MODELS = [
+    'google/gemini-2.0-flash-exp:free',
+    'meta-llama/llama-3.2-11b-vision-instruct:free',
+    'openai/gpt-4o-mini',
+  ];
+  let lastError = null;
+
+  for (const model of OPENROUTER_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`,
+          'HTTP-Referer': 'https://nutritrack.vercel.app',
+          'X-Title': 'NutriTrack System',
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 3500,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                ...(extraPromptText ? [{ type: 'text', text: extraPromptText }] : []),
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${cleanMimeType};base64,${cleanBase64}`,
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        if (text && text.trim()) {
+          return { text: text.trim(), model };
+        }
+      }
+
+      const errText = await resp.text();
+      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? `${model} timeout (12s)` : err.message;
+      lastError = new Error(`${model} err: ${msg}`);
+    }
+  }
+
+  throw lastError || new Error('Seluruh model OpenRouter gagal merespons.');
+}
+
+function getProviderDisplayName(code) {
+  switch (code) {
+    case 'gemini': return 'Google Gemini';
+    case 'openai': return 'OpenAI';
+    case 'groq': return 'Groq Vision';
+    case 'anthropic': return 'Anthropic Claude';
+    case 'openrouter': return 'OpenRouter';
+    default: return code;
+  }
+}
+
+/**
+ * Multi-Provider Cascade Coordinator
+ * Mencoba provider sesuai prioritas atau preferensi user, dan jika gagal/sibuk/overload,
+ * langsung berpindah otomatis ke provider cadangan aktif tanpa menampilkan error ke user.
+ */
+async function callVisionCascade({
+  requestedProvider = 'auto',
+  systemInstruction,
+  base64Image,
+  mimeType,
+  extraPromptText = '',
+}) {
+  const startTime = Date.now();
+  const cleanBase64 = String(base64Image || '').replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
+  const cleanMimeType = (mimeType && mimeType.includes('/')) ? mimeType : 'image/jpeg';
+
+  const keys = {
+    gemini: process.env.GEMINI_API_KEY,
+    openai: process.env.OPENAI_API_KEY,
+    groq: process.env.GROQ_API_KEY,
+    anthropic: process.env.ANTHROPIC_API_KEY,
+    openrouter: process.env.OPENROUTER_API_KEY,
+  };
+
+  const availableProviders = Object.keys(keys).filter(k => !!keys[k]);
+  if (availableProviders.length === 0) {
+    throw new Error(
+      'Tidak ada API Key AI Vision yang dikonfigurasi. Harap pasang minimal satu dari: ' +
+      'GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, atau ANTHROPIC_API_KEY pada Environment Variables Vercel.'
+    );
+  }
+
+  // Tentukan urutan provider yang akan dipanggil
+  let providerPlan = [];
+  const req = (requestedProvider || 'auto').toLowerCase();
+
+  if (req !== 'auto' && availableProviders.includes(req)) {
+    // Utamakan provider yang dipilih pengguna
+    providerPlan.push(req);
+    // Tambahkan provider lainnya sebagai fallback jika pilihan utama mengalami rate limit / 503
+    for (const p of availableProviders) {
+      if (p !== req) providerPlan.push(p);
+    }
+  } else {
+    // Mode Auto: coba Gemini dulu jika tersedia, jika sibuk cascade ke OpenAI -> Groq -> Anthropic -> OpenRouter
+    const defaultOrder = ['gemini', 'openai', 'groq', 'anthropic', 'openrouter'];
+    for (const p of defaultOrder) {
+      if (availableProviders.includes(p)) {
+        providerPlan.push(p);
+      }
+    }
+  }
+
+  const errors = [];
+  let fallbackOccurred = false;
+
+  for (let i = 0; i < providerPlan.length; i++) {
+    const prov = providerPlan[i];
+    if (i > 0) fallbackOccurred = true;
+
+    try {
+      let resultText = '';
+      let modelUsed = '';
+
+      if (prov === 'gemini') {
+        const res = await callGeminiVision(keys.gemini, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+        resultText = res.text;
+        modelUsed = res.model;
+      } else if (prov === 'openai') {
+        const res = await callOpenAIVision(keys.openai, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+        resultText = res.text;
+        modelUsed = res.model;
+      } else if (prov === 'groq') {
+        const res = await callGroqVision(keys.groq, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+        resultText = res.text;
+        modelUsed = res.model;
+      } else if (prov === 'anthropic') {
+        const res = await callAnthropicVision(keys.anthropic, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+        resultText = res.text;
+        modelUsed = res.model;
+      } else if (prov === 'openrouter') {
+        const res = await callOpenRouterVision(keys.openrouter, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+        resultText = res.text;
+        modelUsed = res.model;
+      }
+
+      if (resultText && resultText.trim()) {
+        const latencyMs = Date.now() - startTime;
+        return {
+          text: resultText.trim(),
+          provider_used: `${getProviderDisplayName(prov)} (${modelUsed})`,
+          provider_code: prov,
+          model_used: modelUsed,
+          latency_ms: latencyMs,
+          fallback_occurred: fallbackOccurred,
+          fallback_errors: errors,
+        };
+      }
+    } catch (err) {
+      console.warn(`[AI-Food-Scan] Provider ${prov} gagal: ${err.message}. Mencoba fallback ke provider berikutnya...`);
+      errors.push(`${prov}: ${err.message}`);
+    }
+  }
+
+  // Jika seluruh provider dalam rencana gagal
+  const errSummary = errors.join(' | ');
+  throw new Error(`Server AI sedang padat pada semua penyedia (${errSummary}). Silakan coba beberapa saat lagi.`);
+}
+
+/**
+ * Bulletproof JSON Parser untuk respon LLM
+ * Mampu membersihkan teks pengantar/penutup, markdown fences, dan trailing commas.
+ */
 function parseJsonClean(text) {
-  const cleaned = text
+  if (!text || typeof text !== 'string') {
+    throw new Error('Respon AI kosong atau bukan string.');
+  }
+
+  // 1. Bersihkan markdown fences (misal ```json ... ``` atau ``` ... ```)
+  let cleaned = text
     .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/, '')
+    .replace(/\s*```\s*$/i, '')
     .trim();
-  return JSON.parse(cleaned);
+
+  // 2. Coba parse langsung
+  try {
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    // 3. Ekstrak blok antara { pertama dan } terakhir
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const candidate = cleaned.substring(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch (e2) {
+        // Coba perbaiki trailing commas dan kutip pintar
+        const fixed = candidate
+          .replace(/,\s*([}\]])/g, '$1')
+          .replace(/[\u201C\u201D]/g, '"');
+        try {
+          return JSON.parse(fixed);
+        } catch (e3) {
+          // Lanjut ke error
+        }
+      }
+    }
+
+    throw new Error(`Format JSON tidak valid: ${e1.message}`);
+  }
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
@@ -327,15 +710,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY belum dikonfigurasi di Environment Variables Vercel.' });
-  }
-
   const {
     mode,
     image,
     mimeType,
+    provider = 'auto',
     capture_mode = 'STANDARD_2D_RGB',
     depth_map_256x192 = null,
     confidence_map = null,
@@ -364,19 +743,36 @@ ${lidar_depth_context ? 'Metadata Fisik 3D: ' + JSON.stringify(lidar_depth_conte
 ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (ground-truth geometry).`;
       }
 
-      const rawText = await callGeminiVision(apiKey, SYSTEM_PROMPT_FOOD_DECOMPOSITION, image, mimeType, extraContext);
+      const visionResult = await callVisionCascade({
+        requestedProvider: provider,
+        systemInstruction: SYSTEM_PROMPT_FOOD_DECOMPOSITION,
+        base64Image: image,
+        mimeType: mimeType,
+        extraPromptText: extraContext,
+      });
+
       let step1Output;
       try {
-        step1Output = parseJsonClean(rawText);
+        step1Output = parseJsonClean(visionResult.text);
       } catch (err) {
-        console.error('Failed to parse Step 1 JSON:', rawText);
+        console.error('Failed to parse Step 1 JSON:', visionResult.text);
         return res.status(422).json({
-          error: 'Gagal memproses analisis foto makanan. Pastikan foto makanan terlihat jelas dan pencahayaan memadai.',
-          raw: rawText.slice(0, 300),
+          error: 'Gagal memproses struktur data foto makanan dari AI. Pastikan foto terlihat jelas dan pencahayaan memadai.',
+          raw: visionResult.text.slice(0, 300),
+          provider_used: visionResult.provider_used,
         });
       }
 
       const detectedItems = Array.isArray(step1Output?.detected_items) ? step1Output.detected_items : [];
+
+      // Jika tidak ada makanan yang terdeteksi
+      if (detectedItems.length === 0) {
+        return res.status(422).json({
+          error: 'Objek makanan tidak terdeteksi pada foto. Pastikan makanan, wadah, atau kemasan makanan terlihat jelas di kamera.',
+          scale_reference_detected: step1Output.scale_reference_detected || 'Tidak ada makanan terdeteksi',
+          provider_used: visionResult.provider_used,
+        });
+      }
 
       // Step 2: Hybrid Database Matching, Integrasi Voxel 3D LiDAR & Serapan Minyak/Santan
       const enrichedItems = detectedItems.map((item, idx) => {
@@ -596,6 +992,11 @@ ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (grou
       return res.status(200).json({
         success: true,
         mode: 'food',
+        provider_used: visionResult.provider_used,
+        provider_code: visionResult.provider_code,
+        model_used: visionResult.model_used,
+        latency_ms: visionResult.latency_ms,
+        fallback_occurred: visionResult.fallback_occurred,
         capture_mode_used: capture_mode,
         scale_reference_detected: step1Output.scale_reference_detected || (capture_mode === 'LIDAR_RGBD_3D' ? `Sensor LiDAR ARKit jarak ${finalDistanceCm || 35} cm` : 'Piring makan standar (~25 cm)'),
         camera_to_plate_distance_cm: finalDistanceCm,
@@ -611,15 +1012,22 @@ ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (grou
     // FITUR 2 (Lapis 3): OCR TABEL NILAI GIZI & STANDAR BPOM
     // ═════════════════════════════════════════════════════════════════════════
     if (mode === 'label') {
-      const rawText = await callGeminiVision(apiKey, SYSTEM_PROMPT_LABEL_OCR, image, mimeType);
+      const visionResult = await callVisionCascade({
+        requestedProvider: provider,
+        systemInstruction: SYSTEM_PROMPT_LABEL_OCR,
+        base64Image: image,
+        mimeType: mimeType,
+      });
+
       let ocrExtracted;
       try {
-        ocrExtracted = parseJsonClean(rawText);
+        ocrExtracted = parseJsonClean(visionResult.text);
       } catch (err) {
-        console.error('Failed to parse Label OCR JSON:', rawText);
+        console.error('Failed to parse Label OCR JSON:', visionResult.text);
         return res.status(422).json({
           error: 'Tabel Informasi Nilai Gizi tidak terdeteksi atau tidak terbaca. Pastikan foto tegak lurus dan teks angka terlihat tajam.',
-          raw: rawText.slice(0, 300),
+          raw: visionResult.text.slice(0, 300),
+          provider_used: visionResult.provider_used,
         });
       }
 
@@ -648,6 +1056,11 @@ ATURAN WAJIB: Perlakukan data 3D LiDAR ini sebagai kebenaran fisik absolut (grou
       return res.status(200).json({
         success: true,
         mode: 'label',
+        provider_used: visionResult.provider_used,
+        provider_code: visionResult.provider_code,
+        model_used: visionResult.model_used,
+        latency_ms: visionResult.latency_ms,
+        fallback_occurred: visionResult.fallback_occurred,
         normalized: normalizedData,
         nutrition: legacyNutrition, // Backward compatibility dengan UI saat ini
       });

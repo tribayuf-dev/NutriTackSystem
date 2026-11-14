@@ -210,59 +210,19 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
  * 1. Google Gemini Vision Call
  * Menggunakan auto-discovery model aktif dari akun dengan caching 30 menit & fallback valid.
  */
-let _cachedGeminiModels = null;
-let _lastGeminiListFetch = 0;
+// Model prioritas dengan nama yang VALID dan STABIL di Google Generative Language v1beta
+const VERIFIED_GEMINI_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-2.0-flash-exp',
+  'gemini-1.5-flash-8b',
+  'gemini-1.5-pro',
+];
 
 async function getValidGeminiModels(apiKey) {
-  const now = Date.now();
-  if (_cachedGeminiModels && (now - _lastGeminiListFetch < 30 * 60 * 1000)) {
-    return _cachedGeminiModels;
-  }
-
-  // Model prioritas dengan nama yang VALID di Google Generative Language v1beta
-  const PRIORITY_ORDER = [
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-002',
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-flash-8b-latest',
-    'gemini-1.5-flash-8b',
-    'gemini-1.5-pro-latest',
-    'gemini-1.5-pro-002',
-  ];
-
-  try {
-    const controller = new AbortController();
-    const tId = setTimeout(() => controller.abort(), 3500); // Max 3.5s timeout
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-    });
-    clearTimeout(tId);
-
-    if (resp.ok) {
-      const data = await resp.json();
-      const validNames = (data.models || [])
-        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-        .map(m => m.name.replace(/^models\//, ''))
-        .filter(m => !m.includes('robotics') && !m.includes('embedding') && !m.includes('aqa') && !m.includes('imagen') && !m.includes('tts'));
-
-      if (validNames.length > 0) {
-        const matched = PRIORITY_ORDER.filter(p => validNames.includes(p));
-        const rest = validNames.filter(m => !matched.includes(m) && (m.includes('flash') || m.includes('pro')));
-        _cachedGeminiModels = [...matched, ...rest];
-        _lastGeminiListFetch = now;
-        return _cachedGeminiModels;
-      }
-    }
-  } catch (err) {
-    console.warn('[Gemini] ListModels query notice:', err.message);
-  }
-
-  _cachedGeminiModels = PRIORITY_ORDER;
-  _lastGeminiListFetch = now;
-  return _cachedGeminiModels;
+  // Gunakan model-model terverifikasi tanpa query katalog dinamis yang memuat model 404 (seperti 2.5)
+  return VERIFIED_GEMINI_MODELS;
 }
 
 async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
@@ -289,7 +249,8 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   for (const model of candidateModels) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s per model
+    // 25 detik per model agar proses visi + segmentasi JSON tidak terpotong timeout dini
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const resp = await fetch(url, {
@@ -312,13 +273,13 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       attemptedErrors.push(`${model} [${resp.status}]`);
       console.warn(`[Gemini] Model ${model} HTTP ${resp.status}: ${errText.slice(0, 100)}`);
       // Jika error 429 (Quota/Rate Limit), kuota per menit akun sedang habis
-      // Segera batasi percobaan agar cascade ke OpenAI/Groq dapat langsung bekerja
+      // Segera batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
       if (resp.status === 429 && attemptedErrors.length >= 2) {
         break;
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? 'timeout 10s' : err.message;
+      const msg = err.name === 'AbortError' ? 'timeout 25s' : err.message;
       attemptedErrors.push(`${model} [${msg}]`);
     }
   }

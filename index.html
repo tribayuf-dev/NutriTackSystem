@@ -27,7 +27,7 @@ html,body{background:var(--bg);color:var(--tx);font-family:'Plus Jakarta Sans',s
 .gh{border:1px solid var(--ln);border-radius:12px;padding:8px 12px;font-weight:600;font-size:14px}
 .inp{background:var(--tk);border:1px solid transparent;border-radius:12px;padding:10px 12px;width:100%;color:var(--tx)}
 .inp:focus,button:focus-visible,a:focus-visible{outline:3px solid rgba(16,185,129,.35)}
-.mu{color:var(--mu)}.pr{color:var(--pr)}.trk{background:var(--tk);border-radius:9999px;height:8px;overflow:hidden;position:relative}.trk>i{display:block;height:100%;border-radius:9999px;transform-origin:left center;animation:trkLoad .85s cubic-bezier(.16,1,.3,1) forwards;will-change:transform}.trk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-100%);animation:shimmerGlow 1.2s cubic-bezier(.4,0,.2,1) .15s 1;pointer-events:none}@keyframes trkLoad{0%{transform:scaleX(0);opacity:.3}100%{transform:scaleX(1);opacity:1}}@keyframes shimmerGlow{0%{transform:translateX(-100%);opacity:0}50%{opacity:.6}100%{transform:translateX(200%);opacity:0}}.bn-bar{transform-origin:left center;animation:bnBarLoad .9s cubic-bezier(.16,1,.3,1) forwards;will-change:transform}@keyframes bnBarLoad{0%{transform:scaleX(0);opacity:.25}100%{transform:scaleX(1);opacity:1}}.ring-svg{transform:translateZ(0)}.ring-circle{transform-origin:center}.donut-svg{animation:donutScale .8s cubic-bezier(.16,1,.3,1) forwards;transform-origin:center}@keyframes donutScale{0%{opacity:.2;transform:scale(.92) rotate(-15deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}.cup{height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:transform .2s ease}.cup.cup-filled{animation:cupPop .45s cubic-bezier(.175,.885,.32,1.275) forwards}@keyframes cupPop{0%{transform:scale(.7);opacity:.4}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}@media(prefers-reduced-motion:reduce){.trk>i,.bn-bar,.ring-circle,.donut-svg,.cup.cup-filled{animation:none!important}.trk::after{display:none!important}}
+.mu{color:var(--mu)}.pr{color:var(--pr)}.trk{background:var(--tk);border-radius:9999px;height:8px;overflow:hidden;position:relative}.trk>i{display:block;height:100%;border-radius:9999px;transform-origin:left center;animation:trkLoad .85s cubic-bezier(.16,1,.3,1) forwards;will-change:transform}.trk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-100%);animation:shimmerGlow 1.2s cubic-bezier(.4,0,.2,1) .15s 1;pointer-events:none}@keyframes trkLoad{0%{transform:scaleX(0);opacity:.3}100%{transform:scaleX(1);opacity:1}}@keyframes shimmerGlow{0%{transform:translateX(-100%);opacity:0}50%{opacity:.6}100%{transform:translateX(200%);opacity:0}}.bn-bar{transform-origin:left center;animation:bnBarLoad .9s cubic-bezier(.16,1,.3,1) forwards;will-change:transform}@keyframes bnBarLoad{0%{transform:scaleX(0);opacity:.25}100%{transform:scaleX(1);opacity:1}}.ring-svg{animation:ringPop .8s cubic-bezier(.16,1,.3,1) forwards;transform-origin:center;will-change:transform,opacity}@keyframes ringPop{0%{opacity:.2;transform:scale(.88) rotate(-15deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}.donut-svg{animation:donutScale .8s cubic-bezier(.16,1,.3,1) forwards;transform-origin:center}@keyframes donutScale{0%{opacity:.2;transform:scale(.92) rotate(-15deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}.cup{height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:transform .2s ease}.cup.cup-filled{animation:cupPop .45s cubic-bezier(.175,.885,.32,1.275) forwards}@keyframes cupPop{0%{transform:scale(.7);opacity:.4}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}@media(prefers-reduced-motion:reduce){.trk>i,.bn-bar,.ring-svg,.donut-svg,.cup.cup-filled{animation:none!important}.trk::after{display:none!important}}
 .chip{padding:6px 12px;border-radius:9999px;font-size:13px;font-weight:600;background:var(--tk);white-space:nowrap}.chip.on{background:#7df0c0;color:#00422b}
 .nv{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;font-weight:600;color:var(--mu)}.nv.on{background:var(--nb);color:var(--nt);font-weight:700}
 .bd{font-size:12px;font-weight:700;padding:2px 8px;border-radius:9999px;background:var(--tk)}
@@ -556,7 +556,7 @@ const rng=(a,b)=>{const o=[];for(let s=a,i=0;s<=b&&i<366;s=addD(s,1),i++){const 
 const avg=(ds,k)=>{const l=ds.filter(d=>d.n);return l.length?l.reduce((a,d)=>a+d.T[k],0)/l.length:0};
 const wkU=kg=>S.set.unit=='m'?r1(kg)+' kg':r1(kg*2.20462)+' lb';
 const bar=(l,v,t,c,u)=>`<div class="mb-3"><div class="flex justify-between text-sm font-semibold"><span>${l}</span><span><span data-counter="${r0(v)}">${n0(v)}</span> / ${n0(t)} ${u} <span class="mu"><span data-counter="${r0(t?v/t*100:0)}">${r0(t?v/t*100:0)}</span>%</span></span></div><div class="trk mt-1"><i style="width:${Math.min(100,t?v/t*100:0)}%;background:${c}"></i></div></div>`;
-const ring=p=>{const C=326.7,d=Math.min(100,Math.max(0,p))/100*C,targetStr=`${d.toFixed(1)} ${C}`,isReduced=typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;return`<svg viewBox="0 0 120 120" class="w-36 h-36 ring-svg" role="img" aria-label="${r0(p)} persen"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--tk)" stroke-width="12"/><circle class="ring-circle" cx="60" cy="60" r="52" fill="none" stroke="var(--pc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${targetStr}" style="stroke-dasharray:${targetStr}" transform="rotate(-90 60 60)">${d>0&&!isReduced?`<animate attributeName="stroke-dasharray" from="0 ${C}" to="${targetStr}" dur="0.85s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1" keyTimes="0;1"/>`:''}</circle></svg>`};
+const ring=p=>{const C=326.7,d=Math.min(100,Math.max(0,p))/100*C;return`<svg viewBox="0 0 120 120" class="w-36 h-36 ring-svg" role="img" aria-label="${r0(p)} persen"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--tk)" stroke-width="12"/><circle class="ring-bar" cx="60" cy="60" r="52" fill="none" stroke="var(--pc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${d.toFixed(1)} ${C}" data-d="${d.toFixed(1)}" data-c="${C}" transform="rotate(-90 60 60)"/></svg>`};
 const line=(v,c,t,lb)=>{const a=v.filter(x=>x>0),mx0=Math.max(...a,t||0,1),mn0=a.length?Math.min(...a,t||Infinity):0,pad=(mx0-mn0)*.2||mx0*.2||1,lo=Math.max(0,mn0-pad),hi=mx0+pad,y=x=>86-(x-lo)/((hi-lo)||1)*66,X=i=>14+i/((v.length-1)||1)*272,pts=v.map((x,i)=>x>0?[X(i),y(x),x]:null),ls=pts.filter(Boolean).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),nb=pts.filter(Boolean).length,fm=x=>x>=100?n0(x):r1(x);
 return`<svg viewBox="0 0 300 108" class="w-full" role="img" aria-label="grafik tren">${t?`<line x1="14" x2="286" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="var(--mu)" stroke-dasharray="4"/><text x="286" y="${(y(t)-3).toFixed(1)}" font-size="8" text-anchor="end" fill="var(--mu)">target ${fm(t)}</text>`:''}${nb>1?`<polyline points="${ls}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}${pts.map((p,i)=>p?`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${c}"/>${nb<=8||i==v.length-1?`<text x="${Math.min(278,Math.max(22,p[0])).toFixed(1)}" y="${(p[1]-7).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" fill="var(--tx)">${fm(p[2])}</text>`:''}`:'').join('')}${lb?lb.map((l,i)=>`<text x="${X(i).toFixed(1)}" y="104" font-size="8" text-anchor="middle" fill="var(--mu)">${l}</text>`).join(''):''}</svg>`};
 const bars=(v,lb,c,t)=>{const mx=Math.max(...v,t||0,1);return`<div class="flex items-end gap-1 h-32">${v.map((x,i)=>`<div class="flex-1 flex flex-col items-center justify-end h-full"><div class="w-full rounded-t-md" style="height:${x/mx*100}%;min-height:3px;background:${x?c:'var(--tk)'}" title="${n0(x)}"></div><span class="mu" style="font-size:10px">${lb[i]}</span></div>`).join('')}</div>`};
@@ -768,7 +768,10 @@ function renderAimKeysModal() {
         <b class="text-base flex items-center gap-1.5">${MS('key',18)} Kunci API AI Mandiri</b>
         <button class="ib" data-a="aimkeysx">${MS('close',18)}</button>
       </div>
-      <p class="mu text-xs mb-3">Masukkan API key Anda sendiri jika ingin menggunakan OpenAI (GPT-4o-mini) atau Groq secara langsung tanpa bergantung pada kuota server bersama. Kunci tersimpan 100% aman di browser lokal Anda.</p>
+      <p class="mu text-xs mb-3">Anda dapat memasukkan API Key sendiri jika ingin menggunakan OpenAI atau Groq tanpa bergantung pada server. Kunci tersimpan 100% aman di perangkat lokal Anda.</p>
+      <div class="p-2 mb-3 rounded-lg text-[11px] leading-relaxed" style="background:rgba(16,185,129,0.12);color:var(--pr);border:1px solid rgba(16,185,129,0.25)">
+        <b>💡 Kunci API Gratis:</b> Dapatkan API Key gratis instan tanpa kartu kredit di <b class="underline">console.groq.com</b> (Groq) atau <b class="underline">aistudio.google.com</b> (Gemini).
+      </div>
       
       <div class="space-y-2.5 text-xs mb-4">
         <div>
@@ -2253,6 +2256,24 @@ function triggerIndicatorAnimations() {
   const startTime = performance.now();
   const isReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Animasi Cincin Kalori (Web Animations API jika didukung, dengan fallback aman)
+  const ringBar = document.querySelector('.ring-bar');
+  if (ringBar && typeof ringBar.animate === 'function' && !isReduced) {
+    try {
+      const targetD = parseFloat(ringBar.getAttribute('data-d')) || 0;
+      const maxC = parseFloat(ringBar.getAttribute('data-c')) || 326.7;
+      if (targetD > 0) {
+        ringBar.animate([
+          { strokeDasharray: `0 ${maxC}` },
+          { strokeDasharray: `${targetD.toFixed(1)} ${maxC}` }
+        ], {
+          duration: 850,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+        });
+      }
+    } catch (_) {}
+  }
+
   // Animasi Angka (Count-Up Numbers)
   counterElements.forEach(el => {
     const rawTarget = el.getAttribute('data-counter');
@@ -2485,7 +2506,18 @@ else if(a=='aimmode'){if(AIM){AIM.mode=v;render();const vid=document.getElementB
 else if(a=='aimflip'){_aimCamFacing=(_aimCamFacing==='user')?'environment':'user';initAimCamera();return}
 else if(a=='aimcap'){captureAimPhoto();return}
 else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode,bc=AIM.barcode;AIM=null;openAimScan(m,bc)}return}
-else if(a=='aimprovider'){S.aiProvider=v;try{localStorage.setItem('nutritrack_ai_provider',v)}catch(e){}render();return}
+else if(a=='aimprovider'){
+  S.aiProvider=v;
+  try{localStorage.setItem('nutritrack_ai_provider',v)}catch(e){}
+  if(v!=='auto'&&v!=='gemini'){
+    let ck={};try{ck=JSON.parse(localStorage.getItem('nutritrack_custom_ai_keys')||'{}')}catch(_){}
+    if(!ck[v]){
+      tst('Provider '+getAimProviderName(v)+' memerlukan API Key. Masukkan kunci Anda di tombol 🔑 Kunci.');
+    }
+  }
+  render();
+  return;
+}
 else if(a=='aimkeysmodal'){AIM_KEYS_MODAL=true;render();return}
 else if(a=='aimkeysx'){AIM_KEYS_MODAL=false;render();return}
 else if(a=='aimkeyssave'){

@@ -302,7 +302,7 @@ async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   for (const model of OPENAI_MODELS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
     try {
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -345,10 +345,17 @@ async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMim
       }
 
       const errText = await resp.text();
-      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+      let parsedMsg = errText.slice(0, 160);
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed?.error?.message) {
+          parsedMsg = parsed.error.message;
+        }
+      } catch (e) {}
+      lastError = new Error(`${model} (${resp.status}): ${parsedMsg}`);
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? `${model} timeout (14s)` : err.message;
+      const msg = err.name === 'AbortError' ? `${model} timeout (25s)` : err.message;
       lastError = new Error(`${model} err: ${msg}`);
     }
   }
@@ -365,7 +372,7 @@ async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeT
 
   for (const model of GROQ_MODELS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
     try {
       const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -407,10 +414,17 @@ async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeT
       }
 
       const errText = await resp.text();
-      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+      let parsedMsg = errText.slice(0, 160);
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed?.error?.message) {
+          parsedMsg = parsed.error.message;
+        }
+      } catch (e) {}
+      lastError = new Error(`${model} (${resp.status}): ${parsedMsg}`);
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? `${model} timeout (10s)` : err.message;
+      const msg = err.name === 'AbortError' ? `${model} timeout (20s)` : err.message;
       lastError = new Error(`${model} err: ${msg}`);
     }
   }
@@ -432,7 +446,7 @@ async function callAnthropicVision(apiKey, systemInstruction, cleanBase64, clean
 
   for (const model of ANTHROPIC_MODELS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -481,10 +495,17 @@ async function callAnthropicVision(apiKey, systemInstruction, cleanBase64, clean
       }
 
       const errText = await resp.text();
-      lastError = new Error(`${model} (${resp.status}): ${errText.slice(0, 140)}`);
+      let parsedMsg = errText.slice(0, 160);
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed?.error?.message) {
+          parsedMsg = parsed.error.message;
+        }
+      } catch (e) {}
+      lastError = new Error(`${model} (${resp.status}): ${parsedMsg}`);
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? `${model} timeout (14s)` : err.message;
+      const msg = err.name === 'AbortError' ? `${model} timeout (25s)` : err.message;
       lastError = new Error(`${model} err: ${msg}`);
     }
   }
@@ -608,22 +629,20 @@ async function callVisionCascade({
   let providerPlan = [];
   const req = (requestedProvider || 'auto').toLowerCase();
 
-  if (req !== 'auto' && availableProviders.includes(req)) {
-    // Utamakan provider yang dipilih pengguna
-    providerPlan.push(req);
-    // Tambahkan provider lainnya sebagai fallback jika pilihan utama mengalami rate limit / 503
-    for (const p of availableProviders) {
-      if (p !== req) providerPlan.push(p);
+  if (req !== 'auto') {
+    if (!availableProviders.includes(req)) {
+      // Pengguna secara spesifik memilih provider yang kuncinya belum diisi
+      throw new Error(
+        `Kunci API untuk ${getProviderDisplayName(req)} belum terpasang. ` +
+        `Silakan masukkan API Key di menu "⚙️ Kunci API" atau atur ${req.toUpperCase()}_API_KEY di Environment Variables Vercel.`
+      );
     }
-  } else if (req !== 'auto' && !availableProviders.includes(req)) {
-    // Pengguna secara spesifik memilih provider yang kuncinya belum diisi
-    throw new Error(
-      `Kunci API untuk ${getProviderDisplayName(req)} belum terpasang. ` +
-      `Silakan masukkan API Key di menu "⚙️ Kunci API" atau atur ${req.toUpperCase()}_API_KEY di Environment Variables Vercel.`
-    );
+    // Pengguna secara eksplisit memilih provider tertentu: jalankan HANYA provider tersebut secara ketat
+    // Jangan fallback diam-diam ke provider lain agar pengguna mendapatkan hasil/status murni dari AI pilihannya
+    providerPlan = [req];
   } else {
-    // Mode Auto: coba Gemini dulu jika tersedia, jika sibuk cascade ke OpenAI -> Groq -> Anthropic -> OpenRouter
-    const defaultOrder = ['gemini', 'openai', 'groq', 'anthropic', 'openrouter'];
+    // Mode Auto: cascade cerdas Groq -> Gemini -> OpenAI -> Anthropic -> OpenRouter
+    const defaultOrder = ['groq', 'gemini', 'openai', 'anthropic', 'openrouter'];
     for (const p of defaultOrder) {
       if (availableProviders.includes(p)) {
         providerPlan.push(p);
@@ -677,13 +696,16 @@ async function callVisionCascade({
         };
       }
     } catch (err) {
-      console.warn(`[AI-Food-Scan] Provider ${prov} gagal: ${err.message}. Mencoba fallback ke provider berikutnya...`);
+      console.warn(`[AI-Food-Scan] Provider ${prov} gagal: ${err.message}.`);
       errors.push(`${prov}: ${err.message}`);
     }
   }
 
   // Jika seluruh provider dalam rencana gagal
   const errSummary = errors.join(' | ');
+  if (req !== 'auto') {
+    throw new Error(`Provider ${getProviderDisplayName(req)} gagal: ${errSummary}`);
+  }
   throw new Error(`Server AI sedang padat pada semua penyedia (${errSummary}). Silakan coba beberapa saat lagi.`);
 }
 

@@ -2509,12 +2509,6 @@ else if(a=='aimretake'){stopAimCamera();if(AIM){const m=AIM.mode,bc=AIM.barcode;
 else if(a=='aimprovider'){
   S.aiProvider=v;
   try{localStorage.setItem('nutritrack_ai_provider',v)}catch(e){}
-  if(v!=='auto'&&v!=='gemini'){
-    let ck={};try{ck=JSON.parse(localStorage.getItem('nutritrack_custom_ai_keys')||'{}')}catch(_){}
-    if(!ck[v]){
-      tst('Provider '+getAimProviderName(v)+' memerlukan API Key. Masukkan kunci Anda di tombol 🔑 Kunci.');
-    }
-  }
   render();
   return;
 }

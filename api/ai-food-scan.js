@@ -210,20 +210,18 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
  * 1. Google Gemini Vision Call
  * Menggunakan auto-discovery model aktif dari akun dengan caching 30 menit & fallback valid.
  */
-// Model prioritas dengan nama yang VALID dan STABIL di Google Generative Language v1beta
-const VERIFIED_GEMINI_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash-8b',
-  'gemini-1.5-pro',
+// Target endpoint & model Gemini terverifikasi
+const CANDIDATE_GEMINI_TARGETS = [
+  // 1. Alias resmi Google Flash terbaru (Aktif dan didukung di Google AI Studio)
+  { ver: 'v1beta', model: 'gemini-flash-latest' },
+  { ver: 'v1beta', model: 'gemini-flash-lite-latest' },
+  // 2. Endpoint Stable v1 GA
+  { ver: 'v1', model: 'gemini-1.5-flash' },
+  { ver: 'v1', model: 'gemini-1.5-pro' },
+  // 3. Fallback v1beta model eksplisit
+  { ver: 'v1beta', model: 'gemini-2.0-flash' },
+  { ver: 'v1beta', model: 'gemini-1.5-flash' },
 ];
-
-async function getValidGeminiModels(apiKey) {
-  // Gunakan model-model terverifikasi tanpa query katalog dinamis yang memuat model 404 (seperti 2.5)
-  return VERIFIED_GEMINI_MODELS;
-}
 
 async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
   const parts = [{ text: systemInstruction }];
@@ -242,17 +240,22 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       responseMimeType: 'application/json',
       maxOutputTokens: 3500,
     },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+    ],
   };
 
-  const candidateModels = await getValidGeminiModels(apiKey);
   const attemptedErrors = [];
 
-  for (const model of candidateModels) {
+  for (const target of CANDIDATE_GEMINI_TARGETS) {
     const controller = new AbortController();
     // 25 detik per model agar proses visi + segmentasi JSON tidak terpotong timeout dini
     const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/${target.ver}/models/${target.model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -263,24 +266,27 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
       if (resp.ok) {
         const data = await resp.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const candidate = data?.candidates?.[0];
+        const text = candidate?.content?.parts?.[0]?.text || '';
         if (text && text.trim()) {
-          return { text: text.trim(), model };
+          return { text: text.trim(), model: target.model };
         }
-      }
-
-      const errText = await resp.text();
-      attemptedErrors.push(`${model} [${resp.status}]`);
-      console.warn(`[Gemini] Model ${model} HTTP ${resp.status}: ${errText.slice(0, 100)}`);
-      // Jika error 429 (Quota/Rate Limit), kuota per menit akun sedang habis
-      // Segera batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
-      if (resp.status === 429 && attemptedErrors.length >= 2) {
-        break;
+        const finishReason = candidate?.finishReason || 'NO_TEXT';
+        attemptedErrors.push(`${target.model} [${finishReason}]`);
+      } else {
+        const errText = await resp.text();
+        attemptedErrors.push(`${target.model} [${resp.status}]`);
+        console.warn(`[Gemini] Model ${target.model} (${target.ver}) HTTP ${resp.status}: ${errText.slice(0, 100)}`);
+        // Jika error 429 (Quota/Rate Limit), kuota per menit akun sedang habis
+        // Segera batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
+        if (resp.status === 429 && attemptedErrors.length >= 2) {
+          break;
+        }
       }
     } catch (err) {
       clearTimeout(timeoutId);
       const msg = err.name === 'AbortError' ? 'timeout 25s' : err.message;
-      attemptedErrors.push(`${model} [${msg}]`);
+      attemptedErrors.push(`${target.model} [${msg}]`);
     }
   }
 

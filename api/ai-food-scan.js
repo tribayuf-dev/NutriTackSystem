@@ -367,7 +367,11 @@ async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMim
  * 3. Groq Vision Call (LPU Ultra-Fast Sub-Second Vision)
  */
 async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
-  const GROQ_MODELS = ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'];
+  const GROQ_MODELS = [
+    'qwen/qwen3.8-27b',
+    'meta-models/muse-spark-open',
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+  ];
   let lastError = null;
 
   for (const model of GROQ_MODELS) {
@@ -718,8 +722,11 @@ function parseJsonClean(text) {
     throw new Error('Respon AI kosong atau bukan string.');
   }
 
+  // 0. Bersihkan blok reasoning <think> ... </think> jika model reasoning (misal Qwen / DeepSeek)
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
   // 1. Bersihkan markdown fences (misal ```json ... ``` atau ``` ... ```)
-  let cleaned = text
+  cleaned = cleaned
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```\s*$/i, '')
     .trim();

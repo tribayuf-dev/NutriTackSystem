@@ -914,7 +914,7 @@ function getAimProviderName(code) {
   switch (code) {
     case 'gemini': return 'Google Gemini';
     case 'openai': return 'OpenAI (GPT-4o-mini)';
-    case 'groq': return 'Groq (Llama 3.2 Vision)';
+    case 'groq': return 'Groq Vision (Qwen)';
     case 'anthropic': return 'Anthropic Claude';
     case 'openrouter': return 'OpenRouter';
     default: return 'Auto (Cascade)';
@@ -1208,7 +1208,7 @@ function vAim(){
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='auto'?'on':''}" data-a="aimprovider" data-v="auto" title="Cascade Otomatis: Gemini → OpenAI → Groq → Claude">⚡ Auto</button>
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='gemini'?'on':''}" data-a="aimprovider" data-v="gemini" title="Google Gemini 2.0 Flash / 1.5">🌐 Gemini</button>
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='openai'?'on':''}" data-a="aimprovider" data-v="openai" title="OpenAI GPT-4o-mini (Cepat & Stabil)">🧠 OpenAI</button>
-        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='groq'?'on':''}" data-a="aimprovider" data-v="groq" title="Groq Llama 3.2 Vision (Sub-detik)">⚡ Groq</button>
+        <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='groq'?'on':''}" data-a="aimprovider" data-v="groq" title="Groq Vision (Qwen Ultra-Fast Sub-detik)">⚡ Groq</button>
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='anthropic'?'on':''}" data-a="aimprovider" data-v="anthropic" title="Anthropic Claude 3.5">🎭 Claude</button>
         <button class="chip text-center py-1 px-1 text-[11px] justify-center ${curProv==='openrouter'?'on':''}" data-a="aimprovider" data-v="openrouter" title="OpenRouter Multimodel">🔀 Router</button>
       </div>

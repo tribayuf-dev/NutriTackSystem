@@ -417,10 +417,10 @@ return{bmr:r0(bmr),tdee:r0(tdee),rec:r0(rec),kcal:r0(k),p:r0(pg),f:r0(fk/9),c:r0
 function init(){const L=[],W=[],X=[],T={b:'08:15',l:'12:30',s:'16:00',d:'19:30'},V=[[['telur',2,'butir','b'],['nasi',150,'g','b'],['kopi',1,'gelas','b'],['ayam',150,'g','l'],['nasi',1,'piring','l'],['brokoli',1,'mangkuk','l'],['pisang',1,'buah','s'],['teht',1,'gelas','s'],['tempe',3,'potong','d'],['tahu',2,'potong','d'],['nasi',1,'mangkuk','d'],['apel',1,'buah','d']],[['roti',3,'lembar','b'],['telur',2,'butir','b'],['susu',1,'gelas','b'],['ayamg',2,'potong','l'],['nasim',1,'piring','l'],['apel',1,'buah','s'],['ayam',150,'g','d'],['brokoli',1,'mangkuk','d'],['nasim',1,'mangkuk','d']]];
 for(let i=0;i<35;i++){const d=addD(td,-i);W.push({id:'w'+i,d,ml:i?1400+((i*53)%13)*90:1500,t:'12:00'});if(i&&i%11==5)continue;const z=i?.8+((i*37)%9)/20:1;V[i%2].forEach((a,j)=>{const fo=FD.find(f=>f.id==a[0]);if(!fo)return;const q=['g','piring','mangkuk'].includes(a[2])?+(a[1]*z).toFixed(1):a[1],c=toG(fo,q,a[2]);L.push({id:d+j,d,m:a[3],t:T[a[3]],fo:fo.id,n:fo.n,q,u:a[2],g:c.g,est:c.est,sn:snap(fo,c.g)})})}
 for(let k=0;k<10;k++)X.push({d:addD(td,-3*k),kg:+(61.5+k*.12).toFixed(1)});for(let k=5;k<60;k++)X.push({d:addD(td,-7*k),kg:+(61.5+k*.06+Math.sin(k)*.4).toFixed(1)});
-const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],ex:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,lang:'id'}}}
+const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],ex:[],chat:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,lang:'id'}}}
 const FIRST=(()=>{try{return!localStorage.getItem('nt2')}catch(e){return true}})();
 let S;try{S=JSON.parse(localStorage.getItem('nt2'))||init()}catch(e){S=init()}
-S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};S.ex=S.ex||[];if(S.set.bkf===undefined)S.set.bkf=7;
+S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};S.ex=S.ex||[];S.chat=S.chat||[];if(S.set.bkf===undefined)S.set.bkf=7;
 S.cfg={...JSON.parse(JSON.stringify(CFG0)),...(S.cfg||{})};S.rcp=S.rcp||[];S.del=S.del||[];S.fimg=S.fimg||{};S.pf.g=S.pf.g||'keep';S.cf=(S.cf||[]).map(f=>({...f,cat:CM[f.cat]||f.cat,st:f.st=='Custom'?'Buatan sendiri':f.st}));S.tg=calcT(S.pf,(S.tg&&S.tg.man)||{},S.cfg);
 // IndexedDB Persistent Image Store & Storage Engine
 const IDB_NAME='nutritrack_db',IDB_STORE='images';
@@ -551,6 +551,8 @@ function initStorageEngine(){
 let BCM=null,_bcDetector=null,_bcScanning=false,_bcStream=null,_zxLoading=false;let D=td,MD=null,CF=null,NM=null,RC=false,IM=null,XI={txt:'',res:null},XO='',XC=false,DF=null,RD=null,RT='b',DW=0,WP='w',RP={t:'w',a:addD(td,-6),b:td},B=null,MORE=false,WS=false,WK='',WDT=td,WC='',TU='',CPM=null,TWV=null,TWD=null,TWC='',toast='',EX_MODAL=null;
 // AIM = AI Food Scan Modal state
 let AIM=null,_aimStream=null;
+// NutriBot Conversational AI state
+let CHAT_OPEN=false,CHAT_LOADING=false,CHAT_INPUT='',CHAT_ERR='',CHAT_PROVIDER='auto',CHAT_VOICE_RECORDING=false;
 const lg=s=>S.logs.filter(l=>l.d==s),dT=s=>sum(lg(s)),wat=s=>S.water.filter(w=>w.d==s).reduce((a,w)=>a+w.ml,0),
       exL=s=>(S.ex||[]).filter(x=>x.d==s).sort((a,b)=>a.t<b.t?-1:1),
       exK=s=>exL(s).reduce((a,x)=>a+(num(x.kcal)||0),0);
@@ -648,7 +650,7 @@ return`<article class="card mb-4"><div class="flex items-center justify-between 
 function journal(){const L=lg(D),T=sum(L),g=S.tg,W=wat(D),burned=exK(D),netK=Math.max(0,T.k-burned),rem=g.kcal-netK,pc=r0(netK/g.kcal*100),sd=addD(D,-new Date(D+'T12:00').getDay()),
 days=[...Array(7)].map((_,i)=>{const x=addD(sd,i),d=dT(x),n=lg(x).length,on=x==D,ok=n&&Math.abs(d.k-g.kcal)<=g.kcal*.1,fu=x>td;return`<button class="dy ${on?'on':''}" ${fu?'disabled':''} data-a="sd" data-v="${x}"><span class="text-xs font-medium" style="opacity:.75">${new Date(x+'T12:00').toLocaleDateString(curLoc(),{weekday:'short'}).toUpperCase()}</span><b class="text-xl my-0.5">${x.slice(8)}</b><span class="flex gap-1 mt-1">${n?`<i class="dt" style="background:${on?'currentColor':'var(--pc)'}"></i><i class="dt" style="background:${on?'currentColor':ok?'var(--pc)':'var(--C)'}"></i>`:'<i class="dt" style="background:var(--ln)"></i>'}</span><span class="text-xs mt-1" style="opacity:.75">${fu?tr('planned'):n?n0(d.k)+' kkal':'–'}</span></button>`}).join(''),
 mb=(l,v,t,c)=>`<div class="bn"><div class="flex justify-between text-xs font-bold" style="opacity:.85"><span>${l}</span><i class="dt" style="background:${c};width:8px;height:8px"></i></div><div class="mt-1"><b class="text-lg" data-counter="${r0(v)}">${r0(v)}</b> <span class="text-xs" style="opacity:.7">/ ${t} g</span></div><div class="mt-2" style="background:rgba(255,255,255,.2);height:6px;border-radius:9999px;overflow:hidden"><div class="bn-bar" style="background:#fff;height:100%;width:${Math.min(100,v/t*100)}%"></div></div></div>`,fl=Math.min(6,Math.floor(W/(S.tg.water/6)));
-return`<section class="mb-6"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="ey flex items-center gap-2"><i class="dt" style="background:var(--pc);width:8px;height:8px"></i>${tr('personalJournal')}</div><div class="flex items-center gap-1 mt-1"><button class="sq" data-a="d" data-v="-1" aria-label="${tr('prevDay')}">${MS('chevron_left')}</button><div class="chipd">${MS('calendar_today',20,'color:var(--pr)')}<h1 class="text-xl font-bold tracking-tight">${D==td?tr('today')+', ':''}${fD(D)}</h1>${D==td?`<span class="act">${tr('active')}</span>`:''}</div><button class="sq" data-a="d" data-v="1" ${D>=td?'disabled':''} aria-label="${tr('nextDay')}">${MS('chevron_right')}</button></div></div><div class="flex flex-wrap items-center gap-2 max-md:w-full"><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="cpd">${MS('bookmark',18,'color:var(--pr)')} ${tr('copyPrev')}</button><button class="gh" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="qai">${MS('camera_enhance',18)} AI Foto</button><button class="gh" style="background:linear-gradient(135deg,#ea580c,#f97316);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="openex">${MS('fitness_center',18)} Olahraga</button><button class="btn" data-a="add" data-m="b">${MS('add',18)} ${tr('addFood')}</button></div></div>
+return`<section class="mb-6"><div class="flex flex-wrap items-center justify-between gap-3"><div><div class="ey flex items-center gap-2"><i class="dt" style="background:var(--pc);width:8px;height:8px"></i>${tr('personalJournal')}</div><div class="flex items-center gap-1 mt-1"><button class="sq" data-a="d" data-v="-1" aria-label="${tr('prevDay')}">${MS('chevron_left')}</button><div class="chipd">${MS('calendar_today',20,'color:var(--pr)')}<h1 class="text-xl font-bold tracking-tight">${D==td?tr('today')+', ':''}${fD(D)}</h1>${D==td?`<span class="act">${tr('active')}</span>`:''}</div><button class="sq" data-a="d" data-v="1" ${D>=td?'disabled':''} aria-label="${tr('nextDay')}">${MS('chevron_right')}</button></div></div><div class="flex flex-wrap items-center gap-2 max-md:w-full"><button class="gh" style="background:var(--cd);display:flex;gap:6px;align-items:center" data-a="cpd">${MS('bookmark',18,'color:var(--pr)')} ${tr('copyPrev')}</button><button class="gh" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="openchat">${MS('smart_toy',18)} NutriBot AI</button><button class="gh" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="qai">${MS('camera_enhance',18)} AI Foto</button><button class="gh" style="background:linear-gradient(135deg,#ea580c,#f97316);color:#fff;display:flex;gap:6px;align-items:center;border:none" data-a="openex">${MS('fitness_center',18)} Olahraga</button><button class="btn" data-a="add" data-m="b">${MS('add',18)} ${tr('addFood')}</button></div></div>
 <div class="grid grid-cols-7 gap-1 mt-4 p-2 card" style="padding:8px">${days}</div></section>
 <section class="mb-6"><div class="relative overflow-hidden flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 text-white" style="border-radius:16px;background:linear-gradient(90deg,#006c49,#006c4a);box-shadow:0 10px 20px rgba(0,108,73,.2)"><div style="position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(78,222,163,.2);filter:blur(48px)"></div><div class="flex items-center gap-4" style="position:relative"><img src="/icon-192.png" alt="" style="width:56px;height:56px;border-radius:16px;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.25)"><div><div class="flex items-center gap-2 text-xs font-semibold uppercase" style="letter-spacing:.06em"><span style="color:#85f8c4">${tr('dailyQuota')}</span></div><div class="flex items-baseline gap-2 flex-wrap"><span class="text-3xl font-black tracking-tight" data-counter="${Math.abs(rem)}" data-suffix=" kkal">${n0(Math.abs(rem))} kkal</span><span class="text-xl font-semibold" style="color:#85f8c4">${rem>=0?tr('rem'):tr('over')}</span><span class="text-sm hidden sm:inline" style="opacity:.75">• <span data-counter="${pc}">${pc}</span>% ${tr('ofTarget')}</span></div>${burned>0?`<div class="flex items-center gap-2 mt-2 flex-wrap text-xs"><span class="chip font-semibold" style="background:rgba(255,255,255,.2);color:#fff">🍽️ Makanan: ${n0(T.k)} kkal</span><span class="chip font-semibold" style="background:rgba(255,255,255,.2);color:#fff">🔥 Olahraga: -${n0(burned)} kkal</span><span class="chip font-bold" style="background:#fff;color:#00422b">⚡ Net Kalori: ${n0(netK)} kkal</span></div>`:''}</div></div><div class="grid grid-cols-3 gap-2" style="position:relative">${mb(tr('prot').toUpperCase(),T.p,g.p,'#ffdad6')}${mb(tr('carb').toUpperCase(),T.c,g.c,'#ffddb8')}${mb(tr('fat').toUpperCase(),T.f,g.f,'#85f8c4')}</div></div></section>
 <div class="grid lg:grid-cols-12 gap-6 items-start"><div class="lg:col-span-8">${meals(L)}</div><div class="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-24"><div class="card"><div class="flex justify-between items-center"><div class="flex items-center gap-2"><div class="ic" style="width:32px;height:32px;border-radius:8px">${MS('water_drop',20,"font-variation-settings:'FILL' 1")}</div><h3 class="font-bold text-lg">${tr('wat')}</h3></div><span class="text-xs font-bold pr">${tr('dailyTarget')}: ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} L</span></div><div class="flex items-baseline justify-between mt-4 mb-2"><div><b class="text-3xl font-black" data-counter="${W/1000}" data-decimals="1">${(W/1000).toLocaleString(curLoc(),{minimumFractionDigits:1,maximumFractionDigits:2})}</b> <span class="mu">/ ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} Liter</span></div><b class="text-sm pr"><span data-counter="${r0(W/g.water*100)}">${r0(W/g.water*100)}</span>%</b></div><div class="grid grid-cols-6 gap-2 my-2">${[...Array(6)].map((_,i)=>i<fl?`<div class="cup cup-filled" style="background:var(--pc);color:#00422b;animation-delay:${i*0.06}s">${MS('check',18)}</div>`:`<div class="cup mu" style="background:var(--tk2)">${MS('water_bottle',18)}</div>`).join('')}</div><div class="flex gap-2 mt-2"><button class="addm flex-1 justify-center" style="color:var(--tx)" data-a="w" data-v="250">+ 250 ml</button><button class="addm flex-1 justify-center" style="color:var(--tx)" data-a="w" data-v="500">+ 500 ml</button></div><div class="mt-4"><div class="text-sm font-semibold mb-1">${tr('manualInput')}</div><div class="flex gap-2"><input class="inp" id="hq" type="text" inputmode="decimal" data-ce autocomplete="off" placeholder="${tr('amount')} (ml)"><input class="inp" id="ht" type="time" style="width:120px;flex-shrink:0" value="${new Date().toTimeString().slice(0,5)}"><button class="btn" data-a="hw">${tr('addFood').split(' ')[0]}</button></div></div><div class="mt-3" style="max-height:140px;overflow:auto">${S.water.filter(x=>x.d==D).sort((a,b)=>a.t<b.t?-1:1).map(x=>`<div class="flex justify-between items-center text-sm py-1"><span class="mu">${x.t}</span><span><b>${n0(x.ml)} ml</b><button class="ib dl" data-a="hd" data-id="${x.id}" aria-label="${tr('delete')}">${MS('delete',16)}</button></span></div>`).join('')||`<div class="mu text-xs">${tr('noFoodToday')}</div>`}</div></div>
@@ -860,7 +862,7 @@ function login(){const first=!S.u.ph;return`<div class="min-h-screen flex flex-c
 const sb=()=>`<div class="card mb-4 flex items-center gap-3 cursor-pointer" style="background:var(--tk)" data-a="go" data-r="goals">${MS('tune',22,'color:var(--pr)')}<div><b class="text-sm">Lengkapi profil dan Goal Anda</b><div class="mu text-xs">Isi data di Goals & Targets agar target kalori dan nutrisi dihitung sesuai Anda.</div></div></div>`;
 const FT='<div class="ftr">Design By Tribayu · Powered By Claude</div>';
 function shell(c,r){const on=k=>r==k||(k=='rep'&&(r=='weekly'||r=='monthly'))||(k=='foods'&&r.startsWith('food/'));const nl=n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}" title="${tr(n[0])}">${ic(n[2])}<span class="hidden lg:inline">${tr(n[0])}</span></a>`;
-return`<aside class="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-50 py-5 md:w-[72px] lg:w-64" style="background:var(--cd);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex flex-col gap-5 px-3"><div class="flex items-center gap-2 px-2"><img src="/icon-192.png" alt="NutriTrack" style="width:32px;height:32px;border-radius:9px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><span class="hidden lg:flex items-center gap-2 font-bold text-lg">NutriTrack <span class="pro">PRO</span></span></div><nav class="flex flex-col gap-1">${NAV.slice(0,8).map(nl).join('')}</nav></div><nav class="px-3 flex flex-col gap-1">${NAV.slice(8).map(nl).join('')}</nav></aside><header class="hidden md:flex fixed top-0 right-0 md:left-[72px] lg:left-64 h-16 z-40 items-center justify-between px-8" style="background:color-mix(in srgb,var(--cd) 90%,transparent);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex items-center gap-4"><div class="relative flex items-center">${MS('search',20,'position:absolute;left:10px;color:var(--mu)')}<input id="tq" class="inp" style="width:320px;padding-left:38px;padding-top:7px;padding-bottom:7px" placeholder="${tr('search')}"></div><div class="flex items-center gap-2 text-xs font-semibold" style="background:var(--tk);padding:7px 14px;border-radius:12px">${MS('calendar_today',18,'color:var(--mu)')}${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</div></div><div class="flex items-center gap-3"><button class="chip" style="padding:4px 10px;font-size:12px;font-weight:700" data-a="langtoggle" title="Ganti Bahasa / Switch Language">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib relative" aria-label="Notifikasi">${MS('notifications',22)}<i class="dt" style="position:absolute;top:6px;right:6px;background:var(--pc);width:8px;height:8px"></i></button><div class="flex items-center gap-2"><span class="ic" style="width:32px;height:32px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span><div class="hidden xl:flex flex-col"><b class="text-xs">${S.u.name}</b><span class="mu text-xs">${tr('dailyTarget')}: ${n0(S.tg.kcal)} kkal</span></div></div></div></header><header class="md:hidden fixed top-0 inset-x-0 z-50" style="background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(16px);padding-top:env(safe-area-inset-top,0px);box-shadow:0 1px 8px rgba(0,0,0,.04)"><div class="h-16 px-4 flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><img src="/icon-192.png" alt="NutriTrack" style="width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold pr tracking-tight" style="font-size:18px">NutriTrack</span><span class="pro">PRO</span></div><div class="flex items-center gap-1 mu text-xs">${MS('calendar_today',13,'color:var(--pr)')}<span>${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</span></div></div></div><div class="flex items-center gap-1"><button class="chip" style="padding:3px 8px;font-size:11px;font-weight:700" data-a="langtoggle">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib" data-a="more" aria-label="Menu">${MS('menu',26)}</button><a class="cursor-pointer" data-a="go" data-r="profile" aria-label="Profile"><span class="ic" style="width:34px;height:34px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span></a></div></div><div class="px-4 pb-2"><h1 class="font-bold text-xl truncate">${r.startsWith('food/')?tr('foods'):tr(r)}</h1></div></header><main class="mm md:ml-[72px] lg:ml-64 px-4 md:px-8 pb-28 md:pb-8 max-w-[1320px]">${r=='dash'&&!S.setup?sb():''}${r=='dash'?bkBanner():''}${c}${FT}</main><nav class="md:hidden fixed bottom-0 inset-x-0 z-40" style="background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);box-shadow:0 -2px 12px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom,0px)"><div class="relative flex items-center justify-between h-16 px-2">${[['dash','home'],['journal','book']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}<div class="flex-1 flex items-center justify-center"><button class="btn" style="border-radius:9999px;width:56px;height:56px;justify-content:center;padding:0;margin-top:-22px;box-shadow:0 10px 15px -3px rgba(16,185,129,.4)" data-a="ga" aria-label="${tr('addFood')}">${MS('add',30)}</button></div>${[['rep','bar_chart'],['goals','tune']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}</div></nav>${MORE?`<div class="md:hidden fixed inset-0" style="z-index:60;background:rgba(19,27,46,.4);backdrop-filter:blur(4px)" data-a="more"><div class="absolute top-0 right-0 h-full flex flex-col" data-a="nop" style="width:80%;max-width:320px;background:var(--cd);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 20px 25px -5px rgba(15,23,42,.1)"><div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--ln)"><b class="text-lg">Menu</b><button class="ib" data-a="more" aria-label="${tr('close')}">${MS('close',24)}</button></div><div class="flex-1 overflow-y-auto py-2 flex flex-col gap-1">${NAV.map(n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}">${ic(n[2])}${tr(n[0])}</a>${n[0]=='rep'?[['weekly','insights'],['monthly','calendar_month']].map(m=>`<a class="nv cursor-pointer ${r==m[0]?'on':''}" style="margin-left:24px;font-size:14px" data-a="go" data-r="${m[0]}">${MS(m[1],20)}${tr(m[0])}</a>`).join(''):''}`).join('')}</div><div class="pt-3 text-xs mu" style="border-top:1px solid var(--ln)"><b style="color:var(--tx)">${S.u.name}</b><br>${S.u.email}</div></div></div>`:''}`}
+return`<aside class="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-50 py-5 md:w-[72px] lg:w-64" style="background:var(--cd);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex flex-col gap-5 px-3"><div class="flex items-center gap-2 px-2"><img src="/icon-192.png" alt="NutriTrack" style="width:32px;height:32px;border-radius:9px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><span class="hidden lg:flex items-center gap-2 font-bold text-lg">NutriTrack <span class="pro">PRO</span></span></div><nav class="flex flex-col gap-1">${NAV.slice(0,8).map(nl).join('')}</nav></div><nav class="px-3 flex flex-col gap-1">${NAV.slice(8).map(nl).join('')}</nav></aside><header class="hidden md:flex fixed top-0 right-0 md:left-[72px] lg:left-64 h-16 z-40 items-center justify-between px-8" style="background:color-mix(in srgb,var(--cd) 90%,transparent);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex items-center gap-4"><div class="relative flex items-center">${MS('search',20,'position:absolute;left:10px;color:var(--mu)')}<input id="tq" class="inp" style="width:320px;padding-left:38px;padding-top:7px;padding-bottom:7px" placeholder="${tr('search')}"></div><div class="flex items-center gap-2 text-xs font-semibold" style="background:var(--tk);padding:7px 14px;border-radius:12px">${MS('calendar_today',18,'color:var(--mu)')}${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</div></div><div class="flex items-center gap-3"><button class="chip" style="padding:4px 10px;font-size:12px;font-weight:700" data-a="langtoggle" title="Ganti Bahasa / Switch Language">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib relative" aria-label="Notifikasi">${MS('notifications',22)}<i class="dt" style="position:absolute;top:6px;right:6px;background:var(--pc);width:8px;height:8px"></i></button><div class="flex items-center gap-2"><span class="ic" style="width:32px;height:32px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span><div class="hidden xl:flex flex-col"><b class="text-xs">${S.u.name}</b><span class="mu text-xs">${tr('dailyTarget')}: ${n0(S.tg.kcal)} kkal</span></div></div></div></header><header class="md:hidden fixed top-0 inset-x-0 z-50" style="background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(16px);padding-top:env(safe-area-inset-top,0px);box-shadow:0 1px 8px rgba(0,0,0,.04)"><div class="h-16 px-4 flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><img src="/icon-192.png" alt="NutriTrack" style="width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold pr tracking-tight" style="font-size:18px">NutriTrack</span><span class="pro">PRO</span></div><div class="flex items-center gap-1 mu text-xs">${MS('calendar_today',13,'color:var(--pr)')}<span>${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</span></div></div></div><div class="flex items-center gap-1"><button class="chip" style="padding:3px 8px;font-size:11px;font-weight:700" data-a="langtoggle">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib" data-a="more" aria-label="Menu">${MS('menu',26)}</button><a class="cursor-pointer" data-a="go" data-r="profile" aria-label="Profile"><span class="ic" style="width:34px;height:34px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span></a></div></div><div class="px-4 pb-2"><h1 class="font-bold text-xl truncate">${r.startsWith('food/')?tr('foods'):tr(r)}</h1></div></header><main class="mm md:ml-[72px] lg:ml-64 px-4 md:px-8 pb-28 md:pb-8 max-w-[1320px]">${r=='dash'&&!S.setup?sb():''}${r=='dash'?bkBanner():''}${c}${FT}</main><nav class="md:hidden fixed bottom-0 inset-x-0 z-40" style="background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);box-shadow:0 -2px 12px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom,0px)"><div class="relative flex items-center justify-between h-16 px-2">${[['dash','home'],['journal','book']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}<div class="flex-1 flex items-center justify-center"><button class="btn" style="border-radius:9999px;width:56px;height:56px;justify-content:center;padding:0;margin-top:-22px;box-shadow:0 10px 15px -3px rgba(16,185,129,.4)" data-a="ga" aria-label="${tr('addFood')}">${MS('add',30)}</button></div>${[['rep','bar_chart'],['goals','tune']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}</div></nav>${MORE?`<div class="md:hidden fixed inset-0" style="z-index:60;background:rgba(19,27,46,.4);backdrop-filter:blur(4px)" data-a="more"><div class="absolute top-0 right-0 h-full flex flex-col" data-a="nop" style="width:80%;max-width:320px;background:var(--cd);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 20px 25px -5px rgba(15,23,42,.1)"><div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--ln)"><b class="text-lg">Menu</b><button class="ib" data-a="more" aria-label="${tr('close')}">${MS('close',24)}</button></div><div class="flex-1 overflow-y-auto py-2 flex flex-col gap-1">${NAV.map(n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}">${ic(n[2])}${tr(n[0])}</a>${n[0]=='rep'?[['weekly','insights'],['monthly','calendar_month']].map(m=>`<a class="nv cursor-pointer ${r==m[0]?'on':''}" style="margin-left:24px;font-size:14px" data-a="go" data-r="${m[0]}">${MS(m[1],20)}${tr(m[0])}</a>`).join(''):''}`).join('')}</div><div class="pt-3 text-xs mu" style="border-top:1px solid var(--ln)"><b style="color:var(--tx)">${S.u.name}</b><br>${S.u.email}</div></div></div>`:''}<button class="fixed z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-lg font-bold text-xs text-white cursor-pointer transition-all hover:scale-105 active:scale-95 bottom-[76px] right-4 md:bottom-8 md:right-8" style="background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 8px 24px rgba(16,185,129,0.35);border:1.5px solid rgba(255,255,255,0.25)" data-a="openchat" aria-label="Tanya NutriBot AI">${MS('smart_toy',20)}<span class="hidden sm:inline">NutriBot AI</span></button>`}
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const TJ=JSON.stringify({foods:[{nama:'Bubur Ayam',kategori:'Makanan',sumber:'Pengguna',status:'Buatan sendiri',merek:'Contoh Merek',kepadatan:1,per_100g:{kalori:120,protein:6,karbohidrat:18,lemak:3,serat:0.5,gula:1,natrium:300},porsi:[{nama:'mangkuk',gram:250},{nama:'piring',gram:300}],mikro:{besi:0.6,besi_heme_persen:0,kalsium:12,seng:0.5,magnesium:10,kalium:80,vit_a:10,vit_d:0.2,vit_e:0.3,vit_k:1,vit_c:1,vit_b12:0.3,folat:10},sifat:{sumber_protein:'hewani',fitat:'rendah',oksalat:'rendah',polifenol:false}}]},null,2),
 TC='nama,kategori,sumber,status,nama_porsi,gram_per_porsi,kalori,protein,karbohidrat,lemak,serat,gula,natrium,merek,kepadatan,besi,besi_heme_persen,kalsium,seng,magnesium,kalium,vit_a,vit_d,vit_e,vit_k,vit_c,vit_b12,folat,sumber_protein,fitat,oksalat,polifenol\nBubur Ayam,Makanan,Pengguna,Buatan sendiri,mangkuk,250,120,6,18,3,0.5,1,300,Contoh Merek,1,0.6,0,12,0.5,10,80,10,0.2,0.3,1,1,0.3,10,hewani,rendah,rendah,tidak\nSambal Terasi,Makanan,Pengguna,Estimasi,sdm,15,70,1.5,8,3.5,1.2,2,900'+','.repeat(19);
@@ -1190,7 +1192,356 @@ function toggleVoiceInput() {
   }
 }
 
-function vModal(){if(AIM_KEYS_MODAL)return renderAimKeysModal();if(EX_MODAL)return vExModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
+// ─── NutriBot AI Companion (Tahap 4) ──────────────────────────────────────────
+function renderMd(text){
+  if(!text)return '';
+  let s=String(text)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+  s=s.replace(/```([\s\S]*?)```/g,(_,c)=>`<pre style="background:var(--tk);padding:8px 12px;border-radius:8px;font-size:12px;overflow-x:auto;margin:6px 0;font-family:monospace"><code>${c.trim()}</code></pre>`);
+  s=s.replace(/`([^`]+)`/g,'<code style="background:var(--tk);padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace">$1</code>');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  s=s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g,'$1<i>$2</i>');
+  const lines=s.split('\n');let inList=false,listTag='ul';const out=[];
+  for(let line of lines){
+    const trm=line.trim();
+    if(/^[-*•]\s+(.*)/.test(trm)){
+      const item=trm.replace(/^[-*•]\s+/,'');
+      if(!inList||listTag!=='ul'){if(inList)out.push(`</${listTag}>`);out.push('<ul style="padding-left:18px;margin:4px 0;list-style-type:disc">');inList=true;listTag='ul'}
+      out.push(`<li style="margin:2px 0">${item}</li>`);
+    }else if(/^\d+\.\s+(.*)/.test(trm)){
+      const item=trm.replace(/^\d+\.\s+/,'');
+      if(!inList||listTag!=='ol'){if(inList)out.push(`</${listTag}>`);out.push('<ol style="padding-left:18px;margin:4px 0;list-style-type:decimal">');inList=true;listTag='ol'}
+      out.push(`<li style="margin:2px 0">${item}</li>`);
+    }else{
+      if(inList){out.push(`</${listTag}>`);inList=false}
+      if(trm==='')out.push('<div style="height:6px"></div>');
+      else out.push(`<p style="margin:4px 0;line-height:1.5">${line}</p>`);
+    }
+  }
+  if(inList)out.push(`</${listTag}>`);
+  return out.join('');
+}
+
+function getNutriBotContext(){
+  const L=lg(D),T=sum(L),g=S.tg||{},W=wat(D),burned=exK(D),netK=Math.max(0,T.k-burned),rem=(g.kcal||2000)-netK;
+  const cr=calcChrono(L);
+  const gl=Math.round(L.reduce((a,l)=>a+calcGL(l),0)*10)/10;
+  const glStatus=gl<=80?'Rendah (Optimal)':gl<=120?'Sedang (Moderat)':'Tinggi (Waspada)';
+  const goalMap={lose:'Menurunkan Berat Badan (Defisit)',keep:'Menjaga Berat Badan',gain:'Menaikkan Berat Badan (Surplus)'};
+  const mNames={b:'Sarapan',l:'Makan Siang',d:'Makan Malam',s:'Camilan'};
+  return{
+    name:S.u.name||'Pengguna',
+    goal:goalMap[S.pf.g]||'Menjaga Berat Badan',
+    targetKcal:g.kcal||2000,
+    targetProtein:g.p||75,
+    targetCarbs:g.c||250,
+    targetFat:g.f||65,
+    targetFiber:Math.round(((g.kcal||2000)/1000)*(S.cfg.fiber||14)),
+    targetWater:g.water||2000,
+    consumedKcal:r0(T.k),
+    consumedProtein:r1(T.p),
+    consumedCarbs:r1(T.c),
+    consumedFat:r1(T.f),
+    consumedFiber:r1(T.fi),
+    consumedWater:W,
+    burnedKcal:burned,
+    netKcal:netK,
+    remainingKcal:rem,
+    mealsToday:L.map(l=>({
+      meal:mNames[l.m]||'Makanan',
+      name:l.n,
+      portion:(l.q||1)+' '+(l.u||'porsi'),
+      kcal:(l.sn&&l.sn.k)||0,
+      p:(l.sn&&l.sn.p)||0,
+      c:(l.sn&&l.sn.c)||0,
+      f:(l.sn&&l.sn.f)||0
+    })),
+    eatingWindow:cr?{
+      firstTime:cr.firstTime,
+      lastTime:cr.lastTime,
+      windowHours:Math.floor(cr.windowMin/60)+'j '+(cr.windowMin%60?(cr.windowMin%60)+'m':''),
+      fastingHours:Math.floor(cr.fastMin/60)+'j'
+    }:null,
+    glycemicLoad:{score:gl,status:glStatus},
+    profile:{
+      age:S.pf.age,
+      sex:S.pf.sex,
+      height:S.pf.h,
+      weight:S.pf.w,
+      targetWeight:S.pf.tw||null,
+      diet:S.pf.diet||'Umum/Omnivora'
+    }
+  };
+}
+
+let _chatSpeechRecognizer=null;
+function toggleChatVoice(){
+  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec){
+    tst('Browser tidak mendukung Speech Recognition (Gunakan Chrome/Edge/Safari).');
+    return;
+  }
+  if(CHAT_VOICE_RECORDING){
+    if(_chatSpeechRecognizer){try{_chatSpeechRecognizer.stop()}catch(e){}}
+    CHAT_VOICE_RECORDING=false;render();return;
+  }
+  try{
+    const rec=new SpeechRec();
+    rec.lang='id-ID';
+    rec.interimResults=false;
+    rec.maxAlternatives=1;
+
+    rec.onstart=()=>{
+      CHAT_VOICE_RECORDING=true;
+      render();
+      tst('🎙️ Mendengarkan suara Anda...');
+    };
+
+    rec.onresult=e=>{
+      const transcript=e.results[0]?.[0]?.transcript;
+      if(transcript){
+        CHAT_INPUT=(CHAT_INPUT?CHAT_INPUT+' ':'')+transcript.trim();
+        tst('Dikte: "'+transcript+'"');
+      }
+      CHAT_VOICE_RECORDING=false;
+      render();
+      setTimeout(()=>{
+        const inp=document.getElementById('chat-input');
+        if(inp){inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(_){}}
+      },50);
+    };
+
+    rec.onerror=e=>{
+      CHAT_VOICE_RECORDING=false;
+      render();
+      if(e.error!=='no-speech'){
+        tst('Dikte suara: '+(e.error||'Terjadi gangguan mikrofon.'));
+      }
+    };
+
+    rec.onend=()=>{
+      CHAT_VOICE_RECORDING=false;
+      render();
+    };
+
+    _chatSpeechRecognizer=rec;
+    rec.start();
+  }catch(err){
+    CHAT_VOICE_RECORDING=false;
+    render();
+    tst('Gagal memulai mikrofon: '+err.message);
+  }
+}
+
+async function sendNutriBotMessage(textOverride){
+  const text=(textOverride||CHAT_INPUT||'').trim();
+  if(!text||CHAT_LOADING)return;
+
+  S.chat=S.chat||[];
+  S.chat.push({
+    id:'msg_'+Date.now(),
+    role:'user',
+    content:text,
+    time:new Date().toTimeString().slice(0,5)
+  });
+
+  CHAT_INPUT='';
+  CHAT_ERR='';
+  CHAT_LOADING=true;
+  save();
+  render();
+
+  setTimeout(()=>{
+    const el=document.getElementById('chat-history-container');
+    if(el)el.scrollTop=el.scrollHeight;
+  },40);
+
+  let customKeys={};
+  try{
+    customKeys=JSON.parse(localStorage.getItem('nutritrack_custom_ai_keys')||'{}');
+  }catch(e){}
+
+  const payload={
+    messages:S.chat.map(m=>({role:m.role,content:m.content})),
+    userContext:getNutriBotContext(),
+    provider:CHAT_PROVIDER||'auto',
+    custom_keys:customKeys
+  };
+
+  try{
+    const res=await fetch('/api/ai-chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+
+    const data=await res.json();
+    if(!res.ok){
+      throw new Error(data.error||('Gagal menghubungkan ke AI ('+res.status+')'));
+    }
+
+    S.chat.push({
+      id:'msg_'+Date.now(),
+      role:'assistant',
+      content:data.text||'Maaf, NutriBot belum bisa merespons saat ini.',
+      time:new Date().toTimeString().slice(0,5),
+      provider:data.provider_used||data.provider_code||'AI',
+      model:data.model_used||'',
+      latencyMs:data.latency_ms||0
+    });
+    CHAT_ERR='';
+  }catch(err){
+    CHAT_ERR=err.message||'Terjadi kesalahan saat menghubungi NutriBot.';
+  }finally{
+    CHAT_LOADING=false;
+    save();
+    render();
+    setTimeout(()=>{
+      const el=document.getElementById('chat-history-container');
+      if(el)el.scrollTop=el.scrollHeight;
+      const inp=document.getElementById('chat-input');
+      if(inp)inp.focus();
+    },50);
+  }
+}
+
+function vChatModal(){
+  if(!CHAT_OPEN)return '';
+  const ctx=getNutriBotContext();
+  const msgs=S.chat||[];
+
+  return `<div class="ov" role="dialog" aria-modal="true" style="z-index:110">
+    <div class="card w-full max-w-xl flex flex-col p-0 overflow-hidden" style="height:90vh;max-height:740px;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.3);background:var(--cd);position:relative">
+      <!-- Modal Header -->
+      <div class="p-4 flex items-center justify-between gap-2" style="border-bottom:1px solid var(--ln);background:var(--cd)">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff">
+            ${MS('smart_toy',22)}
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <b class="text-sm font-bold tracking-tight">NutriBot AI</b>
+              <span class="pro" style="background:#10b981;color:#fff;font-size:10px;padding:1px 6px">Gizi Klinis</span>
+            </div>
+            <div class="mu text-[11px] truncate">Asisten Diet & Rekomendasi Menu</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <select id="chat-provider-select" class="inp text-xs py-1 px-2 cursor-pointer" style="width:auto;height:32px;font-weight:600;background:var(--tk);border-radius:10px" title="Pilih Mesin AI">
+            <option value="auto" ${CHAT_PROVIDER==='auto'?'selected':''}>⚡ Auto (Cascade)</option>
+            <option value="groq" ${CHAT_PROVIDER==='groq'?'selected':''}>⚡ Groq LPU</option>
+            <option value="gemini" ${CHAT_PROVIDER==='gemini'?'selected':''}>🌐 Gemini</option>
+            <option value="openai" ${CHAT_PROVIDER==='openai'?'selected':''}>🧠 OpenAI</option>
+            <option value="claude" ${CHAT_PROVIDER==='claude'?'selected':''}>🎭 Claude</option>
+            <option value="openrouter" ${CHAT_PROVIDER==='openrouter'?'selected':''}>🔀 OpenRouter</option>
+          </select>
+          <button class="ib" data-a="aimkeys" title="Atur API Key Mandiri" style="width:32px;height:32px">${MS('key',16)}</button>
+          <button class="ib" data-a="chatclear" title="Bersihkan Percakapan" style="width:32px;height:32px">${MS('delete_sweep',18)}</button>
+          <button class="ib" data-a="chatclose" title="Tutup" style="width:32px;height:32px">${MS('close',20)}</button>
+        </div>
+      </div>
+
+      <!-- Real-time Context Status Bar -->
+      <div class="px-3 py-1.5 text-[11px] flex items-center justify-between gap-3 overflow-x-auto shrink-0" style="background:var(--tk);border-bottom:1px solid var(--ln);white-space:nowrap">
+        <div class="flex items-center gap-3">
+          <span>🎯 Target: <b>${ctx.targetKcal} kkal</b></span>
+          <span>🍽️ Masuk: <b>${ctx.consumedKcal} kkal</b></span>
+          ${ctx.burnedKcal>0?`<span>🔥 Terbakar: <b class="text-[#ea580c]">-${ctx.burnedKcal} kkal</b></span>`:''}
+          <span>⚡ Net: <b style="color:${ctx.remainingKcal>=0?'var(--pr)':'var(--P)'}">${ctx.remainingKcal>=0?ctx.remainingKcal+' kkal tersisa':'+'+Math.abs(ctx.remainingKcal)+' kkal (surplus)'}</b></span>
+          <span>🥩 P: <b>${ctx.consumedProtein}/${ctx.targetProtein}g</b></span>
+          <span>📊 GL: <b>${ctx.glycemicLoad.score}</b></span>
+        </div>
+        <span class="mu text-[10px] flex items-center gap-1 shrink-0 font-medium" title="Konteks log harian Anda otomatis terhubung ke AI"><i class="dt" style="background:#10b981;width:6px;height:6px"></i> Live Sync</span>
+      </div>
+
+      <!-- Message History Container -->
+      <div id="chat-history-container" class="flex-1 p-4 overflow-y-auto space-y-3.5" style="scroll-behavior:smooth">
+        ${msgs.length===0?`
+          <div class="text-center py-5 px-3 flex flex-col items-center justify-center">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-md" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff">
+              ${MS('smart_toy',32)}
+            </div>
+            <b class="text-base font-bold mb-1">Halo, ${esc(S.u.name||'Sobat Sehat')}! 👋</b>
+            <p class="mu text-xs max-w-sm mb-4 leading-relaxed">
+              Saya <b>NutriBot</b>, konsultan gizi klinis AI Anda. Saya memantau catatan makanan, sisa target kalori (${ctx.remainingKcal>=0?ctx.remainingKcal+' kkal tersisa':'surplus '+Math.abs(ctx.remainingKcal)+' kkal'}), dan ritme makan Anda hari ini.
+            </p>
+            <div class="w-full max-w-md text-left">
+              <span class="mu text-[11px] font-semibold block mb-2">💡 Pertanyaan Rekomendasi:</span>
+              <div class="flex flex-col gap-1.5">
+                <button class="chip text-xs justify-start text-left p-2.5 transition-all hover:border-[var(--pr)] hover:bg-[var(--tk2)]" data-a="chatsuggest" data-v="Beri rekomendasi menu makan malam tinggi protein rendah kalori sesuai sisa kuota kalori saya hari ini.">
+                  🍱 Rekomendasi menu makan malam tinggi protein rendah kalori
+                </button>
+                <button class="chip text-xs justify-start text-left p-2.5 transition-all hover:border-[var(--pr)] hover:bg-[var(--tk2)]" data-a="chatsuggest" data-v="Evaluasi pola makan, rasio makronutrien, dan estimasi beban glikemik saya hari ini. Berikan saran perbaikan.">
+                  📊 Evaluasi pola makan dan beban glikemik hari ini
+                </button>
+                <button class="chip text-xs justify-start text-left p-2.5 transition-all hover:border-[var(--pr)] hover:bg-[var(--tk2)]" data-a="chatsuggest" data-v="Beri saya ide camilan sehat khas Indonesia sekitar 100-150 kkal yang padat protein dan mengenyangkan.">
+                  🍎 Camilan sehat Indonesia 100–150 kkal yang mengenyangkan
+                </button>
+                <button class="chip text-xs justify-start text-left p-2.5 transition-all hover:border-[var(--pr)] hover:bg-[var(--tk2)]" data-a="chatsuggest" data-v="Bagaimana analisis jendela makan dan ritme sirkadian saya hari ini? Apakah sudah optimal?">
+                  ⏰ Analisis ritme sirkadian & jendela makan hari ini
+                </button>
+              </div>
+            </div>
+          </div>
+        `:msgs.map(m=>m.role==='user'?`
+          <div class="flex justify-end items-end gap-2">
+            <div class="max-w-[85%] rounded-2xl rounded-br-none px-4 py-2.5 text-xs text-white" style="background:linear-gradient(135deg,var(--pr),#059669);box-shadow:0 2px 8px rgba(16,185,129,0.25)">
+              <div class="leading-relaxed whitespace-pre-wrap">${esc(m.content)}</div>
+              <div class="text-[10px] text-right mt-1 opacity-75">${m.time||''}</div>
+            </div>
+          </div>
+        `:`
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-sm" style="background:linear-gradient(135deg,#10b981,#047857);color:#fff">
+              ${MS('smart_toy',16)}
+            </div>
+            <div class="max-w-[85%] rounded-2xl rounded-tl-none px-4 py-2.5 text-xs" style="background:var(--tk);border:1px solid var(--ln);box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+              <div class="leading-relaxed font-normal">${renderMd(m.content)}</div>
+              <div class="flex items-center justify-between gap-3 text-[10px] mu mt-2 pt-1.5" style="border-top:1px solid var(--ln)">
+                <span>${m.provider?'⚡ '+esc(m.provider):'NutriBot'}</span>
+                <span>${m.time||''}${m.latencyMs?' · '+(m.latencyMs/1000).toFixed(1)+'s':''}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+
+        ${CHAT_LOADING?`
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 animate-bounce shadow-sm" style="background:linear-gradient(135deg,#10b981,#047857);color:#fff">
+              ${MS('smart_toy',16)}
+            </div>
+            <div class="rounded-2xl rounded-tl-none px-4 py-3 text-xs flex items-center gap-2" style="background:var(--tk);border:1px solid var(--ln)">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style="animation-delay:0.2s"></span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style="animation-delay:0.4s"></span>
+              <span class="mu text-[11px] ml-1">NutriBot sedang menganalisis nutrisi Anda...</span>
+            </div>
+          </div>
+        `:''}
+
+        ${CHAT_ERR?`
+          <div class="p-3 rounded-xl text-xs flex items-center justify-between gap-2" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b">
+            <span>⚠️ ${esc(CHAT_ERR)}</span>
+            <button class="chip text-xs px-2.5 py-1 font-bold cursor-pointer" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" data-a="chatrety">Coba Lagi</button>
+          </div>
+        `:''}
+      </div>
+
+      <!-- Footer Input Bar -->
+      <div class="p-3" style="background:var(--cd);border-top:1px solid var(--ln)">
+        <div class="flex items-center gap-2">
+          <input id="chat-input" class="inp flex-1 text-xs" style="padding-top:10px;padding-bottom:10px" placeholder="Tanyakan saran makanan, kalori, atau gizi... (Enter kirim)" value="${esc(CHAT_INPUT)}" ${CHAT_LOADING?'disabled':''}>
+          <button class="ib ${CHAT_VOICE_RECORDING?'animate-pulse':''}" style="width:40px;height:40px;border-radius:12px;${CHAT_VOICE_RECORDING?'background:#ffe4e6;color:#e11d48;border:1px solid #f43f5e':'background:var(--tk)'}" data-a="chatvoice" title="Dikte Suara">${MS(CHAT_VOICE_RECORDING?'mic':'mic_none',20,CHAT_VOICE_RECORDING?'color:#e11d48':'')}</button>
+          <button class="btn text-xs font-bold" style="width:40px;height:40px;border-radius:12px;padding:0;justify-content:center;background:linear-gradient(135deg,var(--pr),#059669)" data-a="chatsend" ${CHAT_LOADING||!CHAT_INPUT.trim()?'disabled':''} title="Kirim Pesan">${MS('send',18)}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function vModal(){if(CHAT_OPEN)return vChatModal();if(AIM_KEYS_MODAL)return renderAimKeysModal();if(EX_MODAL)return vExModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
 if(DF)return cm('Hapus item makanan?','Item dihapus dari Food Database dan tidak muncul lagi saat mencatat makanan. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','dfy','dfn');if(RD)return cm('Hapus resep?','Resep dan menu terkait di Food Database akan dihapus. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','rdy','rdn');if(CF)return cm('Hapus catatan makanan?','Data yang dihapus tidak dapat dikembalikan.','Hapus','cy','cn');if(RC)return cm('Reset data?','Seluruh catatan, target, resep, dan pengaturan akan dikosongkan, dan Food Database kembali ke master awal. Akun login tetap. Disarankan mengunduh cadangan terlebih dahulu.','Reset','rcy','rcn');
 if(CPM){const c=CPM,mnm=MEALS.find(m=>m[0]==c.m)[1],tg=`<div class="grid grid-cols-2 gap-2 mt-3"><input class="inp" id="cd" type="date" max="${td}" value="${c.d}"><select class="inp" id="ctm">${MEALS.map(m=>`<option value="${m[0]}" ${m[0]==c.tm?'selected':''}>${m[1]}</option>`).join('')}</select></div>`,err=c.e?`<div class="text-sm mt-2" style="color:var(--P)">${c.e}</div>`:'';
 return`<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-2"><b>${c.t=='copy'?'Salin '+mnm:c.t=='save'?'Simpan sebagai Template':'Pakai Template'}</b><button data-a="cpx" aria-label="Tutup">✕</button></div>${c.t=='copy'?`<p class="mu text-sm">Salin semua item ${mnm} pada ${fD(D)} ke tanggal dan waktu makan tujuan.</p>${tg}${err}<button class="btn w-full justify-center mt-4" data-a="cmy">Salin</button>`:c.t=='save'?`<p class="mu text-sm">Simpan item ${mnm} hari ini sebagai template untuk dipakai ulang.</p><input class="inp mt-3" id="cn" maxlength="40" placeholder="Nama template (mis. Sarapan Biasa)" value="${esc(c.name)}">${err}<button class="btn w-full justify-center mt-4" data-a="stz">Simpan Template</button>`:`<p class="mu text-sm">Pilih tujuan, lalu template yang akan dipakai. Nilai gizi sesuai saat template disimpan.</p>${tg}${err}<div class="mt-3">${S.tpl.map(t=>{const k=t.items.reduce((a,x)=>a+(x.sn?x.sn.k:0),0);return`<div class="flex items-center gap-2 py-2" style="border-top:1px solid var(--ln)"><div class="flex-1 min-w-0"><b class="text-sm block truncate">${esc(t.name)}</b><span class="mu text-xs">${t.items.length} item · ${n0(k)} kkal</span></div><button class="btn" style="padding:6px 12px" data-a="tpy" data-id="${t.id}">Pakai</button><button class="ib dl" data-a="tpd" data-id="${t.id}" aria-label="Hapus template">${MS('delete',18)}</button></div>`}).join('')||'<div class="mu text-sm">Belum ada template.</div>'}</div>`}</div></div>`}
@@ -2726,6 +3077,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
 if(a=='go')return go(b.dataset.r);
 if(a=='nop')return;
 if(a=='more')MORE=!MORE;
+else if(a=='openchat'){CHAT_OPEN=true;CHAT_ERR='';render();setTimeout(()=>{const el=document.getElementById('chat-history-container');if(el)el.scrollTop=el.scrollHeight;const inp=document.getElementById('chat-input');if(inp)inp.focus()},60);return}
+else if(a=='chatclose'){CHAT_OPEN=false;render();return}
+else if(a=='chatclear'){if(confirm('Hapus seluruh riwayat percakapan dengan NutriBot?')){S.chat=[];save();render()}return}
+else if(a=='chatsuggest'){sendNutriBotMessage(v);return}
+else if(a=='chatrety'){const lastUser=(S.chat||[]).slice().reverse().find(m=>m.role==='user');if(lastUser){sendNutriBotMessage(lastUser.content)}return}
+else if(a=='chatsend'){sendNutriBotMessage();return}
+else if(a=='chatvoice'){toggleChatVoice();return}
 else if(a=='voiceinput'){toggleVoiceInput();return}
 else if(a=='openex'){EX_MODAL={id:null,d:D,t:new Date().toTimeString().slice(0,5),preset:'run_jog',name:'Lari / Jogging (~8 km/jam)',met:7.5,min:'30',kcal:'',e:''};render()}
 else if(a=='exedit'){const it=(S.ex||[]).find(x=>x.id==id);if(it){EX_MODAL={id:it.id,d:it.d,t:it.t,preset:it.preset||'custom',name:it.name,met:it.met||5.0,min:String(it.min),kcal:it.kcal?String(it.kcal):'',e:''};render()}}
@@ -2969,6 +3327,7 @@ else{if(pw.length<8){er.textContent='Kata sandi minimal 8 karakter untuk membuat
 S.u.in=true;save();go('dash');render()}
 async function chPw(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){tst('Kata sandi baru minimal 8 karakter');return}if(a!==b){tst('Konfirmasi kata sandi tidak sama');return}S.u.ph=await hx(a);save();tst('Kata sandi berhasil diubah')}
 document.addEventListener('change',e=>{const t=e.target,i=t.dataset&&t.dataset.i;
+if(t.id=='chat-provider-select'){CHAT_PROVIDER=t.value;return}
 if(t.id=='ex-preset'&&EX_MODAL){const found=EX_PRESETS.find(p=>p.id===t.value);if(found){EX_MODAL.preset=found.id;EX_MODAL.met=found.met;if(!EX_MODAL.name||EX_PRESETS.some(p=>p.name===EX_MODAL.name)){EX_MODAL.name=found.name}render()}return}
 if(i&&/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B&&B.r&&B.r[j];if(x){if(i[1]=='f'){x[0]=t.value;const fo=fOf(t.value);x[2]=(fo&&un(fo)[0])||'g'}else if(i[1]=='q'){const qv=num(t.value);x[1]=Number.isFinite(qv)?qv:t.value}else{x[2]=t.value}render()}return}
 if(t.id=='xif'&&t.files[0]){if(t.files[0].size>25e6){tst('Berkas terlalu besar (maksimal 25 MB)');return}const fr=new FileReader();fr.onload=()=>{XI.txt=String(fr.result);XI.res=parseBk(XI.txt);render()};fr.readAsText(t.files[0]);return}if(t.id=='imf'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{IM.txt=String(fr.result);if(/\.csv$/i.test(t.files[0].name))IM.f='csv';else if(/\.json$/i.test(t.files[0].name))IM.f='json';IM.res=parseImp(IM.f,IM.txt);render()};fr.readAsText(t.files[0]);return}
@@ -3025,6 +3384,7 @@ if(t.classList&&t.classList.contains('aim-urt-inp')){
   }
   return;
 }
+if(t.id=='chat-input'){CHAT_INPUT=t.value;const sb=document.querySelector('[data-a="chatsend"]');if(sb)sb.disabled=!t.value.trim()||CHAT_LOADING;return}
 if(t.id=='sq'){MD.q=t.value;render();f=$('#sq');fc(f);return}
 const dc=v=>v.replace(/[^0-9.,]/g,'');
 if(t.dataset&&t.dataset.ce!==undefined&&t.inputMode=='decimal'){const c0=dc(t.value);if(c0!==t.value)t.value=c0}
@@ -3067,7 +3427,9 @@ const fc=f=>{if(f){f.focus();try{f.setSelectionRange(99,99)}catch(e){}}};
 function calcLd2(id){clearTimeout(window._c);window._c=setTimeout(()=>{render();const f=$('#'+(id||'mq'));if(f){fc(f)}},250)}
 const ceF=e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ce!==undefined&&typeof t.setSelectionRange=='function'){const L=t.value.length;setTimeout(()=>{try{t.setSelectionRange(L,L)}catch(_){}},0)}};
 document.addEventListener('focusin',ceF);document.addEventListener('click',ceF);document.addEventListener('touchend',ceF);
-document.addEventListener('keydown',e=>{if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e.target.id=='tq'&&e.key=='Enter'){FS.q=e.target.value;go('foods');return}if(e.target.id=='bc-manual-input'&&e.key=='Enter'){e.preventDefault();const c=e.target.value.trim();if(c){if(BCM)BCM.manualCode=c;onBarcodeScanned(c)}else{tst(tr('typeBarcodeFirst'))}return}if(e.key=='Escape'&&BCM){stopBcCamera();BCM=null;render();return}
+document.addEventListener('keydown',e=>{if(e.target.id=='chat-input'&&e.key=='Enter'&&!e.shiftKey){e.preventDefault();sendNutriBotMessage();return}
+if(e.key=='Escape'&&CHAT_OPEN){CHAT_OPEN=false;render();return}
+if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e.target.id=='tq'&&e.key=='Enter'){FS.q=e.target.value;go('foods');return}if(e.target.id=='bc-manual-input'&&e.key=='Enter'){e.preventDefault();const c=e.target.value.trim();if(c){if(BCM)BCM.manualCode=c;onBarcodeScanned(c)}else{tst(tr('typeBarcodeFirst'))}return}if(e.key=='Escape'&&BCM){stopBcCamera();BCM=null;render();return}
 if(e.key=='Escape'&&AIM){stopAimCamera();AIM=null;render();return}});
 try{window.matchMedia('(max-width:767px)').addEventListener('change',render)}catch(e){}
 let _mb=MOB();window.addEventListener('resize',()=>{const m=MOB();if(m!==_mb){_mb=m;render()}});

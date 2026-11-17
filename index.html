@@ -420,7 +420,7 @@ for(let k=0;k<10;k++)X.push({d:addD(td,-3*k),kg:+(61.5+k*.12).toFixed(1)});for(l
 const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,lang:'id'}}}
 const FIRST=(()=>{try{return!localStorage.getItem('nt2')}catch(e){return true}})();
 let S;try{S=JSON.parse(localStorage.getItem('nt2'))||init()}catch(e){S=init()}
-S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};if(S.set.bkf===undefined)S.set.bkf=7;S.badges=S.badges||{earned:[],seen:[]};S.customXP=S.customXP||0;
+S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};if(S.set.bkf===undefined)S.set.bkf=7;
 S.cfg={...JSON.parse(JSON.stringify(CFG0)),...(S.cfg||{})};S.rcp=S.rcp||[];S.del=S.del||[];S.fimg=S.fimg||{};S.pf.g=S.pf.g||'keep';S.cf=(S.cf||[]).map(f=>({...f,cat:CM[f.cat]||f.cat,st:f.st=='Custom'?'Buatan sendiri':f.st}));S.tg=calcT(S.pf,(S.tg&&S.tg.man)||{},S.cfg);
 // IndexedDB Persistent Image Store & Storage Engine
 const IDB_NAME='nutritrack_db',IDB_STORE='images';
@@ -574,14 +574,9 @@ async function hx(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEn
 const stB=s=>`<span class="bd" style="color:${s=='Terverifikasi'?'var(--pr)':'#b7791f'}">${tr(s=='Terverifikasi'?'verified':s=='Belum diverifikasi'?'unverified':s=='Estimasi'?'estimated':s=='Buatan sendiri'?'homemade':s)}</span>`;
 const MOB=()=>!!(window.matchMedia&&window.matchMedia('(max-width:767px)').matches);
 const mobList=F=>F.length?`<div class="flex flex-col gap-2">${F.map(f=>`<div class="row" style="padding:10px"><div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" data-a="go" data-r="food/${f.id}">${fImg(f.id,48,12)}<div class="min-w-0"><div class="font-semibold text-sm truncate">${f.n}</div><div class="mu text-xs">${f.br?esc(f.br)+' • ':''}${f.cat} • ${stB(f.st)}</div><div class="text-xs mt-0.5"><b>${r0(f.k)}</b> kkal · P ${r1(f.p)} · K ${r1(f.c)} · L ${r1(f.f)} <span class="mu">/100 g</span></div></div></div><button class="ib" data-a="nme" data-id="${f.id}" aria-label="${tr('edit')}">${MS('edit',20)}</button><button class="ib dl" data-a="fd" data-id="${f.id}" aria-label="${tr('delete')}">${MS('delete',20)}</button></div>`).join('')}</div>`:empty(tr('noLogsPeriod'));
-function dash(){evaluateBadges();const lvl=calcUserLevel(),L=lg(D),T=sum(L),g=S.tg,W=wat(D),h=new Date().getHours(),gr=h<11?tr('pagi'):h<15?tr('siang'):h<18?tr('sore'):tr('malam'),wk=[...Array(7)].map((_,i)=>dT(addD(D,i-6)).k),pp=r0(T.p/g.p*100),en=[T.p*4,T.c*4,T.f*9],ee=en[0]+en[1]+en[2]||1,we=addD(D,-7*DW),C5={};
+function dash(){const L=lg(D),T=sum(L),g=S.tg,W=wat(D),h=new Date().getHours(),gr=h<11?tr('pagi'):h<15?tr('siang'):h<18?tr('sore'):tr('malam'),wk=[...Array(7)].map((_,i)=>dT(addD(D,i-6)).k),pp=r0(T.p/g.p*100),en=[T.p*4,T.c*4,T.f*9],ee=en[0]+en[1]+en[2]||1,we=addD(D,-7*DW),C5={};
 S.logs.filter(l=>l.d>=addD(we,-6)&&l.d<=we).forEach(l=>{const o=C5[l.fo]||(C5[l.fo]={n:l.n,i:l.fo,c:0,k:0});o.c++;o.k+=l.sn.k});const t5=Object.values(C5).sort((a,b)=>b.c-a.c||b.k-a.k).slice(0,5),mx=t5[0]?t5[0].c:1;
-return hd(`${tr('welcome')} ${gr}, ${S.u.name}${streak()?` <span class="act" style="font-size:13px;vertical-align:middle">🔥 ${tr('streak')} ${streak()} ${tr('day')}</span>`:''}`)+
-`<div class="flex items-center gap-2 flex-wrap -mt-2 mb-3">
-  <button class="chip text-xs" data-a="badgesmodal" style="background:rgba(250,144,62,0.12);color:#c25400;border:1px solid rgba(250,144,62,0.3)" title="Lihat Level & Lencana">${MS('military_tech',16)} Lv.${lvl.level} · ${lvl.title} (${lvl.totalXP} XP)</button>
-  <button class="chip text-xs" data-a="badgesmodal" style="background:rgba(24,128,56,0.12);color:var(--pc);border:1px solid rgba(24,128,56,0.25)" title="Koleksi Lencana">🏆 ${lvl.earnedBadgesCount}/${BADGES.length} Lencana</button>
-</div>`+
-`<div class="mu -mt-1 mb-4">${new Date(D+'T12:00').toLocaleDateString(curLoc(),{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+return hd(`${tr('welcome')} ${gr}, ${S.u.name}${streak()?` <span class="act" style="font-size:13px;vertical-align:middle">🔥 ${tr('streak')} ${streak()} ${tr('day')}</span>`:''}`)+`<div class="mu -mt-3 mb-4">${new Date(D+'T12:00').toLocaleDateString(curLoc(),{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
 <div class="grid lg:grid-cols-3 gap-4 mb-4"><div class="card"><div class="flex justify-between items-start"><div><div class="ey">${tr('dailyBudget')}</div><h2 class="font-semibold text-lg">${tr('targetKal')}</h2></div><span class="act"><span data-counter="${r0(T.k/g.kcal*100)}">${r0(T.k/g.kcal*100)}</span>% ${tr('ofTarget')}</span></div><div class="flex items-center gap-4 mt-3"><div class="relative shrink-0">${ring(T.k/g.kcal*100)}<div class="absolute inset-0 flex flex-col items-center justify-center"><b class="text-2xl" data-counter="${T.k}">${n0(T.k)}</b><span class="mu text-xs">/ ${n0(g.kcal)} kkal</span></div></div><div class="flex flex-col gap-2 flex-1"><div class="row flex-col" style="align-items:flex-start"><span class="mu text-xs">${g.kcal-T.k>=0?tr('rem'):tr('over')}</span><b class="text-xl pr"><span data-counter="${Math.abs(g.kcal-T.k)}">${n0(Math.abs(g.kcal-T.k))}</span> <span class="text-xs mu font-normal">kkal</span></b></div></div></div></div>
 <div class="card"><div class="ey">${tr('macroMicroTarget')}</div><h2 class="font-semibold text-lg mb-3">${tr('nutritionDetails')}</h2>${bar(tr('prot'),T.p,g.p,'var(--P)','g')}${bar(tr('carb'),T.c,g.c,'var(--C)','g')}${bar(tr('fat'),T.f,g.f,'var(--F)','g')}${bar(tr('fib'),T.fi,g.fi,'var(--FI)','g')}${S.set.sod?bm(tr('sug')+' ('+tr('maxLimit')+')',T.su,g.su,'g')+bm(tr('sod')+' ('+tr('maxLimit')+')',T.na,g.na,'mg'):''}</div>
 <div class="card"><div class="ey">${tr('fluidBalance')}</div><h2 class="font-semibold text-lg">${tr('hydrationTracker')}</h2><div class="text-3xl font-extrabold my-2"><span data-counter="${W/1000}" data-decimals="1">${(W/1000).toLocaleString(curLoc(),{minimumFractionDigits:1,maximumFractionDigits:1})}</span><span class="mu text-base"> / ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} L</span></div><div class="trk mb-3"><i style="width:${Math.min(100,W/g.water*100)}%;background:var(--W)"></i></div><div class="mu text-xs"><span data-counter="${r0(W/g.water*100)}">${r0(W/g.water*100)}</span>% ${tr('ofTodayTarget')}</div></div></div>
@@ -805,172 +800,6 @@ function renderAimKeysModal() {
   </div>`;
 }
 
-// ─── Gamifikasi: Badges & Level System ─────────────────────────────────────────
-const BADGES = [
-  { id: 'starter_streak', name: '🔥 Pemula Konsisten', desc: '3 hari berturut-turut mencatat makanan', icon: 'local_fire_department', xp: 50, color: '#ea580c' },
-  { id: 'streak_week', name: '⚡ Pejuang 7 Hari', desc: '7 hari berturut-turut mencatat makanan', icon: 'bolt', xp: 100, color: '#eab308' },
-  { id: 'streak_month', name: '👑 Master Disiplin', desc: '30 hari berturut-turut mencatat makanan', icon: 'military_tech', xp: 300, color: '#f59e0b' },
-  { id: 'protein_champ', name: '💪 Jawara Protein', desc: 'Mencapai target protein hari ini (≥ 90%)', icon: 'fitness_center', xp: 40, color: '#dc2626' },
-  { id: 'hydro_hero', name: '💧 Pahlawan Hidrasi', desc: 'Mencapai 100% target air minum hari ini', icon: 'water_drop', xp: 40, color: '#0284c7' },
-  { id: 'balanced_macro', name: '🥗 Nutrisi Seimbang', desc: 'Protein, Karbohidrat, & Lemak dalam target', icon: 'eco', xp: 60, color: '#16a34a' },
-  { id: 'ai_explorer', name: '📸 Penjelajah AI', desc: 'Memindai makanan menggunakan AI Vision', icon: 'camera_enhance', xp: 50, color: '#7c3aed' },
-  { id: 'calorie_target', name: '🎯 Target Tepat', desc: 'Asupan kalori berada dalam rentang target ±10%', icon: 'track_changes', xp: 50, color: '#10b981' },
-  { id: 'food_pioneer', name: '🍽️ Pencatat Sejati', desc: 'Mencapai minimal 10 catatan makanan di jurnal', icon: 'restaurant', xp: 30, color: '#f97316' },
-];
-
-function calcUserLevel() {
-  S.badges = S.badges || { earned: [], seen: [] };
-  const baseLogXP = (S.logs || []).length * 15;
-  const baseWaterXP = (S.water || []).length * 5;
-  const badgeXP = (S.badges.earned || []).reduce((acc, id) => {
-    const b = BADGES.find(x => x.id === id);
-    return acc + (b ? b.xp : 40);
-  }, 0);
-  const totalXP = baseLogXP + baseWaterXP + badgeXP + (S.customXP || 0);
-
-  const thresholds = [
-    { level: 1, title: 'Pemula Nutrisi', min: 0, max: 100 },
-    { level: 2, title: 'Penjaga Pola Makan', min: 100, max: 250 },
-    { level: 3, title: 'Pengamat Gizi', min: 250, max: 500 },
-    { level: 4, title: 'Pejuang Sehat', min: 500, max: 900 },
-    { level: 5, title: 'Master Nutrisi', min: 900, max: 1400 },
-    { level: 6, title: 'Legenda Kebugaran', min: 1400, max: 2000 },
-    { level: 7, title: 'Grandmaster Sehat', min: 2000, max: 999999 },
-  ];
-
-  let currentTier = thresholds[0];
-  for (const t of thresholds) {
-    if (totalXP >= t.min) currentTier = t;
-  }
-
-  const range = currentTier.max - currentTier.min || 1;
-  const progress = Math.min(100, Math.max(0, ((totalXP - currentTier.min) / range) * 100));
-
-  return {
-    level: currentTier.level,
-    title: currentTier.title,
-    totalXP,
-    minXP: currentTier.min,
-    maxXP: currentTier.max,
-    progress: Math.round(progress),
-    earnedBadgesCount: (S.badges.earned || []).length,
-  };
-}
-
-function evaluateBadges() {
-  if (!S || !S.u || !S.u.in) return;
-  S.badges = S.badges || { earned: [], seen: [] };
-  const st = typeof streak === 'function' ? streak() : 0;
-  const todayLogs = typeof lg === 'function' ? lg(td) : [];
-  const todayTotal = typeof sum === 'function' ? sum(todayLogs) : { k: 0, p: 0, c: 0, f: 0 };
-  const todayWater = typeof wat === 'function' ? wat(td) : 0;
-  const tg = S.tg || {};
-
-  const earnedNow = new Set(S.badges.earned || []);
-  const newlyUnlocked = [];
-
-  function tryAward(badgeId) {
-    if (!earnedNow.has(badgeId)) {
-      earnedNow.add(badgeId);
-      newlyUnlocked.push(badgeId);
-    }
-  }
-
-  // 1. Streak milestones
-  if (st >= 3) tryAward('starter_streak');
-  if (st >= 7) tryAward('streak_week');
-  if (st >= 30) tryAward('streak_month');
-
-  // 2. Nutrition milestones
-  if (tg.p > 0 && todayTotal.p >= tg.p * 0.9) tryAward('protein_champ');
-  if (tg.water > 0 && todayWater >= tg.water) tryAward('hydro_hero');
-  if (tg.kcal > 0 && todayTotal.k > 0 && Math.abs(todayTotal.k - tg.kcal) <= tg.kcal * 0.1) tryAward('calorie_target');
-  if (tg.p > 0 && tg.c > 0 && tg.f > 0 &&
-      todayTotal.p >= tg.p * 0.8 && todayTotal.c >= tg.c * 0.8 && todayTotal.f >= tg.f * 0.8 &&
-      todayTotal.k <= tg.kcal * 1.15) {
-    tryAward('balanced_macro');
-  }
-
-  // 3. Count milestones
-  if ((S.logs || []).length >= 10) tryAward('food_pioneer');
-  if ((S.logs || []).some(l => (l.sn && l.sn.ai) || (l.fo && String(l.fo).startsWith('aim')) || (l.fo && String(l.fo).startsWith('ai_')))) {
-    tryAward('ai_explorer');
-  }
-
-  if (newlyUnlocked.length > 0) {
-    S.badges.earned = Array.from(earnedNow);
-    save();
-    const firstB = BADGES.find(b => b.id === newlyUnlocked[0]);
-    if (firstB && typeof tst === 'function') {
-      tst(`🏆 Lencana Baru Terbuka: ${firstB.name}! (+${firstB.xp} XP)`);
-    }
-  }
-}
-
-let BADGES_MODAL = false;
-
-function vBadgesModal() {
-  if (!BADGES_MODAL) return '';
-  const lvl = calcUserLevel();
-  const earnedSet = new Set(S.badges?.earned || []);
-
-  return `<div class="ov" role="dialog" aria-modal="true" style="z-index:115">
-    <div class="card w-full max-w-lg p-5" style="border-radius:24px;max-height:calc(100vh - 48px);overflow:auto">
-      <div class="flex justify-between items-center mb-4">
-        <b class="text-lg flex items-center gap-2">🏆 Pencapaian & Lencana Nutrisi</b>
-        <button class="ib" data-a="badgesx" aria-label="Tutup">${MS('close', 20)}</button>
-      </div>
-
-      <!-- Level & XP Hero Card -->
-      <div class="p-4 rounded-2xl mb-5" style="background:linear-gradient(135deg, rgba(24,128,56,0.12) 0%, rgba(250,144,62,0.15) 100%);border:1px solid rgba(24,128,56,0.25)">
-        <div class="flex justify-between items-start mb-2">
-          <div>
-            <span class="text-xs uppercase tracking-wider font-bold text-[var(--pr)]">Tingkat Pencapaian</span>
-            <h3 class="text-xl font-extrabold mt-0.5">Level ${lvl.level} — ${lvl.title}</h3>
-          </div>
-          <span class="chip font-bold text-xs" style="background:var(--pc);color:#fff">
-            ${lvl.totalXP} Total XP
-          </span>
-        </div>
-        <div class="flex justify-between text-xs mu mb-1">
-          <span>Progres Level</span>
-          <span>${lvl.totalXP} / ${lvl.maxXP === 999999 ? 'MAX' : lvl.maxXP + ' XP'}</span>
-        </div>
-        <div class="trk" style="height:10px;border-radius:9999px;background:rgba(0,0,0,0.08)">
-          <i style="width:${lvl.progress}%;background:linear-gradient(90deg, var(--pc), #fa903e);border-radius:9999px"></i>
-        </div>
-        <p class="mu text-xs mt-2.5">
-          💡 Catat makanan (+15 XP), air minum (+5 XP), dan raih lencana baru (+30~300 XP) untuk naik level!
-        </p>
-      </div>
-
-      <!-- Badges Grid -->
-      <div class="flex justify-between items-center mb-3">
-        <h4 class="font-bold text-sm">Koleksi Lencana (${lvl.earnedBadgesCount} / ${BADGES.length})</h4>
-        <span class="text-xs mu">Konsistensi adalah kunci</span>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2">
-        ${BADGES.map(b => {
-          const isEarned = earnedSet.has(b.id);
-          return `<div class="p-3 rounded-xl flex items-start gap-3 transition-all" style="background:${isEarned ? 'var(--card)' : 'rgba(0,0,0,0.03)'};border:1px solid ${isEarned ? b.color + '55' : 'var(--ln)'};opacity:${isEarned ? '1' : '0.65'}">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${isEarned ? b.color + '22' : 'var(--tk)'};color:${isEarned ? b.color : 'var(--mu)'}">
-              ${MS(isEarned ? b.icon : 'lock', 22)}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-1">
-                <b class="text-xs truncate ${isEarned ? '' : 'text-[var(--mu)]'}">${b.name}</b>
-                ${isEarned ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded" style="background:${b.color}22;color:${b.color}">✓ Diraih</span>` : `<span class="text-[10px] mu font-mono">+${b.xp} XP</span>`}
-              </div>
-              <p class="text-[11px] mu mt-0.5 leading-snug">${b.desc}</p>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>`;
-}
-
 // ─── UX Lanjutan: Voice Input Logging (Web Speech API) ───────────────────────────
 let VOICE_RECORDING = false;
 let _speechRecognizer = null;
@@ -1123,7 +952,7 @@ function toggleVoiceInput() {
   }
 }
 
-function vModal(){if(AIM_KEYS_MODAL)return renderAimKeysModal();if(BADGES_MODAL)return vBadgesModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
+function vModal(){if(AIM_KEYS_MODAL)return renderAimKeysModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
 if(DF)return cm('Hapus item makanan?','Item dihapus dari Food Database dan tidak muncul lagi saat mencatat makanan. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','dfy','dfn');if(RD)return cm('Hapus resep?','Resep dan menu terkait di Food Database akan dihapus. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','rdy','rdn');if(CF)return cm('Hapus catatan makanan?','Data yang dihapus tidak dapat dikembalikan.','Hapus','cy','cn');if(RC)return cm('Reset data?','Seluruh catatan, target, resep, dan pengaturan akan dikosongkan, dan Food Database kembali ke master awal. Akun login tetap. Disarankan mengunduh cadangan terlebih dahulu.','Reset','rcy','rcn');
 if(CPM){const c=CPM,mnm=MEALS.find(m=>m[0]==c.m)[1],tg=`<div class="grid grid-cols-2 gap-2 mt-3"><input class="inp" id="cd" type="date" max="${td}" value="${c.d}"><select class="inp" id="ctm">${MEALS.map(m=>`<option value="${m[0]}" ${m[0]==c.tm?'selected':''}>${m[1]}</option>`).join('')}</select></div>`,err=c.e?`<div class="text-sm mt-2" style="color:var(--P)">${c.e}</div>`:'';
 return`<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-2"><b>${c.t=='copy'?'Salin '+mnm:c.t=='save'?'Simpan sebagai Template':'Pakai Template'}</b><button data-a="cpx" aria-label="Tutup">✕</button></div>${c.t=='copy'?`<p class="mu text-sm">Salin semua item ${mnm} pada ${fD(D)} ke tanggal dan waktu makan tujuan.</p>${tg}${err}<button class="btn w-full justify-center mt-4" data-a="cmy">Salin</button>`:c.t=='save'?`<p class="mu text-sm">Simpan item ${mnm} hari ini sebagai template untuk dipakai ulang.</p><input class="inp mt-3" id="cn" maxlength="40" placeholder="Nama template (mis. Sarapan Biasa)" value="${esc(c.name)}">${err}<button class="btn w-full justify-center mt-4" data-a="stz">Simpan Template</button>`:`<p class="mu text-sm">Pilih tujuan, lalu template yang akan dipakai. Nilai gizi sesuai saat template disimpan.</p>${tg}${err}<div class="mt-3">${S.tpl.map(t=>{const k=t.items.reduce((a,x)=>a+(x.sn?x.sn.k:0),0);return`<div class="flex items-center gap-2 py-2" style="border-top:1px solid var(--ln)"><div class="flex-1 min-w-0"><b class="text-sm block truncate">${esc(t.name)}</b><span class="mu text-xs">${t.items.length} item · ${n0(k)} kkal</span></div><button class="btn" style="padding:6px 12px" data-a="tpy" data-id="${t.id}">Pakai</button><button class="ib dl" data-a="tpd" data-id="${t.id}" aria-label="Hapus template">${MS('delete',18)}</button></div>`}).join('')||'<div class="mu text-sm">Belum ada template.</div>'}</div>`}</div></div>`}
@@ -2343,7 +2172,6 @@ function saveAimFoodJournal(){
     saved++;
   });
   save();
-  evaluateBadges();
   stopAimCamera();
   AIM=null;
   render();
@@ -2647,7 +2475,7 @@ if(!pv)MD.e='Item tidak ditemukan.';else if(!MD.d||MD.d>td)MD.e='Tanggal tidak v
 else{const ov=gx>0,c=ov?{g:gx,est:false}:toG(fo,n,MD.u);if(!(c.g>0))MD.e='Satuan tidak valid untuk item ini. Pilih satuan lain atau isi berat sebenarnya.';else if(c.g>5000)MD.e='Jumlah terlalu besar (maks 5.000 g per catatan).';
 else{const sn=snap(pv,c.g),dup=!MD.id&&S.logs.some(l=>l.d==MD.d&&l.m==MD.m&&l.fo==fo.id&&l.q==n&&l.u==MD.u&&!l.ov),big=sn.k>3000;
 if((dup||big)&&!MD.okk){MD.okk=true;MD.e=(big?'Kalori catatan ini sangat besar ('+n0(sn.k)+' kkal). ':'')+(dup?'Makanan yang sama dengan jumlah yang sama sudah dicatat pada waktu makan ini. ':'')+'Tekan Simpan sekali lagi untuk melanjutkan.'}
-else{const o={id:MD.id||'n'+Date.now(),d:MD.d,m:MD.m,t:MD.t,fo:fo.id,n:fo.n,q:n>0?n:gx,u:n>0?MD.u:'g',g:c.g,est:c.est,sn,p100:{k:pv.k,p:pv.p,c:pv.c,f:pv.f,fi:pv.fi,su:pv.su,na:pv.na},fv:(cur&&cur.v)||1};{const keep=MD.id&&!MD.fresh&&MD.m100,mm=keep?MD.m100:(cur&&cur.mi)||null,aa=keep?(MD.ab||null):(cur&&cur.ab)||null;if(mm)o.m100=mm;if(aa)o.ab=aa}if(ov)o.ov=1;if(MD.id){const i=S.logs.findIndex(l=>l.id==MD.id);S.logs[i]=o}else S.logs.push(o);MD=null;save();evaluateBadges();tst('Makanan disimpan');return true}}}}
+else{const o={id:MD.id||'n'+Date.now(),d:MD.d,m:MD.m,t:MD.t,fo:fo.id,n:fo.n,q:n>0?n:gx,u:n>0?MD.u:'g',g:c.g,est:c.est,sn,p100:{k:pv.k,p:pv.p,c:pv.c,f:pv.f,fi:pv.fi,su:pv.su,na:pv.na},fv:(cur&&cur.v)||1};{const keep=MD.id&&!MD.fresh&&MD.m100,mm=keep?MD.m100:(cur&&cur.mi)||null,aa=keep?(MD.ab||null):(cur&&cur.ab)||null;if(mm)o.m100=mm;if(aa)o.ab=aa}if(ov)o.ov=1;if(MD.id){const i=S.logs.findIndex(l=>l.id==MD.id);S.logs[i]=o}else S.logs.push(o);MD=null;save();tst('Makanan disimpan');return true}}}}
 const defQ=f=>{const u=Object.keys(f.s)[0];return u?[1,u]:[100,'g']};
 function qlist(kind,meal){const C={},cut=addD(td,-60);S.logs.forEach(l=>{if(l.man||!l.fo||l.d<cut)return;const f=fOf(l.fo);if(!f)return;const o=C[l.fo]||(C[l.fo]={id:l.fo,c:0,cm:0,last:'',lq:1,lu:'g'});o.c++;if(l.m==meal)o.cm++;const k=l.d+' '+l.t;if(k>=o.last){o.last=k;if(l.ov){o.lq=Math.round(l.g*10)/10;o.lu='g'}else{o.lq=l.q;o.lu=l.u}}});const a=Object.values(C);return(kind=='r'?a.sort((x,y)=>y.last.localeCompare(x.last)):a.sort((x,y)=>(y.cm*2+y.c)-(x.cm*2+x.c)||y.last.localeCompare(x.last))).slice(0,12)}
 function openM(o){const nowT=new Date().toTimeString().slice(0,5);MD={id:null,mode:'db',tab:'db',m:'b',fo:null,q:'',cat:'Semua',n:'1',u:'g',t:nowT,d:D,e:'',ld:false,gx:'',fresh:false,okk:false,tn:'p',tv:'',p100:null,name:'',mn:{n:'',lb:'',k:'',p:'',c:'',f:'',fi:'',su:'',na:''},...o};if(MD.mode=='man')MD.tab='man';
@@ -2660,8 +2488,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
 if(a=='go')return go(b.dataset.r);
 if(a=='nop')return;
 if(a=='more')MORE=!MORE;
-else if(a=='badgesmodal'){BADGES_MODAL=true;render()}
-else if(a=='badgesx'){BADGES_MODAL=false;render()}
 else if(a=='voiceinput'){toggleVoiceInput();return}
 else if(a=='add'){if(MD&&b.dataset.m===undefined&&!b.dataset.fo)return;openM({m:b.dataset.m||'b',fo:b.dataset.fo||null})}
 else if(a=='x')MD=null;
@@ -2676,12 +2502,12 @@ else if(a=='ok'){if(okDb())return}
 else if(a=='okm'){const mn=MD.mn,v=k=>mn[k].trim()===''?0:num(mn[k]),V={k:v('k'),p:v('p'),c:v('c'),f:v('f'),fi:v('fi'),su:v('su'),na:v('na')};
 if(!mn.n.trim())MD.e='Nama makanan wajib diisi.';else if(mn.k.trim()==='')MD.e='Isi kalori (angka 0 atau lebih).';else if(Object.values(V).some(x=>!Number.isFinite(x)||x<0))MD.e='Nilai nutrisi harus berupa angka 0 atau lebih.';else if(V.k>5000)MD.e='Kalori terlalu besar (maks 5.000 kkal per catatan).';else if(!MD.d||MD.d>td)MD.e='Tanggal tidak valid (tidak boleh melewati hari ini).';else if(!MD.t)MD.e='Pilih waktu makan.';
 else if(V.k>3000&&!MD.okk){MD.okk=true;MD.e='Kalori catatan ini sangat besar ('+n0(V.k)+' kkal). Tekan Simpan sekali lagi untuk melanjutkan.'}
-else{const nm=mn.n.trim(),o={id:MD.id||'n'+Date.now(),d:MD.d,m:MD.m,t:MD.t,fo:'m_'+nm.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30),n:nm,q:1,u:'porsi',lb:mn.lb.trim(),g:0,est:true,man:1,sn:V},mis=Math.abs(4*V.p+4*V.c+9*V.f-V.k)>.15*Math.max(V.k,1)+10;if(MD.id){const i=S.logs.findIndex(l=>l.id==MD.id);S.logs[i]=o}else S.logs.push(o);MD=null;save();evaluateBadges();tst(mis?'Tersimpan. Perhatian: kalori tidak sesuai dengan protein, karbohidrat, dan lemak.':'Catatan manual disimpan');return}}
+else{const nm=mn.n.trim(),o={id:MD.id||'n'+Date.now(),d:MD.d,m:MD.m,t:MD.t,fo:'m_'+nm.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30),n:nm,q:1,u:'porsi',lb:mn.lb.trim(),g:0,est:true,man:1,sn:V},mis=Math.abs(4*V.p+4*V.c+9*V.f-V.k)>.15*Math.max(V.k,1)+10;if(MD.id){const i=S.logs.findIndex(l=>l.id==MD.id);S.logs[i]=o}else S.logs.push(o);MD=null;save();tst(mis?'Tersimpan. Perhatian: kalori tidak sesuai dengan protein, karbohidrat, dan lemak.':'Catatan manual disimpan');return}}
 else if(a=='tgc'){const cur=fOf(MD.fo),pv=(!MD.fresh&&MD.p100)?MD.p100:cur,key=MD.tn||'p',tv=num(MD.tv);if(!pv)MD.e='Item tidak ditemukan.';else if(!(tv>0))MD.e='Isi target lebih dari nol.';else if(!(pv[key]>0))MD.e='Item ini tidak mengandung '+({p:'protein',k:'kalori',c:'karbohidrat',f:'lemak'}[key])+'.';else{MD.u='g';MD.gx='';MD.n=String(Math.round(tv/pv[key]*1000)/10);MD.e='';MD.okk=false}}
 else if(a=='d')D=addD(D,+v)>td?td:addD(D,+v);
-else if(a=='w'){S.water.push({id:'n'+Date.now(),d:D,ml:+v,t:new Date().toTimeString().slice(0,5)});save();evaluateBadges()}
+else if(a=='w'){S.water.push({id:'n'+Date.now(),d:D,ml:+v,t:new Date().toTimeString().slice(0,5)});save()}
 else if(a=='rt')RP.t=v;
-else if(a=='hw'){const v=num($('#hq').value),t=$('#ht').value;if(!(v>0)){tst('Masukkan jumlah air lebih dari 0 ml');return}if(v>5000){tst('Jumlah terlalu besar (maksimal 5.000 ml per input)');return}S.water.push({id:'n'+Date.now(),d:D,ml:Math.round(v),t:t||new Date().toTimeString().slice(0,5)});save();evaluateBadges();tst('Hidrasi ditambahkan');return}
+else if(a=='hw'){const v=num($('#hq').value),t=$('#ht').value;if(!(v>0)){tst('Masukkan jumlah air lebih dari 0 ml');return}if(v>5000){tst('Jumlah terlalu besar (maksimal 5.000 ml per input)');return}S.water.push({id:'n'+Date.now(),d:D,ml:Math.round(v),t:t||new Date().toTimeString().slice(0,5)});save();tst('Hidrasi ditambahkan');return}
 else if(a=='hd'){S.water=S.water.filter(x=>String(x.id)!=id);save()}
 else if(a=='dw')DW=+v;
 else if(a=='wp')WP=v;

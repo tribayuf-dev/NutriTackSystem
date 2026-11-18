@@ -715,7 +715,8 @@ function generateClinicalFallbackResponse(userContext = {}, messages = []) {
     return 0;
   };
 
-  const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
+  const rawMsg = (messages[messages.length - 1]?.content || '').trim();
+  const msg = rawMsg.toLowerCase();
   const hasImage = messages.some(m => !!m.image);
   const name = userContext.name || 'Sobat Sehat';
   const remKcal = Math.round(safeNum(userContext.remainingKcal) || 500);
@@ -726,6 +727,7 @@ function generateClinicalFallbackResponse(userContext = {}, messages = []) {
   const consumedWater = Math.round(safeNum(userContext.consumedWater));
   const targetWater = Math.round(safeNum(userContext.targetWater) || 2000);
 
+  // 1. Konsultasi Foto Makanan
   if (hasImage) {
     const estKcal = Math.max(250, Math.min(remKcal > 0 ? remKcal : 400, 500));
     return `Halo ${name}! Saya melihat foto hidangan yang kamu lampirkan. 📸
@@ -741,8 +743,78 @@ Berikut kartu cepat untuk mencatatnya ke jurnal harian:
 Klik **+ Log** di atas untuk langsung mencatatnya ke jurnal harian, atau tanyakan jika ada bahan khusus yang ingin kamu ketahui lebih detail!`;
   }
 
-  // 1. Rekomendasi Makan Malam / Menu Utama
-  if (lastMsg.includes('makan malam') || lastMsg.includes('malam') || lastMsg.includes('dinner') || lastMsg.includes('makan') || lastMsg.includes('menu')) {
+  // Helper pencocokan kata kunci
+  const hasWord = (...words) => words.some(w => msg.includes(w));
+  const isExactOrShort = (...words) => words.some(w => msg === w || msg === w + '!' || msg === w + '?' || msg === w + '.');
+
+  // 2. Pesan Uji Coba / Diagnostic / Ping ("test", "tes", "testing", "ping", "p", "cek", "123")
+  if (isExactOrShort('test', 'tes', 'testing', 'ping', 'p', 'cek', 'check', '123') || msg === 'halo test' || msg === 'test 123') {
+    return `Halo ${name}! 👋 NutriTrack AI Coach aktif dan siap mendampingimu.
+
+📊 **Ringkasan Nutrisimu Saat Ini**:
+• Sisa Kuota Kalori: **${remKcal > 0 ? remKcal + ' kcal' : '0 kcal (Target tercapai)'}**
+• Kebutuhan Protein: **${pDeficit > 0 ? pDeficit + 'g lagi (' + pPercent + '% tercapai)' : 'Sudah terpenuhi 🎉'}**
+• Status Hidrasi: **${consumedWater} / ${targetWater} ml**
+
+Sistem berjalan normal. Kamu bisa menanyakan rekomendasi menu sarapan/siang/malam, ide camilan sehat, evaluasi hidrasi, atau lampirkan foto makanan untuk saya analisis!`;
+  }
+
+  // 3. Sapaan Ramah / Greetings ("halo", "hai", "selamat pagi", dsb.)
+  if (isExactOrShort('halo', 'hai', 'hello', 'hi', 'hei', 'hey', 'pagi', 'selamat pagi', 'siang', 'selamat siang', 'sore', 'selamat sore', 'malam', 'selamat malam', 'assalamualaikum') || msg.startsWith('halo ') || msg.startsWith('hai ')) {
+    return `Halo ${name}! Senang bisa mendampingi harimu. 😊
+
+Sebagai **NutriTrack AI Coach**, saya siap membantumu menjaga pola makan sehat harian:
+• 🥗 **Rekomendasi Menu**: Makanan bergizi sesuai sisa kuota kalorimu (${remKcal > 0 ? remKcal + ' kcal' : 'target kalori aman'})
+• 🥩 **Target Protein**: Evaluasi asupan protein harian (${pDeficit > 0 ? 'kurang ' + pDeficit + 'g lagi' : 'sudah terpenuhi'})
+• 💧 **Status Hidrasi**: Pantau kebutuhan air minum harian
+• 📸 **Analisis Foto**: Cek estimasi porsi & kalori hidanganmu secara instan
+
+Ada yang ingin kamu tanyakan atau rencanakan untuk menu makanmu hari ini?`;
+  }
+
+  // 4. Perkenalan / Fitur / Bantuan ("kamu siapa", "bisa apa", "fitur apa", "bantu apa")
+  if (hasWord('siapa kamu', 'kamu siapa', 'bisa apa', 'fitur', 'bantu apa', 'bantuan', 'panduan', 'cara pakai')) {
+    return `Saya adalah **NutriTrack AI Coach**, asisten gizi cerdas berbasis formula klinis Mifflin–St Jeor yang siap membantu menjaga keseimbangan nutrisi harianmu.
+
+Berikut beberapa hal yang bisa langsung kamu tanyakan:
+1. *"Beri rekomendasi makan malam tinggi protein"*
+2. *"Ide camilan sehat rendah kalori"*
+3. *"Bagaimana status hidrasi dan air minum saya?"*
+4. *"Analisis asupan protein saya hari ini"*
+5. Atau tekan tombol kamera 📷 di bawah untuk berkonsultasi foto makanan langsung!`;
+  }
+
+  // 5. Ucapan Terima Kasih / Closing ("terima kasih", "makasih", "thanks", "ok", "sip")
+  if (hasWord('terima kasih', 'terimakasih', 'makasih', 'makasi', 'thanks', 'thank you', 'thx') || isExactOrShort('ok', 'oke', 'sip', 'siap', 'mantap', 'baik')) {
+    return `Sama-sama, ${name}! Senang bisa membantu. Tetap semangat menjaga pola makan seimbang dan hidrasi optimalmu hari ini ya! 💪🥗
+
+Jika nanti ada menu makanan yang ingin dicek atau dicatat, buka saja chat ini kapan pun.`;
+  }
+
+  // 6. Sarapan / Makan Pagi
+  if (hasWord('sarapan', 'breakfast', 'makan pagi')) {
+    return `Halo ${name}! Pilihan sarapan kaya protein dan serat untuk energi optimal pagi hari:
+
+[FOOD: Oatmeal Pisang + Susu Protein | 280 | 18]
+[FOOD: Roti Gandum Panggang + Telur Orak-Arik | 260 | 16]
+[FOOD: Omelet Bayam Tahu 2 Butir Telur | 220 | 17]
+
+💡 **Tips Gizi**: Sarapan tinggi protein dan karbohidrat kompleks menjaga kestabilan gula darah dan mencegah rasa lapar berlebih sebelum makan siang. Klik **+ Log** untuk mencatatnya!`;
+  }
+
+  // 7. Makan Siang / Lunch
+  if (hasWord('makan siang', 'lunch')) {
+    return `Halo ${name}! Pilihan makan siang bernutrisi seimbang untuk mendukung aktivitasmu:
+
+[FOOD: Nasi Merah + Dada Ayam Bakar + Lalapan | 420 | 36]
+[FOOD: Gado-Gado Telur Rebus + Tahu Tempe | 350 | 20]
+[FOOD: Ikan Nila Panggang + Sayur Asem + Nasi Putih 1 Porsi | 390 | 30]
+
+💡 **Tips Gizi**: Kombinasi serat dari sayuran dan protein utama membantu metabolisme tetap aktif tanpa rasa kantuk berat setelah makan siang. Klik **+ Log** untuk mencatatnya ke jurnal harian!`;
+  }
+
+  // 8. Makan Malam / Dinner
+  if (hasWord('makan malam', 'dinner', 'menu malam')) {
     const maxKcal = Math.max(250, Math.min(remKcal, 600));
     return `Halo ${name}! Untuk makan malam hari ini dengan sisa target **${remKcal > 0 ? remKcal + ' kcal' : 'kuota kalori terjaga'}** dan kebutuhan protein **${pDeficit > 0 ? pDeficit + 'g lagi' : 'sudah tercapai'}**, berikut rekomendasi menu bergizi seimbang di bawah ${maxKcal} kcal:
 
@@ -755,8 +827,8 @@ Klik **+ Log** di atas untuk langsung mencatatnya ke jurnal harian, atau tanyaka
 Kamu bisa langsung klik **+ Log** pada menu di atas untuk mencatatnya ke jurnal harianmu!`;
   }
 
-  // 2. Camilan / Snack
-  if (lastMsg.includes('camilan') || lastMsg.includes('snack') || lastMsg.includes('ngemil')) {
+  // 9. Camilan / Snack
+  if (hasWord('camilan', 'snack', 'ngemil')) {
     return `Pilihan terbaik untuk camilan sehat ${pDeficit > 0 ? 'tinggi protein (' + pDeficit + 'g lagi)' : 'rendah kalori'} tanpa mengorbankan kuota harian:
 
 [FOOD: Greek Yogurt + Chia Seeds | 130 | 17]
@@ -766,8 +838,8 @@ Kamu bisa langsung klik **+ Log** pada menu di atas untuk mencatatnya ke jurnal 
 💡 Camilan ini kaya serat dan protein sehingga memberikan rasa kenyang lebih stabil dan aman untuk gula darah. Klik **+ Log** untuk langsung mencatatnya!`;
   }
 
-  // 3. Status Hidrasi
-  if (lastMsg.includes('hidrasi') || lastMsg.includes('air') || lastMsg.includes('minum')) {
+  // 10. Status Hidrasi
+  if (hasWord('hidrasi', 'air', 'minum', 'haus')) {
     const sisaAir = Math.max(0, targetWater - consumedWater);
     const persentase = Math.min(100, Math.round((consumedWater / targetWater) * 100));
     return `Halo ${name}! Evaluasi status hidrasimu hari ini:
@@ -777,8 +849,8 @@ ${sisaAir > 0
   : `🎉 **Luar biasa!** Target hidrasi harianmu sudah terpenuhi optimal. Pertahankan kebiasaan baik ini!`}`;
   }
 
-  // 4. Analisis Protein
-  if (lastMsg.includes('protein') || lastMsg.includes('makro')) {
+  // 11. Analisis Protein
+  if (hasWord('protein', 'makro', 'otot')) {
     return `Analisis asupan protein harianmu:
 🥩 **Realisasi**: ${consumedP}g / ${targetP}g (${pPercent}%)
 ${pDeficit > 0 
@@ -793,16 +865,26 @@ Klik **+ Log** untuk langsung menambahkannya ke jurnal!`
   : `🎉 Target protein harianmu sebesar **${targetP}g** sudah tercapai! Otot dan sistem imun tubuhmu ternutrisi dengan baik hari ini.`}`;
   }
 
-  // 5. Default General Response
-  return `Halo ${name}! Saya asisten nutrisi NutriTrack. Berdasarkan catatanmu hari ini:
-• Sisa Target Energi: **${remKcal > 0 ? remKcal + ' kcal' : '0 kcal (Surplus)'}**
-• Kebutuhan Protein: **${pDeficit > 0 ? pDeficit + 'g lagi (' + pPercent + '% tercapai)' : 'Tercapai (' + pPercent + '%)'}**
-• Status Hidrasi: **${consumedWater} / ${targetWater} ml**
+  // 12. Rekomendasi Menu Umum / Lapar
+  if (hasWord('rekomendasi', 'makan apa', 'menu', 'makanan', 'lapar', 'makan')) {
+    return `Halo ${name}! Berdasarkan sisa energimu hari ini (**${remKcal > 0 ? remKcal + ' kcal' : 'kuota kalori terjaga'}**), berikut beberapa pilihan hidangan bergizi seimbang:
 
-Berikut rekomendasi makanan bergizi yang siap kamu santap:
 [FOOD: Dada Ayam Panggang Sambal Matah | 280 | 35]
 [FOOD: Tumis Tempe Tahu + Telur Rebus | 250 | 22]
+[FOOD: Sup Ikan Kuah Bening | 210 | 26]
 
-Klik tombol **+ Log** pada pilihan makanan di atas untuk mencatatnya langsung ke jurnal! Ada hal lain seputar gizi yang ingin kamu tanyakan?`;
+Klik tombol **+ Log** pada pilihan di atas untuk langsung mencatatnya ke jurnal harian!`;
+  }
+
+  // 13. Pesan di Luar Konteks Gizi / Pertanyaan Acak / Unhandled Query
+  return `Halo ${name}! Saya adalah asisten gizi klinis **NutriTrack** yang dikhususkan untuk mendampingi pola makan, pemantauan kalori, target makronutrisi, dan kesehatan harianmu.
+
+Saat ini saya belum dapat menjawab topik di luar kesehatan & gizi, tetapi saya siap membantumu seputar:
+• 🥗 Rekomendasi menu sehat (sarapan, makan siang, makan malam, atau camilan)
+• 🥩 Pengecekan sisa kuota kalori & kebutuhan protein harian
+• 💧 Evaluasi asupan air minum / hidrasi
+• 📸 Analisis foto hidangan makanan secara langsung
+
+Ada yang ingin kamu konsultasikan terkait pola makan atau target kebugaranmu hari ini?`;
 }
 }

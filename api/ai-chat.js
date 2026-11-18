@@ -85,19 +85,137 @@ PANDUAN MENJAWAB:
 7. FITUR KARTU LOG INTERAKTIF: Jika Anda merekomendasikan opsi makanan/camilan konkret yang siap dimakan, cantumkan kartu aksi di baris baru tersendiri dengan format: [FOOD: Nama Makanan | Kalori (angka) | Protein (angka g)] contoh: [FOOD: Greek Yogurt + Chia Seeds | 130 | 17] agar pengguna dapat langsung mencatatnya ke jurnal hanya dengan 1 klik!`;
 }
 
-// ─── Provider Callers ────────────────────────────────────────────────────────
+﻿// ─── Dynamic Model Discovery with In-Memory Caching (Zero-Maintenance) ─────────
+let _groqModelCache = { models: [], timestamp: 0 };
+let _geminiModelCache = { models: [], timestamp: 0 };
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 jam caching agar super cepat
 
-async function callGroqChat(apiKey, systemInstruction, messages) {
-  const GROQ_MODELS = [
+async function getAvailableGroqModels(apiKey) {
+  const now = Date.now();
+  if (_groqModelCache.models.length > 0 && (now - _groqModelCache.timestamp) < CACHE_TTL_MS) {
+    return _groqModelCache.models;
+  }
+
+  const fallback = [
+    process.env.GROQ_CHAT_MODEL,
     'llama-3.3-70b-versatile',
     'llama3-70b-8192',
     'llama3-8b-8192',
     'mixtral-8x7b-32768',
     'gemma2-9b-it',
+  ].filter(Boolean);
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': 'Bearer ' + apiKey.trim() },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      const list = (data.data || []).map(m => m.id);
+      const chatModels = list.filter(id => 
+        (id.includes('llama') || id.includes('mixtral') || id.includes('gemma') || id.includes('qwen')) &&
+        !id.includes('whisper') && !id.includes('vision')
+      );
+      if (chatModels.length > 0) {
+        chatModels.sort((a, b) => {
+          const score = id => {
+            if (id.includes('3.3-70b')) return 100;
+            if (id.includes('70b')) return 80;
+            if (id.includes('8b')) return 60;
+            if (id.includes('mixtral')) return 50;
+            return 10;
+          };
+          return score(b) - score(a);
+        });
+
+        if (process.env.GROQ_CHAT_MODEL && !chatModels.includes(process.env.GROQ_CHAT_MODEL)) {
+          chatModels.unshift(process.env.GROQ_CHAT_MODEL);
+        }
+
+        _groqModelCache = { models: chatModels, timestamp: now };
+        return chatModels;
+      }
+    }
+  } catch (err) {
+    console.warn('[NutriBot] Groq auto-discovery fallback:', err.message);
+  }
+
+  return fallback;
+}
+
+async function getAvailableGeminiTargets(apiKey) {
+  const now = Date.now();
+  if (_geminiModelCache.models.length > 0 && (now - _geminiModelCache.timestamp) < CACHE_TTL_MS) {
+    return _geminiModelCache.models;
+  }
+
+  const fallback = [
+    ...(process.env.GEMINI_CHAT_MODEL ? [{ ver: 'v1beta', model: process.env.GEMINI_CHAT_MODEL }] : []),
+    { ver: 'v1beta', model: 'gemini-flash-latest' },
+    { ver: 'v1beta', model: 'gemini-flash-lite-latest' },
+    { ver: 'v1', model: 'gemini-1.5-flash' },
+    { ver: 'v1beta', model: 'gemini-2.0-flash' },
+    { ver: 'v1beta', model: 'gemini-1.5-flash' },
+    { ver: 'v1', model: 'gemini-1.5-pro' },
   ];
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey.trim()), {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      const rawList = data.models || [];
+      const validModels = rawList
+        .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(id => !id.includes('embedding') && !id.includes('aqa'));
+
+      if (validModels.length > 0) {
+        validModels.sort((a, b) => {
+          const score = id => {
+            if (id.includes('flash-latest')) return 100;
+            if (id.includes('2.0-flash')) return 90;
+            if (id.includes('1.5-flash')) return 80;
+            if (id.includes('flash')) return 70;
+            if (id.includes('pro')) return 50;
+            return 10;
+          };
+          return score(b) - score(a);
+        });
+
+        const targets = validModels.map(m => ({ ver: 'v1beta', model: m }));
+        if (process.env.GEMINI_CHAT_MODEL) {
+          targets.unshift({ ver: 'v1beta', model: process.env.GEMINI_CHAT_MODEL });
+        }
+
+        _geminiModelCache = { models: targets, timestamp: now };
+        return targets;
+      }
+    }
+  } catch (err) {
+    console.warn('[NutriBot] Gemini auto-discovery fallback:', err.message);
+  }
+
+  return fallback;
+}
+
+// ─── Provider Callers ────────────────────────────────────────────────────────
+
+async function callGroqChat(apiKey, systemInstruction, messages) {
+  const models = await getAvailableGroqModels(apiKey);
   let lastError = null;
 
-  for (const model of GROQ_MODELS) {
+  for (const model of models) {
     try {
       const payload = {
         model,
@@ -116,14 +234,14 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey.trim()}`,
+          'Authorization': 'Bearer ' + apiKey.trim(),
         },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`groq ${model} (${res.status}): ${errText}`);
+        throw new Error('groq ' + model + ' (' + res.status + '): ' + errText);
       }
 
       const data = await res.json();
@@ -132,7 +250,7 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
 
       return {
         text: content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(),
-        model: `groq/${model}`,
+        model: 'groq/' + model,
       };
     } catch (err) {
       lastError = err;
@@ -146,16 +264,10 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
 }
 
 async function callGeminiChat(apiKey, systemInstruction, messages) {
-  const GEMINI_TARGETS = [
-    { ver: 'v1beta', model: 'gemini-flash-latest' },
-    { ver: 'v1beta', model: 'gemini-flash-lite-latest' },
-    { ver: 'v1', model: 'gemini-1.5-flash' },
-    { ver: 'v1beta', model: 'gemini-2.0-flash' },
-    { ver: 'v1beta', model: 'gemini-1.5-flash' },
-  ];
+  const targets = await getAvailableGeminiTargets(apiKey);
   let lastError = null;
 
-  for (const target of GEMINI_TARGETS) {
+  for (const target of targets) {
     try {
       const contents = [];
       for (const m of messages) {
@@ -176,7 +288,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
         },
       };
 
-      const url = `https://generativelanguage.googleapis.com/${target.ver}/models/${target.model}:generateContent?key=${apiKey.trim()}`;
+      const url = 'https://generativelanguage.googleapis.com/' + target.ver + '/models/' + target.model + ':generateContent?key=' + encodeURIComponent(apiKey.trim());
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -185,7 +297,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`gemini ${target.model} (${res.status}): ${errText}`);
+        throw new Error('gemini ' + target.model + ' (' + res.status + '): ' + errText);
       }
 
       const data = await res.json();
@@ -194,7 +306,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
 
       return {
         text: text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(),
-        model: `gemini/${target.model}`,
+        model: 'gemini/' + target.model,
       };
     } catch (err) {
       lastError = err;
@@ -208,7 +320,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
 }
 
 async function callOpenAIChat(apiKey, systemInstruction, messages) {
-  const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
+  const OPENAI_MODELS = [process.env.OPENAI_CHAT_MODEL, 'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest'].filter(Boolean);
   let lastError = null;
 
   for (const model of OPENAI_MODELS) {
@@ -260,7 +372,7 @@ async function callOpenAIChat(apiKey, systemInstruction, messages) {
 }
 
 async function callAnthropicChat(apiKey, systemInstruction, messages) {
-  const ANTHROPIC_MODELS = ['claude-3-5-haiku-20241022'];
+  const ANTHROPIC_MODELS = [process.env.ANTHROPIC_CHAT_MODEL, 'claude-3-5-haiku-latest', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'].filter(Boolean);
   let lastError = null;
 
   for (const model of ANTHROPIC_MODELS) {

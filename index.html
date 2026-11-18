@@ -1220,24 +1220,25 @@ function renderMd(text){
   s=s.replace(/\[(?:FOOD|CARD):\s*([^|\]]+)\s*\|\s*([^|\]]+)\s*\|\s*([^\]]+)\]/gi,(_,name,kcal,prot)=>{
     const kNum=String(kcal).replace(/[^\d.]/g,'')||'0';
     const pNum=String(prot).replace(/[^\d.]/g,'')||'0';
-    return `§§FOOD_CARD:${name.trim()}:${kNum}:${pNum}§§`;
+    return `__FOOD_CARD__:${name.trim()}::${kNum}::${pNum}__FOOD_CARD__`;
   });
   const lines=s.split('\n');let inList=false,listTag='ul';const out=[];
   for(let line of lines){
     const trm=line.trim();
-    if(trm.startsWith('§§FOOD_CARD:')&&trm.endsWith('§§')){
+    if(trm.startsWith('__FOOD_CARD__:')&&trm.endsWith('__FOOD_CARD__')){
       if(inList){out.push(`</${listTag}>`);inList=false}
-      const parts=trm.slice(12,-2).split(':');
+      const raw=trm.slice(14,-13);
+      const parts=raw.split('::');
       const fName=parts[0]||'Makanan',fKcal=parts[1]||'0',fProt=parts[2]||'0';
-      out.push(`<div class="mt-2.5 p-2.5 bg-white rounded-xl border border-gray-200/90 flex items-center justify-between gap-3 shadow-xs my-1.5" style="background:#fff;border-color:var(--ln)">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:#ecfdf5;color:#00875a">
+      out.push(`<div style="margin:10px 0;padding:12px 14px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="width:36px;height:36px;border-radius:10px;background:#ecfdf5;color:#00875a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           ${MS('restaurant',18)}
         </div>
-        <div class="flex-1 min-w-0 text-left">
-          <b class="text-xs font-bold text-gray-900 block truncate" style="color:var(--tx)">${fName}</b>
-          <span class="text-[11px] text-gray-500 font-medium">${fKcal} kcal • <span class="font-bold" style="color:#00875a">${fProt}g Protein</span></span>
+        <div style="flex:1;min-width:0;text-align:left">
+          <b style="font-size:13px;font-weight:700;color:#111827;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fName}</b>
+          <span style="font-size:11.5px;color:#6b7280;font-weight:500;display:block;margin-top:2px">${fKcal} kcal • <span style="color:#00875a;font-weight:700">${fProt}g Protein</span></span>
         </div>
-        <button class="btn py-1 px-3 text-xs font-bold shrink-0" style="background:#00875a;color:#fff;border-radius:8px" data-a="chatlogfood" data-name="${fName}" data-kcal="${fKcal}" data-p="${fProt}">
+        <button style="padding:6px 14px;font-size:12px;font-weight:700;background:#00875a;color:#ffffff;border-radius:8px;border:none;cursor:pointer;flex-shrink:0" data-a="chatlogfood" data-name="${fName}" data-kcal="${fKcal}" data-p="${fProt}">
           + Log
         </button>
       </div>`);
@@ -1371,9 +1372,11 @@ function toggleChatVoice(){
 }
 
 async function sendNutriBotMessage(textOverride){
-  const text=(textOverride||CHAT_INPUT||'').trim();
+  const inp=document.getElementById('chat-input');
+  const text=(textOverride||(inp?inp.value:'')||CHAT_INPUT||'').trim();
   if(!text||CHAT_LOADING)return;
 
+  if(inp)inp.value='';
   S.chat=S.chat||[];
   S.chat.push({
     id:'msg_'+Date.now(),
@@ -1420,15 +1423,22 @@ async function sendNutriBotMessage(textOverride){
     S.chat.push({
       id:'msg_'+Date.now(),
       role:'assistant',
-      content:data.text||'Maaf, NutriBot belum bisa merespons saat ini.',
+      content:data.message||data.text||'Maaf, NutriBot belum bisa merespons saat ini.',
       time:new Date().toTimeString().slice(0,5),
-      provider:data.provider_used||data.provider_code||'AI',
-      model:data.model_used||'',
+      provider:data.provider_name||data.provider||'AI Coach',
+      model:data.model||'',
       latencyMs:data.latency_ms||0
     });
     CHAT_ERR='';
   }catch(err){
-    CHAT_ERR=err.message||'Terjadi kesalahan saat menghubungi NutriBot.';
+    const rawMsg=err.message||'';
+    if(rawMsg.includes('Failed to fetch')||rawMsg.includes('NetworkError')){
+      CHAT_ERR='Koneksi internet terputus. Silakan periksa jaringan Anda dan coba lagi.';
+    }else if(rawMsg.includes('{')||rawMsg.includes('404')||rawMsg.includes('429')){
+      CHAT_ERR='Asisten AI sementara sedang dalam pemeliharaan. Silakan coba sesaat lagi.';
+    }else{
+      CHAT_ERR=rawMsg||'Terjadi kendala saat menghubungi NutriBot.';
+    }
   }finally{
     CHAT_LOADING=false;
     save();
@@ -1578,169 +1588,188 @@ function vChatModal(){
   const ctx=getNutriBotContext();
   const msgs=S.chat||[];
 
+  const pConsumed=Math.round(ctx.consumedProtein||0);
+  const pTarget=Math.round(ctx.targetProtein||75);
+  const pDiff=pConsumed-pTarget;
+  const pBadgeText=pDiff>0?('+' + pDiff + 'g'):(pDiff<0?('−' + Math.abs(pDiff) + 'g'):'Tercapai');
+  const userName=esc(S.u.name||'Sarah');
+
   return `<div class="ov" role="dialog" aria-modal="true" style="z-index:110">
-    <div class="card w-full max-w-lg flex flex-col p-0 overflow-hidden" style="height:90vh;max-height:720px;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);background:var(--cd);position:relative">
+    <div class="card w-full max-w-lg flex flex-col p-0 overflow-hidden" style="height:92vh;max-height:740px;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);background:#ffffff;position:relative">
+      
       <!-- Modal Header: Emerald Green (#00875a) -->
-      <div class="px-4 pt-3.5 pb-3 flex flex-col gap-2 shrink-0 text-white" style="background:#00875a;box-shadow:0 2px 10px rgba(0,135,90,0.25)">
+      <div class="shrink-0 text-white" style="background:#00875a;box-shadow:0 2px 10px rgba(0,135,90,0.25)">
         <!-- Top Row: Avatar, Title, Active Engine, Refresh & Close buttons -->
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2 px-4 pt-4 pb-2.5">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="rounded-full flex items-center justify-center shrink-0 p-0.5" style="width:40px;height:40px;flex-shrink:0;background:rgba(255,255,255,0.22);border:1.5px solid rgba(255,255,255,0.4)">
-              <img src="nutribot-avatar.png" alt="AI Coach" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
+            <div class="rounded-full overflow-hidden shrink-0" style="width:38px;height:38px;flex-shrink:0;background:#ffffff;border:2px solid rgba(255,255,255,0.6);box-shadow:0 2px 6px rgba(0,0,0,0.15)">
+              <img src="nutribot-avatar.png" alt="AI Coach" style="width:38px;height:38px;object-fit:cover;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
             </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <b class="text-sm font-bold tracking-tight text-white">NutriTrack AI Coach</b>
-                <span class="w-2 h-2 rounded-full inline-block" style="background:#4ade80"></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <b class="text-sm font-bold text-white tracking-tight leading-tight">NutriTrack AI Coach</b>
+                <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;display:inline-block"></span>
               </div>
-              <div class="text-[11px] text-white/80 flex items-center gap-1 cursor-pointer hover:underline" data-a="aimkeys" title="Klik untuk atur Kunci API / Mesin AI">
-                <span>• Active • ${CHAT_PROVIDER==='auto'?'Mifflin–St Jeor Engine':CHAT_PROVIDER.toUpperCase()+' Engine'}</span>
+              <div class="text-[11px] text-white/85 cursor-pointer truncate hover:underline" data-a="aimkeys" title="Klik untuk atur Kunci API / Mesin AI">
+                • Active • ${CHAT_PROVIDER==='auto'?'Mifflin–St Jeor Engine':CHAT_PROVIDER.toUpperCase()+' Engine'}
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <button class="ib text-white/85 hover:text-white" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.12)" data-a="chatclear" title="Mulai Percakapan Baru">${MS('refresh',20)}</button>
-            <button class="ib text-white/85 hover:text-white" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.12)" data-a="chatclose" title="Tutup">${MS('close',20)}</button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button class="ib text-white/90 hover:text-white" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.18)" data-a="chatclear" title="Mulai Percakapan Baru">${MS('refresh',18)}</button>
+            <button class="ib text-white/90 hover:text-white" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.18)" data-a="chatclose" title="Tutup">${MS('close',18)}</button>
           </div>
         </div>
 
-        <!-- Secondary Pill Context Banner (Dark semi-transparent green) -->
-        <div class="flex items-center justify-between px-3 py-1.5 text-xs font-semibold rounded-full" style="background:rgba(0,50,30,0.45);color:#fff">
-          <span class="truncate pr-2">${esc(S.u.name||'User')} • Sisa Target: <b>${(ctx.remainingKcal||0)>=0?n0(ctx.remainingKcal||0)+' kcal':'+'+n0(Math.abs(ctx.remainingKcal||0))+' kcal'}</b></span>
-          <span class="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background:rgba(255,255,255,0.22)">Protein: ${(ctx.consumedProtein||0)>=(ctx.targetProtein||75)?'+'+(((ctx.consumedProtein||0)-(ctx.targetProtein||75))|0)+'g':'−'+(((ctx.targetProtein||75)-(ctx.consumedProtein||0))|0)+'g'}</span>
+        <!-- Secondary Pill Context Banner (Dark semi-transparent green rounded pill) -->
+        <div class="px-4 pb-3">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;border-radius:9999px;background:rgba(0,45,25,0.45);color:#ffffff;font-size:12px;font-weight:600">
+            <span class="truncate pr-2">${userName} • Sisa Target: <b>${n0(ctx.remainingKcal||0)} kcal</b></span>
+            <span style="padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:700;background:rgba(255,255,255,0.22);color:#ffffff;white-space:nowrap;flex-shrink:0">Protein: ${pBadgeText}</span>
+          </div>
         </div>
       </div>
 
       <!-- Message History Container -->
-      <div id="chat-history-container" class="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3" style="scroll-behavior:smooth">
+      <div id="chat-history-container" class="flex-1 overflow-y-auto" style="scroll-behavior:smooth;background:#ffffff;padding:14px 16px">
         ${msgs.length===0?`
-          <!-- Screen 1: Empty state before message input -->
-          <div class="p-4 sm:p-5 flex flex-col items-center text-center rounded-2xl mb-4" style="background:#f8fafc;border:1px solid #e2e8f0">
-            <div class="rounded-full flex items-center justify-center p-0.5 mb-2.5" style="width:56px;height:56px;flex-shrink:0;background:#ecfdf5;border:2px solid #34d399;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
-              <img src="nutribot-avatar.png" alt="AI Coach" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
+          <!-- Screen 1: Empty state before message input (Mockup 2) -->
+          <div style="padding:18px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.02)">
+            <div style="width:62px;height:62px;border-radius:50%;overflow:hidden;background:#ecfdf5;border:2.5px solid #10b981;box-shadow:0 4px 14px rgba(16,185,129,0.25);margin-bottom:10px;flex-shrink:0">
+              <img src="nutribot-avatar.png" alt="AI Coach" style="width:62px;height:62px;object-fit:cover;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
             </div>
-            <b class="text-base font-extrabold text-gray-900 mb-1">Halo, ${esc(S.u.name||'Sobat Sehat')}! 👋</b>
-            <p class="text-xs text-gray-500 max-w-sm mb-4 leading-relaxed">
-              Saya asisten nutrisi berbasis data harianmu. Siap bantu cek gizi, saran menu makan malam, atau log makanan lewat foto & teks.
+            <b style="font-size:16px;font-weight:800;color:#111827;margin-bottom:6px;display:block">Halo, ${userName}! 👋</b>
+            <p style="font-size:12px;color:#6b7280;line-height:1.6;max-width:310px;margin:0 auto 16px">
+              Saya asisten nutrisi berbasis data harianmu. Siap bantu cek gizi, saran menu makan malam, atau log makanan lewat foto &amp; teks.
             </p>
 
             <!-- 3 Stat Cards in Grid -->
-            <div class="grid grid-cols-3 gap-2 w-full">
-              <div class="bg-white rounded-xl p-2.5 border border-gray-200/80 shadow-xs text-center">
-                <span class="text-[11px] text-gray-500 font-medium block">Sisa Kalori</span>
-                <b class="text-xs sm:text-sm font-black block mt-0.5" style="color:#00875a">${ctx.remainingKcal} kcal</b>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%">
+              <div style="background:#ffffff;border-radius:14px;padding:12px 6px;border:1px solid #e2e8f0;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+                <span style="font-size:11px;color:#6b7280;font-weight:500;display:block">Sisa Kalori</span>
+                <b style="font-size:13.5px;color:#00875a;font-weight:800;display:block;margin-top:4px">${n0(ctx.remainingKcal||0)} kcal</b>
               </div>
-              <div class="bg-white rounded-xl p-2.5 border border-gray-200/80 shadow-xs text-center">
-                <span class="text-[11px] text-gray-500 font-medium block">Protein</span>
-                <b class="text-xs sm:text-sm font-black block mt-0.5" style="color:#00875a">${ctx.consumedProtein<ctx.targetProtein?'-'+(ctx.targetProtein-ctx.consumedProtein)+'g lagi':'Tercapai'}</b>
+              <div style="background:#ffffff;border-radius:14px;padding:12px 6px;border:1px solid #e2e8f0;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+                <span style="font-size:11px;color:#6b7280;font-weight:500;display:block">Protein</span>
+                <b style="font-size:13.5px;color:#00875a;font-weight:800;display:block;margin-top:4px">${pDiff<0?'−'+Math.abs(pDiff)+'g lagi':'Tercapai!'}</b>
               </div>
-              <div class="bg-white rounded-xl p-2.5 border border-gray-200/80 shadow-xs text-center">
-                <span class="text-[11px] text-gray-500 font-medium block">Hidrasi</span>
-                <b class="text-xs sm:text-sm font-black block mt-0.5" style="color:#b45309">${(wat(D)/1000).toFixed(1)} / ${(S.tg.water/1000).toFixed(1)}L</b>
+              <div style="background:#ffffff;border-radius:14px;padding:12px 6px;border:1px solid #e2e8f0;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+                <span style="font-size:11px;color:#6b7280;font-weight:500;display:block">Hidrasi</span>
+                <b style="font-size:13.5px;color:#b45309;font-weight:800;display:block;margin-top:4px">${(wat(D)/1000).toFixed(1)} / ${((S.tg.water||2000)/1000).toFixed(1)}L</b>
               </div>
             </div>
           </div>
 
           <!-- Section: Rekomendasi Cepat -->
-          <div class="w-full">
-            <div class="flex items-center justify-between mb-2 px-1">
-              <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">REKOMENDASI CEPAT</span>
-              <span class="text-[11px] font-semibold flex items-center gap-1" style="color:#00875a">✨ Pilihan AI</span>
+          <div style="width:100%;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px">
+              <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em">REKOMENDASI CEPAT</span>
+              <span style="font-size:11px;font-weight:600;color:#00875a;display:flex;align-items:center;gap:4px">✨ Pilihan AI</span>
             </div>
 
             <!-- Card 1: Rekomendasi makan malam berprotein tinggi -->
-            <div class="p-3 bg-white rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between gap-3 hover:border-[#00875a] cursor-pointer transition-all mb-2" data-a="chatsuggest" data-v="Beri rekomendasi makan malam berprotein tinggi di bawah ${Math.max(150, Math.min(ctx.remainingKcal, 500))} kalori sesuai target harian saya.">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:#ecfdf5;color:#00875a">
+            <div style="padding:12px 14px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)" data-a="chatsuggest" data-v="Beri rekomendasi makan malam berprotein tinggi di bawah ${Math.max(150, Math.min(ctx.remainingKcal||500, 500))} kalori sesuai target harian saya.">
+              <div style="width:40px;height:40px;border-radius:12px;background:#ecfdf5;color:#00875a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 ${MS('restaurant', 20)}
               </div>
-              <div class="flex-1 min-w-0 text-left">
-                <b class="text-xs font-bold text-gray-900 block truncate">Rekomendasi makan malam berprotein tinggi</b>
-                <span class="text-[11px] text-gray-500 block truncate">Di bawah ${Math.max(150, Math.min(ctx.remainingKcal, 500))} kalori sesuai target harian</span>
+              <div style="flex:1;min-width:0;text-align:left">
+                <b style="font-size:12.5px;font-weight:700;color:#111827;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rekomendasi makan malam berprotein tinggi</b>
+                <span style="font-size:11px;color:#6b7280;display:block;margin-top:2px">Di bawah ${Math.max(150, Math.min(ctx.remainingKcal||500, 500))} kalori sesuai target harian</span>
               </div>
-              <span class="text-gray-400 shrink-0">${MS('arrow_forward', 18)}</span>
+              <span style="color:#9ca3af;flex-shrink:0">${MS('arrow_forward', 18)}</span>
             </div>
 
             <!-- Card 2: Analisis foto piring makan saya -->
-            <div class="p-3 bg-white rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between gap-3 hover:border-[#00875a] cursor-pointer transition-all" data-a="chatphoto">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:#eff6ff;color:#2563eb">
+            <div style="padding:12px 14px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)" data-a="chatphoto">
+              <div style="width:40px;height:40px;border-radius:12px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 ${MS('photo_camera', 20)}
               </div>
-              <div class="flex-1 min-w-0 text-left">
-                <div class="flex items-center gap-1.5">
-                  <b class="text-xs font-bold text-gray-900 truncate">Analisis foto piring makan saya</b>
-                  <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded shrink-0" style="background:#d1fae5;color:#065f46">SCAN</span>
+              <div style="flex:1;min-width:0;text-align:left">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <b style="font-size:12.5px;font-weight:700;color:#111827">Analisis foto piring makan saya</b>
+                  <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;background:#d1fae5;color:#065f46;flex-shrink:0">SCAN</span>
                 </div>
-                <span class="text-[11px] text-gray-500 block truncate">Hitung otomatis gramatur & kalori dari foto</span>
+                <span style="font-size:11px;color:#6b7280;display:block;margin-top:2px">Hitung otomatis gramatur &amp; kalori dari foto</span>
               </div>
-              <span class="text-gray-400 shrink-0">${MS('arrow_forward', 18)}</span>
-            </div>
-          </div>
-        `:msgs.map(m=>m.role==='user'?`
-          <!-- Screen 2: User Message -->
-          <div class="flex justify-end items-end gap-2">
-            <div class="max-w-[85%] rounded-2xl rounded-tr-sm px-4 py-3 text-xs leading-relaxed text-white" style="background:#006c49;box-shadow:0 2px 8px rgba(0,108,73,0.25)">
-              <div class="whitespace-pre-wrap">${esc(m.content)}</div>
-              <div class="text-[10px] text-right mt-1 opacity-75">${m.time||''}</div>
+              <span style="color:#9ca3af;flex-shrink:0">${MS('arrow_forward', 18)}</span>
             </div>
           </div>
         `:`
-          <!-- Screen 2: Assistant Message -->
-          <div class="flex items-start gap-2.5">
-            <div class="rounded-full flex items-center justify-center shrink-0 mt-0.5 p-0.5" style="width:32px;height:32px;flex-shrink:0;background:#ecfdf5;border:1.5px solid #34d399;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
-              <img src="nutribot-avatar.png" alt="AI Coach" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
-            </div>
-            <div class="max-w-[88%] rounded-2xl rounded-tl-sm px-4 py-3 text-xs leading-relaxed" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#1e293b">
-              <div class="font-normal">${renderMd(m.content)}</div>
-              <div class="flex items-center justify-between gap-3 text-[10px] text-gray-400 mt-2 pt-1.5" style="border-top:1px solid #e2e8f0">
-                <span>${m.provider?'⚡ '+esc(m.provider):'AI Coach'}</span>
-                <span>${m.time||''}${m.latencyMs?' · '+(m.latencyMs/1000).toFixed(1)+'s':''}</span>
+          ${msgs.map(m=>m.role==='user'?`
+            <!-- Screen 2: User Message (Mockup 3) -->
+            <div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-bottom:12px">
+              <div style="max-width:85%;border-radius:18px 4px 18px 18px;padding:12px 16px;font-size:12.5px;line-height:1.5;color:#ffffff;background:#006c49;box-shadow:0 2px 8px rgba(0,108,73,0.25)">
+                <div style="white-space:pre-wrap">${esc(m.content)}</div>
+                <div style="font-size:10px;text-align:right;margin-top:4px;color:rgba(255,255,255,0.75)">${m.time||''}</div>
               </div>
             </div>
-          </div>
-        `).join('')}
-
-        ${CHAT_LOADING?`
-          <div class="flex items-start gap-2.5">
-            <div class="rounded-full flex items-center justify-center shrink-0 mt-0.5 p-0.5 animate-bounce" style="width:32px;height:32px;flex-shrink:0;background:#ecfdf5;border:1.5px solid #34d399">
-              <img src="nutribot-avatar.png" alt="AI Coach" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
+          `:`
+            <!-- Screen 2: Assistant Message (Mockup 3) -->
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+              <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#ecfdf5;border:1.5px solid #10b981;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-top:2px">
+                <img src="nutribot-avatar.png" alt="AI Coach" style="width:32px;height:32px;object-fit:cover;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
+              </div>
+              <div style="max-width:88%;border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#1e293b;background:#f1f5f9;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+                <div style="font-weight:400">${renderMd(m.content)}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0">
+                  <span>${m.provider ? '⚡ ' + esc(m.provider) : 'AI Coach'}</span>
+                  <span>${m.time||''}${m.latencyMs ? ' · ' + (m.latencyMs/1000).toFixed(1) + 's' : ''}</span>
+                </div>
+              </div>
             </div>
-            <div class="rounded-2xl rounded-tl-sm px-4 py-3 text-xs flex items-center gap-2" style="background:#f1f5f9;border:1px solid #e2e8f0">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style="animation-delay:0.2s"></span>
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style="animation-delay:0.4s"></span>
-              <span class="mu text-[11px] ml-1">AI Coach sedang menganalisis nutrisi Anda...</span>
-            </div>
-          </div>
-        `:''}
+          `).join('')}
 
-        ${CHAT_ERR?`
-          <div class="p-3 rounded-xl text-xs flex items-center justify-between gap-2" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b">
-            <span>⚠️ ${esc(CHAT_ERR)}</span>
-            <button class="chip text-xs px-2.5 py-1 font-bold cursor-pointer" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" data-a="chatrety">Coba Lagi</button>
-          </div>
-        `:''}
+          ${CHAT_LOADING?`
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+              <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#ecfdf5;border:1.5px solid #10b981;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-top:2px" class="animate-bounce">
+                <img src="nutribot-avatar.png" alt="AI Coach" style="width:32px;height:32px;object-fit:cover;display:block;pointer-events:none" draggable="false" onerror="this.onerror=null;this.src='nutribot-avatar.jpg'">
+              </div>
+              <div style="border-radius:4px 18px 18px 18px;padding:12px 16px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;gap:6px">
+                <span style="width:6px;height:6px;border-radius:50%;background:#00875a" class="animate-pulse"></span>
+                <span style="width:6px;height:6px;border-radius:50%;background:#00875a;animation-delay:0.2s" class="animate-pulse"></span>
+                <span style="width:6px;height:6px;border-radius:50%;background:#00875a;animation-delay:0.4s" class="animate-pulse"></span>
+                <span style="font-size:11px;color:#64748b;margin-left:4px">AI Coach sedang menyusun rekomendasi...</span>
+              </div>
+            </div>
+          `:''}
+
+          ${CHAT_ERR?`
+            <div style="padding:10px 14px;border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;margin-top:8px">
+              <span style="flex:1">⚠️ ${esc(CHAT_ERR)}</span>
+              <button style="padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;cursor:pointer;flex-shrink:0" data-a="chatrety">Coba Lagi</button>
+            </div>
+          `:''}
+        `}
       </div>
 
-      <!-- Sticky Quick Suggestion Chips (Available in both empty state and during conversation) -->
-      <div class="px-3 py-1.5 flex items-center gap-2 overflow-x-auto shrink-0 bg-[#f8fafc] border-t border-gray-200/70 whitespace-nowrap" style="-webkit-overflow-scrolling:touch">
-        <button class="chip text-xs py-1 px-3 bg-white border border-gray-200 rounded-full font-medium hover:border-[#00875a] hover:bg-emerald-50 transition-all flex items-center gap-1.5 shrink-0 shadow-2xs" data-a="chatsuggest" data-v="Beri saya ide makan malam berprotein tinggi di bawah sisa kuota kalori saya.">
-          <span>💡</span> <span>Ide makan malam</span>
+      <!-- Sticky Quick Suggestion Chips (Mockup 2 & 3) -->
+      <div style="padding:8px 12px;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0;background:#f8fafc;border-top:1px solid #e2e8f0;white-space:nowrap;-webkit-overflow-scrolling:touch">
+        <button style="padding:6px 14px;background:#ffffff;border:1px solid #cbd5e1;border-radius:9999px;font-size:11.5px;font-weight:600;color:#334155;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);cursor:pointer;flex-shrink:0" data-a="chatsuggest" data-v="Beri saya ide makan malam berprotein tinggi di bawah sisa kuota kalori saya.">
+          <span>💡</span><span>Ide makan malam</span>
         </button>
-        <button class="chip text-xs py-1 px-3 bg-white border border-gray-200 rounded-full font-medium hover:border-[#00875a] hover:bg-emerald-50 transition-all flex items-center gap-1.5 shrink-0 shadow-2xs" data-a="chatsuggest" data-v="Bagaimana evaluasi asupan air minum dan hidrasi saya hari ini? Apakah sudah optimal?">
-          <span>💧</span> <span>Status hidrasi</span>
+        <button style="padding:6px 14px;background:#ffffff;border:1px solid #cbd5e1;border-radius:9999px;font-size:11.5px;font-weight:600;color:#334155;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);cursor:pointer;flex-shrink:0" data-a="chatsuggest" data-v="Bagaimana evaluasi asupan air minum dan hidrasi saya hari ini? Apakah sudah optimal?">
+          <span>💧</span><span>Status hidrasi</span>
         </button>
-        <button class="chip text-xs py-1 px-3 bg-white border border-gray-200 rounded-full font-medium hover:border-[#00875a] hover:bg-emerald-50 transition-all flex items-center gap-1.5 shrink-0 shadow-2xs" data-a="chatsuggest" data-v="Bagaimana pemenuhan target protein saya hari ini? Berapa gram lagi yang dibutuhkan dan apa sumber terbaiknya?">
-          <span>📊</span> <span>Analisis protein</span>
+        <button style="padding:6px 14px;background:#ffffff;border:1px solid #cbd5e1;border-radius:9999px;font-size:11.5px;font-weight:600;color:#334155;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);cursor:pointer;flex-shrink:0" data-a="chatsuggest" data-v="Bagaimana pemenuhan target protein saya hari ini? Berapa gram lagi yang dibutuhkan dan apa sumber terbaiknya?">
+          <span>📊</span><span>Analisis protein</span>
         </button>
       </div>
 
-      <!-- Footer Input Bar -->
-      <div class="p-2.5 sm:p-3 shrink-0 bg-white border-t border-gray-200" style="padding-bottom:max(12px, env(safe-area-inset-bottom, 12px))">
-        <div class="flex items-center gap-2">
-          <button class="ib shrink-0" style="width:38px;height:38px;border-radius:12px;background:var(--tk);color:var(--tx)" data-a="chatphoto" title="Scan Foto Makanan AI">${MS('photo_camera',20)}</button>
-          <input id="chat-input" class="inp flex-1 text-xs" style="padding:10px 14px;border-radius:24px;font-size:13px;background:var(--tk);border:1px solid transparent" placeholder="Ketik pesan ke AI Coach... (Enter kirim)" value="${esc(CHAT_INPUT)}" ${CHAT_LOADING?'disabled':''}>
-          <button class="ib shrink-0 ${CHAT_VOICE_RECORDING?'animate-pulse':''}" style="width:38px;height:38px;border-radius:50%;${CHAT_VOICE_RECORDING?'background:#ffe4e6;color:#e11d48;border:1.5px solid #f43f5e':'background:var(--tk)'}" data-a="chatvoice" title="Dikte Suara">${MS(CHAT_VOICE_RECORDING?'mic':'mic_none',20,CHAT_VOICE_RECORDING?'color:#e11d48':'')}</button>
-          <button class="btn shrink-0" style="width:38px;height:38px;border-radius:50%;padding:0;justify-content:center;background:#00875a;box-shadow:0 4px 12px rgba(0,135,90,0.35);color:#fff" data-a="chatsend" ${CHAT_LOADING||!CHAT_INPUT.trim()?'disabled':''} title="Kirim Pesan">${MS('send',18)}</button>
+      <!-- Footer Input Bar (Mockup 2 & 3) -->
+      <div style="padding:10px 14px;flex-shrink:0;background:#ffffff;border-top:1px solid #f1f5f9;padding-bottom:max(12px, env(safe-area-inset-bottom, 12px))">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button style="width:38px;height:38px;border-radius:12px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer" data-a="chatphoto" title="Scan Foto Makanan AI">
+            ${MS('photo_camera', 20)}
+          </button>
+          <div style="flex:1;min-width:0;display:flex;align-items:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:9999px;padding:2px 6px 2px 14px">
+            <input id="chat-input" type="text" style="flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:12.5px;color:#1e293b;padding:8px 0" placeholder="${msgs.length===0?'Ketik pertanyaan nutrisi, ide menu, atau...':'Ketik pesan ke AI Coach...'}" value="${esc(CHAT_INPUT)}" ${CHAT_LOADING?'disabled':''}>
+            <button style="width:32px;height:32px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;background:transparent;color:${CHAT_VOICE_RECORDING?'#e11d48':'#64748b'};cursor:pointer" class="${CHAT_VOICE_RECORDING?'animate-pulse':''}" data-a="chatvoice" title="Dikte Suara">
+              ${MS(CHAT_VOICE_RECORDING?'mic':'mic_none', 20, CHAT_VOICE_RECORDING?'color:#e11d48':'')}
+            </button>
+          </div>
+          <button style="width:38px;height:38px;border-radius:12px;border:none;display:flex;align-items:center;justify-content:center;background:#00875a;box-shadow:0 3px 10px rgba(0,135,90,0.3);color:#ffffff;cursor:pointer;flex-shrink:0;opacity:${CHAT_LOADING||!CHAT_INPUT.trim()?'0.65':'1'}" data-a="chatsend" ${CHAT_LOADING||!CHAT_INPUT.trim()?'disabled':''} title="Kirim Pesan">
+            ${MS('send', 18)}
+          </button>
         </div>
       </div>
     </div>
@@ -3635,6 +3664,7 @@ if(t.id=='ex-t'){if(EX_MODAL){EX_MODAL.t=t.value}return}
 if(t.id=='ex-d'){if(EX_MODAL){EX_MODAL.d=t.value}return}
 if(t.id=='ex-kcal'){if(EX_MODAL){EX_MODAL.kcal=t.value}return}
 if(t.id=='bc-manual-input'){if(BCM){BCM.manualCode=t.value;BCM.err=''}return}
+if(t.id=='chat-input'){CHAT_INPUT=t.value;return}
 if(t.id=='bc-search-q'){if(BCM){BCM.searchQ=t.value;render();const f=$('#bc-search-q');fc(f)}return}if(!i)return;const[k,n]=i.split('-'),th=i.split('-')[2];
 if(k=='nm'){if(t.dataset.ce!==undefined&&n!='bc')t.value=dc(t.value);NM[n]=t.value;return}
 if(k=='bci'){if(BCM&&BCM.item){BCM.item[n]=t.value;BCM.err=''}return}

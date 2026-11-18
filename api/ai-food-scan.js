@@ -210,18 +210,55 @@ KEMBALIKAN OUTPUT HANYA DALAM FORMAT RAW JSON VALID SESUAI SKEMA BERIKUT:
  * 1. Google Gemini Vision Call
  * Menggunakan auto-discovery model aktif dari akun dengan caching 30 menit & fallback valid.
  */
-// Target endpoint & model Gemini terverifikasi
-const CANDIDATE_GEMINI_TARGETS = [
-  // 1. Alias resmi Google Flash terbaru (Aktif dan didukung di Google AI Studio)
+// Dynamic Vision Model Discovery with Caching (1 Hour TTL)
+let _geminiVisionCache = { targets: [], timestamp: 0 };
+let _groqVisionCache = { models: [], timestamp: 0 };
+const VISION_CACHE_TTL_MS = 60 * 60 * 1000;
+
+const DEFAULT_GEMINI_TARGETS = [
+  ...(process.env.GEMINI_VISION_MODEL ? [{ ver: 'v1beta', model: process.env.GEMINI_VISION_MODEL }] : []),
   { ver: 'v1beta', model: 'gemini-flash-latest' },
   { ver: 'v1beta', model: 'gemini-flash-lite-latest' },
-  // 2. Endpoint Stable v1 GA
   { ver: 'v1', model: 'gemini-1.5-flash' },
-  { ver: 'v1', model: 'gemini-1.5-pro' },
-  // 3. Fallback v1beta model eksplisit
   { ver: 'v1beta', model: 'gemini-2.0-flash' },
   { ver: 'v1beta', model: 'gemini-1.5-flash' },
+  { ver: 'v1', model: 'gemini-1.5-pro' },
 ];
+
+async function getAvailableGeminiVisionTargets(apiKey) {
+  const now = Date.now();
+  if (_geminiVisionCache.targets.length > 0 && (now - _geminiVisionCache.timestamp) < VISION_CACHE_TTL_MS) {
+    return _geminiVisionCache.targets;
+  }
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey.trim()), {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      const valid = (data.models || [])
+        .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(id => !id.includes('embedding') && !id.includes('aqa') && (id.includes('flash') || id.includes('pro')));
+      if (valid.length > 0) {
+        valid.sort((a, b) => {
+          const score = id => id.includes('flash-latest') ? 100 : (id.includes('2.0-flash') ? 90 : (id.includes('1.5-flash') ? 80 : 50));
+          return score(b) - score(a);
+        });
+        const targets = valid.map(m => ({ ver: 'v1beta', model: m }));
+        if (process.env.GEMINI_VISION_MODEL) targets.unshift({ ver: 'v1beta', model: process.env.GEMINI_VISION_MODEL });
+        _geminiVisionCache = { targets, timestamp: now };
+        return targets;
+      }
+    }
+  } catch (err) {
+    console.warn('[AI Food Scan] Gemini vision auto-discovery fallback:', err.message);
+  }
+  return DEFAULT_GEMINI_TARGETS;
+}
 
 async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
   const parts = [{ text: systemInstruction }];
@@ -250,7 +287,8 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   const attemptedErrors = [];
 
-  for (const target of CANDIDATE_GEMINI_TARGETS) {
+  const geminiTargets = await getAvailableGeminiVisionTargets(apiKey);
+  for (const target of geminiTargets) {
     const controller = new AbortController();
     // 25 detik per model agar proses visi + segmentasi JSON tidak terpotong timeout dini
     const timeoutId = setTimeout(() => controller.abort(), 25000);
@@ -297,7 +335,7 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
  * 2. OpenAI GPT-4o Vision Call (Ultra Cepat & Stabil)
  */
 async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
-  const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
+  const OPENAI_MODELS = [process.env.OPENAI_VISION_MODEL, 'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest'].filter(Boolean);
   let lastError = null;
 
   for (const model of OPENAI_MODELS) {
@@ -368,10 +406,11 @@ async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMim
  */
 async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
   const GROQ_MODELS = [
+    process.env.GROQ_VISION_MODEL,
+    'llama-3.2-11b-vision-preview',
+    'llama-3.2-90b-vision-preview',
     'qwen/qwen3.8-27b',
-    'meta-models/muse-spark-open',
-    'meta-llama/llama-4-scout-17b-16e-instruct',
-  ];
+  ].filter(Boolean);
   let lastError = null;
 
   for (const model of GROQ_MODELS) {
@@ -440,7 +479,7 @@ async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeT
  * 4. Anthropic Claude Vision Call
  */
 async function callAnthropicVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
-  const ANTHROPIC_MODELS = ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+  const ANTHROPIC_MODELS = [process.env.ANTHROPIC_VISION_MODEL, 'claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'].filter(Boolean);
   let lastError = null;
 
   let anthropicMedia = cleanMimeType;

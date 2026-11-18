@@ -107,7 +107,7 @@ async function getAvailableGroqModels(apiKey) {
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+    const timer = setTimeout(() => controller.abort(), 2000); // 2s timeout
     const res = await fetch('https://api.groq.com/openai/v1/models', {
       headers: { 'Authorization': 'Bearer ' + apiKey.trim() },
       signal: controller.signal,
@@ -166,7 +166,7 @@ async function getAvailableGeminiTargets(apiKey) {
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+    const timer = setTimeout(() => controller.abort(), 2000); // 2s timeout
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey.trim()), {
       signal: controller.signal,
     });
@@ -211,7 +211,7 @@ async function getAvailableGeminiTargets(apiKey) {
 
 // ─── Provider Callers ────────────────────────────────────────────────────────
 
-async function callGroqChat(apiKey, systemInstruction, messages) {
+async function callGroqChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
   const models = await getAvailableGroqModels(apiKey);
   let lastError = null;
 
@@ -230,6 +230,8 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
         max_tokens: 1024,
       };
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -237,7 +239,9 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
           'Authorization': 'Bearer ' + apiKey.trim(),
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -263,7 +267,7 @@ async function callGroqChat(apiKey, systemInstruction, messages) {
   throw lastError || new Error('Seluruh model Groq gagal.');
 }
 
-async function callGeminiChat(apiKey, systemInstruction, messages) {
+async function callGeminiChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
   const targets = await getAvailableGeminiTargets(apiKey);
   let lastError = null;
 
@@ -289,11 +293,15 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
       };
 
       const url = 'https://generativelanguage.googleapis.com/' + target.ver + '/models/' + target.model + ':generateContent?key=' + encodeURIComponent(apiKey.trim());
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -319,7 +327,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages) {
   throw lastError || new Error('Seluruh model Gemini gagal.');
 }
 
-async function callOpenAIChat(apiKey, systemInstruction, messages) {
+async function callOpenAIChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
   const OPENAI_MODELS = [process.env.OPENAI_CHAT_MODEL, 'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest'].filter(Boolean);
   let lastError = null;
 
@@ -338,6 +346,8 @@ async function callOpenAIChat(apiKey, systemInstruction, messages) {
         max_tokens: 1024,
       };
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -345,7 +355,9 @@ async function callOpenAIChat(apiKey, systemInstruction, messages) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -371,7 +383,7 @@ async function callOpenAIChat(apiKey, systemInstruction, messages) {
   throw lastError || new Error('Seluruh model OpenAI gagal.');
 }
 
-async function callAnthropicChat(apiKey, systemInstruction, messages) {
+async function callAnthropicChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
   const ANTHROPIC_MODELS = [process.env.ANTHROPIC_CHAT_MODEL, 'claude-3-5-haiku-latest', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'].filter(Boolean);
   let lastError = null;
 
@@ -387,6 +399,8 @@ async function callAnthropicChat(apiKey, systemInstruction, messages) {
         })),
       };
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -395,7 +409,9 @@ async function callAnthropicChat(apiKey, systemInstruction, messages) {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -421,7 +437,7 @@ async function callAnthropicChat(apiKey, systemInstruction, messages) {
   throw lastError || new Error('Seluruh model Anthropic gagal.');
 }
 
-async function callOpenRouterChat(apiKey, systemInstruction, messages) {
+async function callOpenRouterChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
   const OPENROUTER_MODELS = [
     'meta-llama/llama-3.3-70b-instruct:free',
     'google/gemini-2.0-flash-exp:free',
@@ -443,6 +459,8 @@ async function callOpenRouterChat(apiKey, systemInstruction, messages) {
         max_tokens: 1024,
       };
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -452,7 +470,9 @@ async function callOpenRouterChat(apiKey, systemInstruction, messages) {
           'X-Title': 'NutriTrack Pro NutriBot',
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -473,6 +493,7 @@ async function callOpenRouterChat(apiKey, systemInstruction, messages) {
   }
 
   throw lastError || new Error('Seluruh model OpenRouter gagal.');
+}
 }
 
 function getProviderDisplayName(code) {
@@ -542,20 +563,28 @@ export default async function handler(req, res) {
 
   const systemInstruction = buildSystemPrompt(userContext);
   const errors = [];
+  const DEADLINE_MS = 6000; // 6s total AI budget to prevent Vercel 10s serverless timeout
 
   for (const prov of plan) {
+    if (Date.now() - startTime > DEADLINE_MS) {
+      console.warn(`[NutriBot] Global AI budget reached (${Date.now() - startTime}ms), switching to clinical engine.`);
+      break;
+    }
+    const remainingBudget = Math.max(1200, DEADLINE_MS - (Date.now() - startTime));
+    const providerTimeout = Math.min(2800, remainingBudget);
+
     try {
       let result = null;
       if (prov === 'groq') {
-        result = await callGroqChat(keys.groq, systemInstruction, messages);
+        result = await callGroqChat(keys.groq, systemInstruction, messages, providerTimeout);
       } else if (prov === 'gemini') {
-        result = await callGeminiChat(keys.gemini, systemInstruction, messages);
+        result = await callGeminiChat(keys.gemini, systemInstruction, messages, providerTimeout);
       } else if (prov === 'openai') {
-        result = await callOpenAIChat(keys.openai, systemInstruction, messages);
+        result = await callOpenAIChat(keys.openai, systemInstruction, messages, providerTimeout);
       } else if (prov === 'anthropic') {
-        result = await callAnthropicChat(keys.anthropic, systemInstruction, messages);
+        result = await callAnthropicChat(keys.anthropic, systemInstruction, messages, providerTimeout);
       } else if (prov === 'openrouter') {
-        result = await callOpenRouterChat(keys.openrouter, systemInstruction, messages);
+        result = await callOpenRouterChat(keys.openrouter, systemInstruction, messages, providerTimeout);
       }
 
       if (result && result.text) {

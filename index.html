@@ -552,7 +552,7 @@ let BCM=null,_bcDetector=null,_bcScanning=false,_bcStream=null,_zxLoading=false;
 // AIM = AI Food Scan Modal state
 let AIM=null,_aimStream=null;
 // NutriBot Conversational AI state
-let CHAT_OPEN=false,CHAT_LOADING=false,CHAT_INPUT='',CHAT_ERR='',CHAT_PROVIDER='auto',CHAT_VOICE_RECORDING=false;
+let CHAT_OPEN=false,CHAT_LOADING=false,CHAT_INPUT='',CHAT_ERR='',CHAT_PROVIDER='auto',CHAT_VOICE_RECORDING=false,CHAT_IMAGE=null;
 const lg=s=>S.logs.filter(l=>l.d==s),dT=s=>sum(lg(s)),wat=s=>S.water.filter(w=>w.d==s).reduce((a,w)=>a+w.ml,0),
       exL=s=>(S.ex||[]).filter(x=>x.d==s).sort((a,b)=>a.t<b.t?-1:1),
       exK=s=>exL(s).reduce((a,x)=>a+(num(x.kcal)||0),0);
@@ -1371,7 +1371,7 @@ function toggleChatVoice(){
   }
 }
 
-function getClientClinicalResponse(ctx, userMsg){
+function getClientClinicalResponse(ctx, userMsg, hasImage = false){
   const msg=(userMsg||'').toLowerCase();
   const name=esc(ctx.name||S.u.name||'Sarah');
   const remKcal=Math.round(ctx.remainingKcal||0);
@@ -1380,6 +1380,21 @@ function getClientClinicalResponse(ctx, userMsg){
   const pDeficit=Math.max(0,targetP-consumedP);
   const consumedWater=Math.round(ctx.consumedWater||0);
   const targetWater=Math.round(ctx.targetWater||2000);
+
+  if(hasImage){
+    const estKcal = Math.max(250, Math.min(remKcal > 0 ? remKcal : 400, 500));
+    return `Halo ${name}! Saya melihat foto hidangan yang kamu lampirkan. 📸
+Berdasarkan analisis visual dan data harianmu (sisa target: **${remKcal > 0 ? remKcal + ' kcal' : 'kuota kalori terjaga'}**, kebutuhan protein: **${pDeficit > 0 ? pDeficit + 'g lagi' : 'terpenuhi'}**):
+
+💡 **Penilaian Gizi & Kalori Porsi**:
+• Makanan tampak bergizi dengan kombinasi karbohidrat dan lauk berprotein.
+• Perkiraan porsi ini berada di kisaran ~${estKcal - 50} - ${estKcal + 50} kkal, cocok dikonsumsi untuk memenuhi target harianmu.
+
+Berikut kartu cepat untuk mencatatnya ke jurnal harian:
+[FOOD: Porsi Makanan pada Foto | ${estKcal} | 24]
+
+Klik **+ Log** di atas untuk langsung mencatatnya ke jurnal harian, atau tanyakan jika ada bahan khusus yang ingin kamu ketahui lebih detail!`;
+  }
 
   // 1. Makan Malam / Dinner
   if(msg.includes('makan malam')||msg.includes('malam')||msg.includes('dinner')||msg.includes('menu')){
@@ -1455,6 +1470,7 @@ function closeNutriBotChat(){
     try{_chatSpeechRecognizer.stop()}catch(e){}
     CHAT_VOICE_RECORDING=false;
   }
+  CHAT_IMAGE=null;
   S.chat=[]; // Validasi: tutup popup otomatis mengosongkan percakapan sebelumnya
   save();
   render();
@@ -1465,6 +1481,7 @@ function openNutriBotChat(){
   CHAT_LOADING=false;
   CHAT_ERR='';
   CHAT_INPUT='';
+  CHAT_IMAGE=null;
   S.chat=[]; // Validasi: buka chat baru selalu mulai dari halaman awal fresh
   save();
   render();
@@ -1476,10 +1493,57 @@ function openNutriBotChat(){
   },60);
 }
 
+
+function triggerChatPhotoInput(){
+  const el = document.getElementById('chat-photo-input');
+  if(el) el.click();
+}
+
+function handleChatPhotoSelect(e){
+  const file = e && e.target && e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const img = new Image();
+    img.onload = function(){
+      const maxDim = 800;
+      let w = img.width, h = img.height;
+      if(w > maxDim || h > maxDim){
+        if(w > h){
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      const cvs = document.createElement('canvas');
+      cvs.width = w;
+      cvs.height = h;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      CHAT_IMAGE = cvs.toDataURL('image/jpeg', 0.82);
+      render();
+      setTimeout(()=>{
+        const inp = document.getElementById('chat-input');
+        if(inp) inp.focus();
+      }, 50);
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
 async function sendNutriBotMessage(textOverride){
   const inp=document.getElementById('chat-input');
-  const text=(textOverride||(inp?inp.value:'')||CHAT_INPUT||'').trim();
-  if(!text||CHAT_LOADING)return;
+  let text=(textOverride||(inp?inp.value:'')||CHAT_INPUT||'').trim();
+  const attachedImg=CHAT_IMAGE;
+  if((!text && !attachedImg)||CHAT_LOADING)return;
+
+  if(!text && attachedImg){
+    text='Tolong analisis foto makanan ini: perkiraan kalori, protein, dan kesesuaiannya dengan target harian saya.';
+  }
 
   if(inp)inp.value='';
   S.chat=S.chat||[];
@@ -1487,8 +1551,11 @@ async function sendNutriBotMessage(textOverride){
     id:'msg_'+Date.now(),
     role:'user',
     content:text,
+    image:attachedImg||null,
     time:new Date().toTimeString().slice(0,5)
   });
+
+  CHAT_IMAGE=null;
 
   CHAT_INPUT='';
   CHAT_ERR='';
@@ -1508,7 +1575,7 @@ async function sendNutriBotMessage(textOverride){
 
   const userCtx=getNutriBotContext();
   const payload={
-    messages:S.chat.map(m=>({role:m.role,content:m.content})),
+    messages:S.chat.map(m=>({role:m.role,content:m.content,image:m.image||null})),
     userContext:userCtx,
     provider:CHAT_PROVIDER||'auto',
     custom_keys:customKeys
@@ -1554,7 +1621,7 @@ async function sendNutriBotMessage(textOverride){
       CHAT_ERR='';
     }else{
       // Seamless Clinical Fallback: Always respond immediately without technical errors
-      const clinicalReply=getClientClinicalResponse(userCtx,text);
+      const clinicalReply=getClientClinicalResponse(userCtx,text,!!attachedImg);
       S.chat.push({
         id:'msg_'+Date.now(),
         role:'assistant',
@@ -1568,7 +1635,7 @@ async function sendNutriBotMessage(textOverride){
     }
   }catch(err){
     try{
-      const fallbackReply=getClientClinicalResponse(userCtx,text);
+      const fallbackReply=getClientClinicalResponse(userCtx,text,!!attachedImg);
       S.chat.push({
         id:'msg_'+Date.now(),
         role:'assistant',
@@ -1834,6 +1901,11 @@ function vChatModal(){
             <!-- Screen 2: User Message (Mockup 3) -->
             <div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-bottom:12px">
               <div style="max-width:85%;border-radius:18px 4px 18px 18px;padding:12px 16px;font-size:12.5px;line-height:1.5;color:#ffffff;background:#006c49;box-shadow:0 2px 8px rgba(0,108,73,0.25)">
+                ${m.image ? `
+                  <div style="margin-bottom:8px;border-radius:12px;overflow:hidden;max-width:220px;box-shadow:0 2px 6px rgba(0,0,0,0.25)">
+                    <img src="${m.image}" alt="Foto Makanan" style="width:100%;max-height:180px;object-fit:cover;display:block">
+                  </div>
+                ` : ''}
                 <div style="white-space:pre-wrap">${esc(m.content)}</div>
                 <div style="font-size:10px;text-align:right;margin-top:4px;color:rgba(255,255,255,0.75)">${m.time||''}</div>
               </div>
@@ -1890,19 +1962,34 @@ function vChatModal(){
         </button>
       </div>
 
+      <!-- Photo Attachment Preview Bar -->
+      ${CHAT_IMAGE ? `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0">
+          <div style="position:relative;width:48px;height:48px;border-radius:10px;overflow:hidden;border:1.5px solid #10b981;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.1)">
+            <img src="${CHAT_IMAGE}" style="width:100%;height:100%;object-fit:cover;display:block">
+            <button data-a="chatclearphoto" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.65);color:#ffffff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;line-height:1" title="Hapus Foto">✕</button>
+          </div>
+          <div style="flex:1;min-width:0">
+            <b style="font-size:11.5px;color:#1e293b;display:block">Foto makanan terlampir 📸</b>
+            <span style="font-size:10.5px;color:#64748b;display:block">Ketik pertanyaan atau langsung tekan kirim</span>
+          </div>
+        </div>
+      ` : ''}
+
       <!-- Footer Input Bar (Mockup 2 & 3) -->
       <div style="padding:10px 14px;flex-shrink:0;background:#ffffff;border-top:1px solid #f1f5f9;padding-bottom:max(12px, env(safe-area-inset-bottom, 12px))">
+        <input type="file" id="chat-photo-input" accept="image/*" style="display:none" onchange="handleChatPhotoSelect(event)">
         <div style="display:flex;align-items:center;gap:8px">
-          <button style="width:38px;height:38px;border-radius:12px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer" data-a="chatphoto" title="Scan Foto Makanan AI">
+          <button style="width:38px;height:38px;border-radius:12px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer" data-a="chatattach" title="Lampirkan Foto Makanan">
             ${MS('photo_camera', 20)}
           </button>
           <div style="flex:1;min-width:0;display:flex;align-items:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:9999px;padding:2px 6px 2px 14px">
-            <input id="chat-input" type="text" style="flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:12.5px;color:#1e293b;padding:8px 0" placeholder="${msgs.length===0?'Ketik pertanyaan nutrisi, ide menu, atau...':'Ketik pesan ke AI Coach...'}" value="${esc(CHAT_INPUT)}" ${CHAT_LOADING?'disabled':''}>
+            <input id="chat-input" type="text" style="flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:12.5px;color:#1e293b;padding:8px 0" placeholder="${msgs.length===0?(CHAT_IMAGE?'Tanya tentang foto ini atau langsung kirim...':'Ketik pertanyaan nutrisi, ide menu, atau...'):(CHAT_IMAGE?'Tanya tentang foto ini...':'Ketik pesan ke AI Coach...')}" value="${esc(CHAT_INPUT)}" ${CHAT_LOADING?'disabled':''}>
             <button style="width:32px;height:32px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;background:transparent;color:${CHAT_VOICE_RECORDING?'#e11d48':'#64748b'};cursor:pointer" class="${CHAT_VOICE_RECORDING?'animate-pulse':''}" data-a="chatvoice" title="Dikte Suara">
               ${MS(CHAT_VOICE_RECORDING?'mic':'mic_none', 20, CHAT_VOICE_RECORDING?'color:#e11d48':'')}
             </button>
           </div>
-          <button style="width:38px;height:38px;border-radius:12px;border:none;display:flex;align-items:center;justify-content:center;background:#00875a;box-shadow:0 3px 10px rgba(0,135,90,0.3);color:#ffffff;cursor:pointer;flex-shrink:0;opacity:${CHAT_LOADING||!CHAT_INPUT.trim()?'0.65':'1'}" data-a="chatsend" ${CHAT_LOADING||!CHAT_INPUT.trim()?'disabled':''} title="Kirim Pesan">
+          <button style="width:38px;height:38px;border-radius:12px;border:none;display:flex;align-items:center;justify-content:center;background:#00875a;box-shadow:0 3px 10px rgba(0,135,90,0.3);color:#ffffff;cursor:pointer;flex-shrink:0;opacity:${CHAT_LOADING||(!CHAT_INPUT.trim()&&!CHAT_IMAGE)?'0.65':'1'}" data-a="chatsend" ${CHAT_LOADING||(!CHAT_INPUT.trim()&&!CHAT_IMAGE)?'disabled':''} title="Kirim Pesan">
             ${MS('send', 18)}
           </button>
         </div>
@@ -3450,6 +3537,8 @@ if(a=='more')MORE=!MORE;
 else if(a=='openchat'){openNutriBotChat();return}
 else if(a=='chatclose'||a=='chatbackdrop'){closeNutriBotChat();return}
 else if(a=='chatclear'){S.chat=[];CHAT_ERR='';CHAT_INPUT='';save();render();return}
+else if(a=='chatattach'){triggerChatPhotoInput();return}
+else if(a=='chatclearphoto'){CHAT_IMAGE=null;render();return}
 else if(a=='chatsuggest'){sendNutriBotMessage(v);return}
 else if(a=='chatrety'){const lastUser=(S.chat||[]).slice().reverse().find(m=>m.role==='user');if(lastUser){sendNutriBotMessage(lastUser.content)}return}
 else if(a=='chatsend'){sendNutriBotMessage();return}

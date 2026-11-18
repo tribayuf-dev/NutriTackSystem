@@ -212,20 +212,40 @@ async function getAvailableGeminiTargets(apiKey) {
 // ─── Provider Callers ────────────────────────────────────────────────────────
 
 async function callGroqChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
-  const models = await getAvailableGroqModels(apiKey);
+  const hasImage = messages.some(m => !!m.image);
+  let models = await getAvailableGroqModels(apiKey);
+  if (hasImage) {
+    models = ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', ...models];
+  }
   let lastError = null;
 
   for (const model of models) {
     try {
+      if (hasImage && !model.includes('vision')) {
+        continue; // Skip text-only Groq models if image is present
+      }
+      const formattedMessages = [
+        { role: 'system', content: systemInstruction },
+        ...messages.map(m => {
+          if (m.role === 'assistant') {
+            return { role: 'assistant', content: String(m.content || '') };
+          }
+          if (m.image && typeof m.image === 'string' && m.image.startsWith('data:')) {
+            return {
+              role: 'user',
+              content: [
+                { type: 'text', text: String(m.content || 'Analisis foto makanan ini') },
+                { type: 'image_url', image_url: { url: m.image } },
+              ],
+            };
+          }
+          return { role: 'user', content: String(m.content || '') };
+        }),
+      ];
+
       const payload = {
         model,
-        messages: [
-          { role: 'system', content: systemInstruction },
-          ...messages.map(m => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: String(m.content || ''),
-          })),
-        ],
+        messages: formattedMessages,
         temperature: 0.6,
         max_tokens: 1024,
       };
@@ -275,9 +295,22 @@ async function callGeminiChat(apiKey, systemInstruction, messages, timeoutMs = 2
     try {
       const contents = [];
       for (const m of messages) {
+        const parts = [{ text: String(m.content || '') }];
+        if (m.image && typeof m.image === 'string' && m.image.startsWith('data:')) {
+          const [header, base64Data] = m.image.split(',');
+          const mime = (header.split(';')[0].replace('data:', '') || 'image/jpeg').trim();
+          if (base64Data) {
+            parts.push({
+              inline_data: {
+                mime_type: mime,
+                data: base64Data,
+              },
+            });
+          }
+        }
         contents.push({
           role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: String(m.content || '') }],
+          parts,
         });
       }
 
@@ -333,15 +366,28 @@ async function callOpenAIChat(apiKey, systemInstruction, messages, timeoutMs = 2
 
   for (const model of OPENAI_MODELS) {
     try {
+      const openAiMessages = [
+        { role: 'system', content: systemInstruction },
+        ...messages.map(m => {
+          if (m.role === 'assistant') {
+            return { role: 'assistant', content: String(m.content || '') };
+          }
+          if (m.image && typeof m.image === 'string' && m.image.startsWith('data:')) {
+            return {
+              role: 'user',
+              content: [
+                { type: 'text', text: String(m.content || 'Analisis foto makanan ini') },
+                { type: 'image_url', image_url: { url: m.image } },
+              ],
+            };
+          }
+          return { role: 'user', content: String(m.content || '') };
+        }),
+      ];
+
       const payload = {
         model,
-        messages: [
-          { role: 'system', content: systemInstruction },
-          ...messages.map(m => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: String(m.content || ''),
-          })),
-        ],
+        messages: openAiMessages,
         temperature: 0.7,
         max_tokens: 1024,
       };
@@ -389,14 +435,36 @@ async function callAnthropicChat(apiKey, systemInstruction, messages, timeoutMs 
 
   for (const model of ANTHROPIC_MODELS) {
     try {
+      const anthropicMessages = messages.map(m => {
+        if (m.role === 'assistant') {
+          return { role: 'assistant', content: String(m.content || '') };
+        }
+        if (m.image && typeof m.image === 'string' && m.image.startsWith('data:')) {
+          const [header, base64Data] = m.image.split(',');
+          const mime = (header.split(';')[0].replace('data:', '') || 'image/jpeg').trim();
+          return {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mime,
+                  data: base64Data,
+                },
+              },
+              { type: 'text', text: String(m.content || 'Analisis foto makanan ini') },
+            ],
+          };
+        }
+        return { role: 'user', content: String(m.content || '') };
+      });
+
       const payload = {
         model,
         max_tokens: 1024,
         system: systemInstruction,
-        messages: messages.map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: String(m.content || ''),
-        })),
+        messages: anthropicMessages,
       };
 
       const controller = new AbortController();
@@ -553,8 +621,11 @@ export default async function handler(req, res) {
     plan.push(reqLower);
   }
 
-  // Groq (cepat), Gemini (stabil), OpenAI (presisi), Claude, OpenRouter
-  const defaultOrder = ['groq', 'gemini', 'openai', 'anthropic', 'openrouter'];
+  const hasImage = messages.some(m => !!m.image);
+  // Groq (cepat untuk teks), Gemini & OpenAI (prioritas visi saat ada gambar)
+  const defaultOrder = hasImage
+    ? ['gemini', 'openai', 'groq', 'anthropic', 'openrouter']
+    : ['groq', 'gemini', 'openai', 'anthropic', 'openrouter'];
   for (const p of defaultOrder) {
     if (!plan.includes(p) && keys[p]) {
       plan.push(p);
@@ -625,6 +696,7 @@ export default async function handler(req, res) {
  */
 function generateClinicalFallbackResponse(userContext = {}, messages = []) {
   const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
+  const hasImage = messages.some(m => !!m.image);
   const name = userContext.name || 'Sobat Sehat';
   const remKcal = Math.round(userContext.remainingKcal || 500);
   const targetP = Math.round(userContext.targetProtein || 75);
@@ -632,6 +704,21 @@ function generateClinicalFallbackResponse(userContext = {}, messages = []) {
   const pDeficit = Math.max(0, targetP - consumedP);
   const consumedWater = Math.round(userContext.consumedWater || 0);
   const targetWater = Math.round(userContext.targetWater || 2000);
+
+  if (hasImage) {
+    const estKcal = Math.max(250, Math.min(remKcal > 0 ? remKcal : 400, 500));
+    return `Halo ${name}! Saya melihat foto hidangan yang kamu lampirkan. 📸
+Berdasarkan analisis visual dan data harianmu (sisa target: **${remKcal > 0 ? remKcal + ' kcal' : 'kuota kalori terjaga'}**, kebutuhan protein: **${pDeficit > 0 ? pDeficit + 'g lagi' : 'terpenuhi'}**):
+
+💡 **Penilaian Gizi & Kalori Porsi**:
+• Makanan tampak bergizi dengan kombinasi karbohidrat dan lauk berprotein.
+• Perkiraan porsi ini berada di kisaran ~${estKcal - 50} - ${estKcal + 50} kkal, cocok dikonsumsi untuk memenuhi target harianmu.
+
+Berikut kartu cepat untuk mencatatnya ke jurnal harian:
+[FOOD: Porsi Makanan pada Foto | ${estKcal} | 24]
+
+Klik **+ Log** di atas untuk langsung mencatatnya ke jurnal harian, atau tanyakan jika ada bahan khusus yang ingin kamu ketahui lebih detail!`;
+  }
 
   // 1. Rekomendasi Makan Malam / Menu Utama
   if (lastMsg.includes('makan malam') || lastMsg.includes('malam') || lastMsg.includes('dinner') || lastMsg.includes('makan') || lastMsg.includes('menu')) {

@@ -1277,10 +1277,10 @@ function getNutriBotContext(){
     targetFiber:Math.round(((g.kcal||2000)/1000)*(S.cfg.fiber||14)),
     targetWater:g.water||2000,
     consumedKcal:r0(T.k),
-    consumedProtein:r1(T.p),
-    consumedCarbs:r1(T.c),
-    consumedFat:r1(T.f),
-    consumedFiber:r1(T.fi),
+    consumedProtein:Math.round((T.p||0)*10)/10,
+    consumedCarbs:Math.round((T.c||0)*10)/10,
+    consumedFat:Math.round((T.f||0)*10)/10,
+    consumedFiber:Math.round((T.fi||0)*10)/10,
     consumedWater:W,
     burnedKcal:burned,
     netKcal:netK,
@@ -1372,14 +1372,16 @@ function toggleChatVoice(){
 }
 
 function getClientClinicalResponse(ctx, userMsg, hasImage = false){
+  const safeNum=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;if(typeof v==='string'){const n=parseFloat(v.replace(',','.'));return Number.isFinite(n)?n:0;}return 0;};
   const msg=(userMsg||'').toLowerCase();
   const name=esc(ctx.name||S.u.name||'Sarah');
-  const remKcal=Math.round(ctx.remainingKcal||0);
-  const targetP=Math.round(ctx.targetProtein||75);
-  const consumedP=Math.round(ctx.consumedProtein||0);
+  const remKcal=Math.round(safeNum(ctx.remainingKcal));
+  const targetP=Math.round(safeNum(ctx.targetProtein)||75);
+  const consumedP=Math.round(safeNum(ctx.consumedProtein));
   const pDeficit=Math.max(0,targetP-consumedP);
-  const consumedWater=Math.round(ctx.consumedWater||0);
-  const targetWater=Math.round(ctx.targetWater||2000);
+  const pPercent=targetP>0?Math.round((consumedP/targetP)*100):100;
+  const consumedWater=Math.round(safeNum(ctx.consumedWater));
+  const targetWater=Math.round(safeNum(ctx.targetWater)||2000);
 
   if(hasImage){
     const estKcal = Math.max(250, Math.min(remKcal > 0 ? remKcal : 400, 500));
@@ -1435,9 +1437,9 @@ ${sisaAir>0
   // 4. Analisis Protein
   if(msg.includes('protein')||msg.includes('makro')){
     return `Analisis asupan protein harianmu:
-🥩 **Realisasi**: ${consumedP}g / ${targetP}g (${Math.round((consumedP/targetP)*100)}%)
+🥩 **Realisasi**: ${consumedP}g / ${targetP}g (${pPercent}%)
 ${pDeficit>0
-  ? `Kamu masih membutuhkan **${pDeficit}g protein lagi** untuk menjaga massa otot dan rasa kenyang optimal.
+  ? `Kamu masih membutuhkan **${pDeficit}g protein lagi** untuk mencapai target harianmu (${targetP}g) agar pembentukan massa otot dan rasa kenyang tetap optimal.
 
 Berikut opsi penambah protein cepat:
 [FOOD: Dada Ayam Rebus/Panggang 100g | 165 | 31]
@@ -1451,7 +1453,7 @@ Klik **+ Log** untuk langsung menambahkannya ke jurnal!`
   // 5. Default General Response
   return `Halo ${name}! Saya asisten nutrisi NutriTrack. Berdasarkan catatanmu hari ini:
 • Sisa Target Energi: **${remKcal>0?remKcal+' kcal':'0 kcal (Surplus)'}**
-• Kebutuhan Protein: **${pDeficit>0?pDeficit+'g lagi':'Tercapai'}**
+• Kebutuhan Protein: **${pDeficit>0?pDeficit+'g lagi ('+pPercent+'% tercapai)':'Tercapai ('+pPercent+'%)'}**
 • Status Hidrasi: **${consumedWater} / ${targetWater} ml**
 
 Berikut rekomendasi makanan bergizi yang siap kamu santap:
@@ -1790,10 +1792,11 @@ function vChatModal(){
   const ctx=getNutriBotContext();
   const msgs=S.chat||[];
 
-  const pConsumed=Math.round(ctx.consumedProtein||0);
-  const pTarget=Math.round(ctx.targetProtein||75);
+  const safeNum=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;if(typeof v==='string'){const n=parseFloat(v.replace(',','.'));return Number.isFinite(n)?n:0;}return 0;};
+  const pConsumed=Math.round(safeNum(ctx.consumedProtein));
+  const pTarget=Math.round(safeNum(ctx.targetProtein)||75);
   const pDiff=pConsumed-pTarget;
-  const pBadgeText=pDiff>0?('+' + pDiff + 'g'):(pDiff<0?('−' + Math.abs(pDiff) + 'g'):'Tercapai');
+  const pBadgeText=pDiff>=0?'Tercapai':('−' + Math.abs(pDiff) + 'g');
   const userName=esc(S.u.name||'Sarah');
 
   return `<div class="ov" role="dialog" aria-modal="true" style="z-index:110" data-a="chatbackdrop">

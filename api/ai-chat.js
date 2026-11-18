@@ -19,29 +19,39 @@ export const config = {
 };
 
 function buildSystemPrompt(userContext = {}) {
-  const {
-    name = 'Pengguna',
-    goal = 'Menjaga Berat Badan',
-    targetKcal = 2000,
-    targetProtein = 75,
-    targetCarbs = 250,
-    targetFat = 65,
-    targetFiber = 25,
-    targetWater = 2000,
-    consumedKcal = 0,
-    consumedProtein = 0,
-    consumedCarbs = 0,
-    consumedFat = 0,
-    consumedFiber = 0,
-    consumedWater = 0,
-    burnedKcal = 0,
-    netKcal = 0,
-    remainingKcal = 2000,
-    mealsToday = [],
-    eatingWindow = null,
-    glycemicLoad = null,
-    profile = {},
-  } = userContext;
+  const safeNum = v => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    if (typeof v === 'string') {
+      const n = parseFloat(v.replace(',', '.'));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
+
+  const name = userContext.name || 'Pengguna';
+  const goal = userContext.goal || 'Menjaga Berat Badan';
+  const targetKcal = Math.round(safeNum(userContext.targetKcal) || 2000);
+  const targetProtein = Math.round(safeNum(userContext.targetProtein) || 75);
+  const targetCarbs = Math.round(safeNum(userContext.targetCarbs) || 250);
+  const targetFat = Math.round(safeNum(userContext.targetFat) || 65);
+  const targetFiber = Math.round(safeNum(userContext.targetFiber) || 25);
+  const targetWater = Math.round(safeNum(userContext.targetWater) || 2000);
+  const consumedKcal = Math.round(safeNum(userContext.consumedKcal));
+  const consumedProtein = Math.round(safeNum(userContext.consumedProtein) * 10) / 10;
+  const consumedCarbs = Math.round(safeNum(userContext.consumedCarbs) * 10) / 10;
+  const consumedFat = Math.round(safeNum(userContext.consumedFat) * 10) / 10;
+  const consumedFiber = Math.round(safeNum(userContext.consumedFiber) * 10) / 10;
+  const consumedWater = Math.round(safeNum(userContext.consumedWater));
+  const burnedKcal = Math.round(safeNum(userContext.burnedKcal));
+  const netKcal = Math.round(safeNum(userContext.netKcal));
+  const remainingKcal = Math.round(safeNum(userContext.remainingKcal));
+  const mealsToday = userContext.mealsToday || [];
+  const eatingWindow = userContext.eatingWindow || null;
+  const glycemicLoad = userContext.glycemicLoad || null;
+  const profile = userContext.profile || {};
+
+  const pDeficit = Math.max(0, targetProtein - Math.round(consumedProtein));
+  const pPercent = targetProtein > 0 ? Math.round((consumedProtein / targetProtein) * 100) : 100;
 
   const mealsListText = mealsToday && mealsToday.length > 0
     ? mealsToday.map(m => `- [${m.meal || 'Makanan'}] ${m.name} (${m.portion || '1 porsi'}): ${m.kcal || 0} kkal, P:${m.p || 0}g, K:${m.c || 0}g, L:${m.f || 0}g`).join('\n')
@@ -66,10 +76,11 @@ DATA & STATUS NUTRISI PENGGUNA HARI INI:
 - Target Harian: ${targetKcal} kkal | Protein ${targetProtein}g | Karbo ${targetCarbs}g | Lemak ${targetFat}g | Serat ${targetFiber}g | Air ${targetWater} ml.
 - Realisasi Konsumsi:
   * Makanan: ${consumedKcal} kkal (Protein ${consumedProtein}g, Karbo ${consumedCarbs}g, Lemak ${consumedFat}g, Serat ${consumedFiber}g).
+  * Status Protein Hari Ini: Realisasi ${consumedProtein}g dari target ${targetProtein}g (${pPercent}% tercapai). ${pDeficit > 0 ? 'PENTING: Pengguna MASIH KEKURANGAN ' + pDeficit + 'g protein lagi! Jangan pernah katakan target protein sudah tercapai jika pDeficit > 0.' : 'Target protein harian sebesar ' + targetProtein + 'g sudah tercapai.'}
   * Olahraga/Aktivitas Terbakar: -${burnedKcal} kkal.
   * Kalori Bersih (Net Calorie): ${netKcal} kkal.
   * Sisa Kalori Target: ${remainingKcal >= 0 ? remainingKcal + ' kkal tersisa' : 'Surplus +' + Math.abs(remainingKcal) + ' kkal'}.
-  * Hidrasi Air Minum: ${consumedWater} ml / ${targetWater} ml.
+  * Hidrasi Air Minum: ${consumedWater} ml / ${targetWater} ml (${targetWater > 0 ? Math.round((consumedWater / targetWater) * 100) : 100}%).
 - Riwayat Makanan Hari Ini:
 ${mealsListText}
 - Ritme Jam Makan: ${windowText}
@@ -695,15 +706,25 @@ export default async function handler(req, res) {
  * dan intent pertanyaan pengguna dengan kartu makanan interaktif [FOOD: name | kcal | prot].
  */
 function generateClinicalFallbackResponse(userContext = {}, messages = []) {
+  const safeNum = v => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    if (typeof v === 'string') {
+      const n = parseFloat(v.replace(',', '.'));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
+
   const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
   const hasImage = messages.some(m => !!m.image);
   const name = userContext.name || 'Sobat Sehat';
-  const remKcal = Math.round(userContext.remainingKcal || 500);
-  const targetP = Math.round(userContext.targetProtein || 75);
-  const consumedP = Math.round(userContext.consumedProtein || 0);
+  const remKcal = Math.round(safeNum(userContext.remainingKcal) || 500);
+  const targetP = Math.round(safeNum(userContext.targetProtein) || 75);
+  const consumedP = Math.round(safeNum(userContext.consumedProtein));
   const pDeficit = Math.max(0, targetP - consumedP);
-  const consumedWater = Math.round(userContext.consumedWater || 0);
-  const targetWater = Math.round(userContext.targetWater || 2000);
+  const pPercent = targetP > 0 ? Math.round((consumedP / targetP) * 100) : 100;
+  const consumedWater = Math.round(safeNum(userContext.consumedWater));
+  const targetWater = Math.round(safeNum(userContext.targetWater) || 2000);
 
   if (hasImage) {
     const estKcal = Math.max(250, Math.min(remKcal > 0 ? remKcal : 400, 500));
@@ -759,9 +780,9 @@ ${sisaAir > 0
   // 4. Analisis Protein
   if (lastMsg.includes('protein') || lastMsg.includes('makro')) {
     return `Analisis asupan protein harianmu:
-🥩 **Realisasi**: ${consumedP}g / ${targetP}g (${Math.round((consumedP / targetP) * 100)}%)
+🥩 **Realisasi**: ${consumedP}g / ${targetP}g (${pPercent}%)
 ${pDeficit > 0 
-  ? `Kamu masih membutuhkan **${pDeficit}g protein lagi** untuk menjaga massa otot dan rasa kenyang optimal.
+  ? `Kamu masih membutuhkan **${pDeficit}g protein lagi** untuk mencapai target harianmu (${targetP}g) agar pembentukan massa otot dan rasa kenyang tetap optimal.
 
 Berikut opsi penambah protein cepat:
 [FOOD: Dada Ayam Rebus/Panggang 100g | 165 | 31]
@@ -775,7 +796,7 @@ Klik **+ Log** untuk langsung menambahkannya ke jurnal!`
   // 5. Default General Response
   return `Halo ${name}! Saya asisten nutrisi NutriTrack. Berdasarkan catatanmu hari ini:
 • Sisa Target Energi: **${remKcal > 0 ? remKcal + ' kcal' : '0 kcal (Surplus)'}**
-• Kebutuhan Protein: **${pDeficit > 0 ? pDeficit + 'g lagi' : 'Tercapai'}**
+• Kebutuhan Protein: **${pDeficit > 0 ? pDeficit + 'g lagi (' + pPercent + '% tercapai)' : 'Tercapai (' + pPercent + '%)'}**
 • Status Hidrasi: **${consumedWater} / ${targetWater} ml**
 
 Berikut rekomendasi makanan bergizi yang siap kamu santap:

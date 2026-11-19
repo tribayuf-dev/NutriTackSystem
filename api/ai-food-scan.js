@@ -308,38 +308,60 @@ async function getAvailableGeminiVisionTargets(apiKey) {
 }
 
 async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
-  const parts = [{ text: systemInstruction }];
-  if (extraPromptText) parts.push({ text: extraPromptText });
-  parts.push({
-    inline_data: {
-      mime_type: cleanMimeType,
-      data: cleanBase64,
-    },
-  });
-
-  const payload = {
-    contents: [{ parts }],
-    generationConfig: {
-      temperature: 0.2,
-      responseMimeType: 'application/json',
-      maxOutputTokens: 2500,
-    },
-    safetySettings: [
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-    ],
-  };
-
   const attemptedErrors = [];
   const geminiTargets = await getAvailableGeminiVisionTargets(apiKey);
 
+  const userPromptText = extraPromptText
+    ? extraPromptText
+    : 'Analisis foto makanan ini secara menyeluruh, lakukan segmentasi kontur lekuk porsimetri, dan kembalikan output murni JSON sesuai skema sistem.';
+
+  const userParts = [
+    { text: userPromptText },
+    {
+      inlineData: {
+        mimeType: cleanMimeType,
+        data: cleanBase64,
+      },
+    },
+  ];
+
   for (const target of geminiTargets) {
     const controller = new AbortController();
-    // 9 detik per model agar failover cepat jika Google sedang overload
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
+    // 25 detik agar Google Gemini memiliki waktu cukup untuk inferensi multimodal beresolusi tinggi
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
+      const genConfig = {
+        temperature: 0.2,
+        maxOutputTokens: 2048,
+      };
+      if (target.ver === 'v1beta') {
+        genConfig.responseMimeType = 'application/json';
+      }
+
+      const payload = {
+        contents: [
+          {
+            role: 'user',
+            parts: target.ver === 'v1beta'
+              ? userParts
+              : [{ text: systemInstruction }, ...userParts],
+          },
+        ],
+        generationConfig: genConfig,
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+        ],
+      };
+
+      if (target.ver === 'v1beta') {
+        payload.system_instruction = {
+          parts: [{ text: systemInstruction }],
+        };
+      }
+
       const url = `https://generativelanguage.googleapis.com/${target.ver}/models/${target.model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
       const resp = await fetch(url, {
         method: 'POST',
@@ -364,9 +386,11 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
         try {
           const errObj = JSON.parse(errText);
           if (errObj?.error?.message) {
-            detail = `: ${errObj.error.message.slice(0, 60)}`;
+            detail = `: ${errObj.error.message.slice(0, 80)}`;
           }
-        } catch (_) {}
+        } catch (_) {
+          if (errText) detail = `: ${errText.slice(0, 80)}`;
+        }
         attemptedErrors.push(`${target.model} [${resp.status}${detail}]`);
         console.warn(`[Gemini] Model ${target.model} (${target.ver}) HTTP ${resp.status}: ${errText.slice(0, 100)}`);
         // Jika 429 beruntun, batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
@@ -376,16 +400,16 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? 'timeout 9s' : err.message;
+      const msg = err.name === 'AbortError' ? 'timeout 25s' : err.message;
       attemptedErrors.push(`${target.model} [${msg}]`);
     }
 
-    if (attemptedErrors.length >= 6) {
+    if (attemptedErrors.length >= 4) {
       break;
     }
   }
 
-  throw new Error(`Model Gemini gagal: ${attemptedErrors.slice(0, 5).join(', ')}`);
+  throw new Error(`Model Gemini gagal: ${attemptedErrors.slice(0, 4).join(', ')}`);
 }
 
 /**
@@ -1050,7 +1074,7 @@ async function callVisionCascade({
               latency_ms: Date.now() - startTime,
               fallback_occurred: true,
               fallback_errors: errors,
-              fallback_notice: `Provider ${getProviderDisplayName(req)} sedang mengalami gangguan teknis. Analisis dialihkan otomatis ke ${getProviderDisplayName(backupProv)} agar pemindaian tetap berhasil.`
+              fallback_notice: `Provider ${getProviderDisplayName(req)} dialihkan ke ${getProviderDisplayName(backupProv)} (${errors[0] || 'gangguan sementara'}). Analisis berhasil diselesaikan.`
             };
           }
         } catch (bErr) {

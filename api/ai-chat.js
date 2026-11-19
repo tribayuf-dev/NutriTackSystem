@@ -312,8 +312,8 @@ async function callGeminiChat(apiKey, systemInstruction, messages, timeoutMs = 2
           const mime = (header.split(';')[0].replace('data:', '') || 'image/jpeg').trim();
           if (base64Data) {
             parts.push({
-              inline_data: {
-                mime_type: mime,
+              inlineData: {
+                mimeType: mime,
                 data: base64Data,
               },
             });

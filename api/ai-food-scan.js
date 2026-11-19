@@ -219,11 +219,15 @@ let _groqVisionCache = { models: [], timestamp: 0 };
 const VISION_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const VERIFIED_GEMINI_TARGETS = [
+  { ver: 'v1beta', model: 'gemini-flash-latest' },
+  { ver: 'v1beta', model: 'gemini-2.5-flash' },
+  { ver: 'v1beta', model: 'gemini-2.0-flash' },
+  { ver: 'v1beta', model: 'gemini-2.0-flash-exp' },
+  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
   { ver: 'v1beta', model: 'gemini-1.5-flash' },
   { ver: 'v1',     model: 'gemini-1.5-flash' },
-  { ver: 'v1beta', model: 'gemini-2.0-flash' },
-  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
   { ver: 'v1beta', model: 'gemini-1.5-flash-8b' },
+  { ver: 'v1beta', model: 'gemini-2.5-pro' },
   { ver: 'v1',     model: 'gemini-1.5-pro' },
 ];
 
@@ -238,17 +242,10 @@ async function getAvailableGeminiVisionTargets(apiKey) {
     targets.push({ ver: 'v1beta', model: process.env.GEMINI_VISION_MODEL });
   }
 
-  // Prioritaskan model produksi yang terbukti stabil & latensi rendah
-  targets.push(
-    { ver: 'v1beta', model: 'gemini-1.5-flash' },
-    { ver: 'v1',     model: 'gemini-1.5-flash' },
-    { ver: 'v1beta', model: 'gemini-2.0-flash' },
-    { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
-  );
-
+  // 1. Jalankan auto-discovery model aktif dari Google AI Studio
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2500);
+    const timer = setTimeout(() => controller.abort(), 4500);
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey.trim()), {
       signal: controller.signal,
     });
@@ -260,27 +257,46 @@ async function getAvailableGeminiVisionTargets(apiKey) {
         .map(m => m.name.replace(/^models\//, ''))
         .filter(id => {
           const low = id.toLowerCase();
-          // Filter ketat: buang TTS, audio, realtime, imagen, search, thinking, tuning, custom, 2.5, dan embedding
+          // Filter ketat: buang TTS, audio-only, realtime, imagen, search, thinking, tuning, custom, dan embedding
           if (low.includes('embedding') || low.includes('aqa') || low.includes('tts') ||
               low.includes('audio') || low.includes('realtime') || low.includes('imagen') ||
               low.includes('search') || low.includes('thinking') || low.includes('custom') ||
-              low.includes('tuning') || low.includes('2.5') || low.includes('preview')) {
+              low.includes('tuning')) {
             return false;
           }
           return low.includes('flash') || low.includes('pro');
         });
+
+      // Urutkan model yang ditemukan: utamakan flash-latest, 2.5-flash, 2.0-flash, flash
+      valid.sort((a, b) => {
+        const score = m => {
+          const l = m.toLowerCase();
+          if (l.includes('flash-latest')) return 100;
+          if (l.includes('2.5-flash')) return 95;
+          if (l.includes('2.0-flash')) return 90;
+          if (l.includes('1.5-flash')) return 85;
+          if (l.includes('flash')) return 80;
+          if (l.includes('pro-latest')) return 75;
+          if (l.includes('pro')) return 60;
+          return 50;
+        };
+        return score(b) - score(a);
+      });
 
       for (const m of valid) {
         if (!targets.some(t => t.model === m)) {
           targets.push({ ver: 'v1beta', model: m });
         }
       }
+    } else {
+      const errBody = await res.text();
+      console.warn(`[AI Food Scan] Gemini discovery status ${res.status}: ${errBody.slice(0, 100)}`);
     }
   } catch (err) {
     console.warn('[AI Food Scan] Gemini vision auto-discovery notice:', err.message);
   }
 
-  // Tambahkan cadangan verifikasi lainnya
+  // 2. Tambahkan target fallback terverifikasi
   for (const vt of VERIFIED_GEMINI_TARGETS) {
     if (!targets.some(t => t.model === vt.model && t.ver === vt.ver)) {
       targets.push(vt);
@@ -321,8 +337,8 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   for (const target of geminiTargets) {
     const controller = new AbortController();
-    // 10 detik per model agar failover cepat jika Google sedang overload/503
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    // 9 detik per model agar failover cepat jika Google sedang overload
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
     try {
       const url = `https://generativelanguage.googleapis.com/${target.ver}/models/${target.model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
       const resp = await fetch(url, {
@@ -344,25 +360,32 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
         attemptedErrors.push(`${target.model} [${finishReason}]`);
       } else {
         const errText = await resp.text();
-        attemptedErrors.push(`${target.model} [${resp.status}]`);
+        let detail = '';
+        try {
+          const errObj = JSON.parse(errText);
+          if (errObj?.error?.message) {
+            detail = `: ${errObj.error.message.slice(0, 60)}`;
+          }
+        } catch (_) {}
+        attemptedErrors.push(`${target.model} [${resp.status}${detail}]`);
         console.warn(`[Gemini] Model ${target.model} (${target.ver}) HTTP ${resp.status}: ${errText.slice(0, 100)}`);
-        // Jika 429 atau 503 beruntun, batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
-        if (resp.status === 429 && attemptedErrors.length >= 2) {
+        // Jika 429 beruntun, batasi percobaan agar cascade ke provider cadangan dapat langsung bekerja
+        if (resp.status === 429 && attemptedErrors.filter(e => e.includes('[429')).length >= 2) {
           break;
         }
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? 'timeout 10s' : err.message;
+      const msg = err.name === 'AbortError' ? 'timeout 9s' : err.message;
       attemptedErrors.push(`${target.model} [${msg}]`);
     }
 
-    if (attemptedErrors.length >= 4) {
+    if (attemptedErrors.length >= 6) {
       break;
     }
   }
 
-  throw new Error(`Model Gemini gagal: ${attemptedErrors.slice(0, 4).join(', ')}`);
+  throw new Error(`Model Gemini gagal: ${attemptedErrors.slice(0, 5).join(', ')}`);
 }
 
 /**
@@ -995,6 +1018,46 @@ async function callVisionCascade({
   // Jika seluruh provider dalam rencana gagal
   const errSummary = errors.join(' | ');
   if (req !== 'auto') {
+    // Auto-failover cerdas: jika provider pilihan pengguna gagal, coba provider alternatif sebelum menyerah
+    const backupOrder = ['groq', 'openai', 'gemini', 'anthropic', 'openrouter'].filter(p => availableProviders.includes(p) && p !== req);
+    if (backupOrder.length > 0) {
+      console.warn(`[AI-Food-Scan] Provider ${req} gagal (${errSummary}). Menjalankan failover ke provider cadangan: ${backupOrder[0]}`);
+      for (const backupProv of backupOrder) {
+        try {
+          let resultText = '', modelUsed = '';
+          if (backupProv === 'groq') {
+            const res = await callGroqVision(keys.groq, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+            resultText = res.text; modelUsed = res.model;
+          } else if (backupProv === 'openai') {
+            const res = await callOpenAIVision(keys.openai, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+            resultText = res.text; modelUsed = res.model;
+          } else if (backupProv === 'gemini') {
+            const res = await callGeminiVision(keys.gemini, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+            resultText = res.text; modelUsed = res.model;
+          } else if (backupProv === 'anthropic') {
+            const res = await callAnthropicVision(keys.anthropic, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+            resultText = res.text; modelUsed = res.model;
+          } else if (backupProv === 'openrouter') {
+            const res = await callOpenRouterVision(keys.openrouter, systemInstruction, cleanBase64, cleanMimeType, extraPromptText);
+            resultText = res.text; modelUsed = res.model;
+          }
+          if (resultText && resultText.trim()) {
+            return {
+              text: resultText.trim(),
+              provider_used: `${getProviderDisplayName(backupProv)} (${modelUsed}) [Auto-Failover]`,
+              provider_code: backupProv,
+              model_used: modelUsed,
+              latency_ms: Date.now() - startTime,
+              fallback_occurred: true,
+              fallback_errors: errors,
+              fallback_notice: `Provider ${getProviderDisplayName(req)} sedang mengalami gangguan teknis. Analisis dialihkan otomatis ke ${getProviderDisplayName(backupProv)} agar pemindaian tetap berhasil.`
+            };
+          }
+        } catch (bErr) {
+          errors.push(`${backupProv}: ${bErr.message}`);
+        }
+      }
+    }
     throw new Error(`Provider ${getProviderDisplayName(req)} gagal: ${errSummary}`);
   }
 

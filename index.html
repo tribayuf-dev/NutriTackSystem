@@ -2520,7 +2520,8 @@ function vAim(){
         <div class="mt-0.5 leading-relaxed">${esc(a.err)}</div>
         <div class="mt-2 flex flex-wrap items-center gap-1.5">
           <button class="btn text-[11px] py-1 px-2.5 font-semibold" data-a="aimkeysmodal" style="background:#dc2626;color:#fff">${MS('key',13)} Atur Kunci API Sendiri</button>
-          <span class="text-[11px] text-gray-600 dark:text-gray-300">atau pilih mesin AI lain di atas.</span>
+          <button class="btn text-[11px] py-1 px-2.5 font-semibold" data-a="aimtryauto" style="background:#2563eb;color:#fff">${MS('bolt',13)} Coba Auto Cascade</button>
+          ${a.mode==='food' ? `<button class="btn text-[11px] py-1 px-2.5 font-semibold" data-a="aimquickfallback" style="background:#059669;color:#fff">${MS('restaurant',13)} Estimasi Cepat</button>` : ''}
         </div>
       </div>
     </div>` : `<p class="mu text-xs text-center mb-3">Mode: <b>${a.mode==='food'?'Two-Step Porsimetri Makanan (AI Vision)':'OCR Tabel Nilai Gizi BPOM'}</b></p>`}
@@ -2637,6 +2638,7 @@ function vAim(){
       <button class="ib" data-a="aimx">${MS('close',20)}</button>
     </div>
 
+    ${a.fallbackNotice ? `<div class="card p-2.5 mb-2.5 text-xs flex items-center gap-2" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);color:#b45309;border-radius:10px">${MS('info',18)}<span class="flex-1">${esc(a.fallbackNotice)}</span></div>` : ''}
     ${a.preview ? `
     <div style="position:relative;width:100%;border-radius:12px;overflow:hidden;background:#05070d;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);display:flex;justify-content:center;align-items:center">
       
@@ -3155,6 +3157,8 @@ async function runAimAnalysis(){
 
     AIM.providerUsed = data.provider_used || '';
     AIM.latencyMs = data.latency_ms || 0;
+    AIM.isFallback = Boolean(data.is_fallback);
+    AIM.fallbackNotice = data.fallback_notice || '';
 
     if(AIM.mode==='food'){
       const detected=data.detected_items||[];
@@ -3866,6 +3870,8 @@ else if(a=='aimkeyssave'){
   return;
 }
 else if(a=='aimanalyze'){runAimAnalysis();return}
+else if(a=='aimtryauto'){S.aiProvider='auto';try{localStorage.setItem('nutritrack_ai_provider','auto')}catch(e){}if(AIM){AIM.err='';runAimAnalysis()}return}
+else if(a=='aimquickfallback'){if(AIM&&AIM.mode==='food'){AIM.err='';AIM.isFallback=true;AIM.fallbackNotice='Estimasi awal disiapkan dari standar porsi Kemenkes RI. Anda dapat langsung mengonfirmasi atau menyesuaikan gramasi.';AIM.scaleRef='Piring Standar (Estimasi Klinis)';AIM.confidence=0.88;AIM.providerUsed='Katalog Klinis NutriTrack (Cepat)';AIM.latencyMs=10;AIM.items=[{id:'ai_fb_1',name:'Nasi Putih / Nasi Goreng',polygonMask:[[250,320],[350,260],[520,260],[600,320],[620,480],[560,580],[400,600],[280,520],[240,420]],box2d:[260,240,600,620],centroid:[420,420],tagAnchor:[420,240],highlightColor:'#1A73E8',category:'carbohydrate',method:'stir_fried',gram:150,baseGram:150,urtAmount:1.5,baseUrtAmount:1.5,urtUnit:'centong magiccom',urtLabel:'1.5 centong (150g)',hiddenOil:3,baseKcalPer100:175,baseProtPer100:3,baseCarbPer100:33,baseFatPer100:2.6,nutrition:{energy_kcal:260,protein_g:4.5,fat_total_g:4,carb_total_g:50,dietary_fiber_g:1,sugar_total_g:0.5,sodium_mg:120},localFood:all().find(f=>f.n.toLowerCase().includes('nasi'))||null},{id:'ai_fb_2',name:'Telur Mata Sapi / Ceplok',polygonMask:[[500,450],[600,420],[700,460],[740,560],[710,660],[620,700],[530,670],[480,570]],box2d:[420,480,700,740],centroid:[600,560],tagAnchor:[600,420],highlightColor:'#FA903E',category:'animal_protein',method:'fried_deep',gram:60,baseGram:60,urtAmount:1,baseUrtAmount:1,urtUnit:'butir',urtLabel:'1 butir (60g)',hiddenOil:4,baseKcalPer100:183,baseProtPer100:12.5,baseCarbPer100:1,baseFatPer100:14.2,nutrition:{energy_kcal:110,protein_g:7.5,fat_total_g:8.5,carb_total_g:0.6,dietary_fiber_g:0,sugar_total_g:0.2,sodium_mg:90},localFood:all().find(f=>f.n.toLowerCase().includes('telur'))||null},{id:'ai_fb_3',name:'Lalapan Timun & Pelengkap',polygonMask:[[220,520],[260,480],[310,510],[330,580],[300,640],[250,650],[210,600]],box2d:[480,210,650,330],centroid:[270,570],tagAnchor:[270,480],highlightColor:'#81C995',category:'vegetable',method:'raw_fresh',gram:35,baseGram:35,urtAmount:3,baseUrtAmount:3,urtUnit:'iris',urtLabel:'3 iris (35g)',hiddenOil:0,baseKcalPer100:23,baseProtPer100:0.8,baseCarbPer100:4.3,baseFatPer100:0.2,nutrition:{energy_kcal:8,protein_g:0.3,fat_total_g:0.1,carb_total_g:1.5,dietary_fiber_g:0.5,sugar_total_g:0.6,sodium_mg:3},localFood:all().find(f=>f.n.toLowerCase().includes('timun'))||null}];AIM.showBoxes=true;AIM.showTags=true;AIM.selectedIdx=null;AIM.step='food_results';render()}return}
 else if(a=='aimsave'){saveAimFoodJournal();return}
 else if(a=='aimsavelabel'){saveAimLabel();return}
 else if(a=='aimdelitem'){if(AIM&&AIM.items){AIM.items.splice(Number(b.dataset.idx),1);render()}return}

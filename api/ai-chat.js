@@ -372,7 +372,7 @@ async function callGeminiChat(apiKey, systemInstruction, messages, timeoutMs = 2
 }
 
 async function callOpenAIChat(apiKey, systemInstruction, messages, timeoutMs = 2800) {
-  const OPENAI_MODELS = [process.env.OPENAI_CHAT_MODEL, 'gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest'].filter(Boolean);
+  const OPENAI_MODELS = [process.env.OPENAI_CHAT_MODEL, 'gpt-4o-mini', 'gpt-4o'].filter(Boolean);
   let lastError = null;
 
   for (const model of OPENAI_MODELS) {

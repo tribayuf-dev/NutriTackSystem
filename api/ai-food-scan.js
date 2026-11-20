@@ -219,16 +219,16 @@ let _groqVisionCache = { models: [], timestamp: 0 };
 const VISION_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const VERIFIED_GEMINI_TARGETS = [
-  { ver: 'v1beta', model: 'gemini-flash-latest' },
-  { ver: 'v1beta', model: 'gemini-2.5-flash' },
-  { ver: 'v1beta', model: 'gemini-2.0-flash' },
-  { ver: 'v1beta', model: 'gemini-2.0-flash-exp' },
-  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
   { ver: 'v1beta', model: 'gemini-1.5-flash' },
   { ver: 'v1',     model: 'gemini-1.5-flash' },
+  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
   { ver: 'v1beta', model: 'gemini-1.5-flash-8b' },
-  { ver: 'v1beta', model: 'gemini-2.5-pro' },
+  { ver: 'v1beta', model: 'gemini-flash-latest' },
+  { ver: 'v1beta', model: 'gemini-2.0-flash' },
+  { ver: 'v1beta', model: 'gemini-2.0-flash-exp' },
+  { ver: 'v1beta', model: 'gemini-2.5-flash' },
   { ver: 'v1',     model: 'gemini-1.5-pro' },
+  { ver: 'v1beta', model: 'gemini-2.5-pro' },
 ];
 
 async function getAvailableGeminiVisionTargets(apiKey) {
@@ -267,18 +267,20 @@ async function getAvailableGeminiVisionTargets(apiKey) {
           return low.includes('flash') || low.includes('pro');
         });
 
-      // Urutkan model yang ditemukan: utamakan flash-latest, 2.5-flash, 2.0-flash, flash
+      // Urutkan model yang ditemukan: utamakan 1.5-flash (paling umum di free tier), lalu 2.x, lalu flash-latest
       valid.sort((a, b) => {
         const score = m => {
           const l = m.toLowerCase();
-          if (l.includes('flash-latest')) return 100;
-          if (l.includes('2.5-flash')) return 95;
-          if (l.includes('2.0-flash')) return 90;
-          if (l.includes('1.5-flash')) return 85;
-          if (l.includes('flash')) return 80;
-          if (l.includes('pro-latest')) return 75;
-          if (l.includes('pro')) return 60;
-          return 50;
+          if (l.includes('1.5-flash-latest')) return 100;
+          if (l === 'gemini-1.5-flash') return 98;
+          if (l.includes('1.5-flash')) return 95;
+          if (l.includes('flash-latest')) return 90;
+          if (l.includes('2.0-flash')) return 85;
+          if (l.includes('2.5-flash')) return 80;
+          if (l.includes('flash')) return 70;
+          if (l.includes('pro-latest')) return 60;
+          if (l.includes('pro')) return 50;
+          return 40;
         };
         return score(b) - score(a);
       });
@@ -327,8 +329,8 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   for (const target of geminiTargets) {
     const controller = new AbortController();
-    // 25 detik agar Google Gemini memiliki waktu cukup untuk inferensi multimodal beresolusi tinggi
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    // 15 detik per model — cukup untuk inferensi multimodal tanpa membuang terlalu banyak waktu jika model tidak aktif
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const genConfig = {
         temperature: 0.2,
@@ -400,7 +402,7 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? 'timeout 25s' : err.message;
+      const msg = err.name === 'AbortError' ? 'timeout 15s' : err.message;
       attemptedErrors.push(`${target.model} [${msg}]`);
     }
 
@@ -486,8 +488,8 @@ async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMim
  * 3. Groq Vision Call (LPU Ultra-Fast Sub-Second Vision)
  */
 const VERIFIED_GROQ_MODELS = [
-  'qwen/qwen3.8-27b',
   'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
 ];
 
 async function getAvailableGroqVisionModels(apiKey) {
@@ -499,7 +501,7 @@ async function getAvailableGroqVisionModels(apiKey) {
   if (process.env.GROQ_VISION_MODEL) {
     models.push(process.env.GROQ_VISION_MODEL);
   }
-  models.push('qwen/qwen3.8-27b');
+  models.push('meta-llama/llama-4-scout-17b-16e-instruct');
 
   try {
     const controller = new AbortController();
@@ -514,10 +516,11 @@ async function getAvailableGroqVisionModels(apiKey) {
       const list = (data.data || []).map(m => m.id);
       const activeVision = list.filter(id => {
         const low = id.toLowerCase();
-        // Singkirkan model preview lama yang sudah didekomisioning
+        // Singkirkan model preview lama yang sudah didekomisioning dan model non-vision
         if (low.includes('llama-3.2-11b') || low.includes('llama-3.2-90b')) return false;
         if (low.includes('whisper') || low.includes('guard')) return false;
-        return low.includes('qwen') || low.includes('vision') || low.includes('scout') || low.includes('maverick');
+        // Prioritaskan model dengan vision capability (scout, maverick, vision)
+        return low.includes('scout') || low.includes('maverick') || low.includes('vision');
       });
       for (const vm of activeVision) {
         if (!models.includes(vm)) models.push(vm);
@@ -552,8 +555,8 @@ async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeT
         body: JSON.stringify({
           model,
           temperature: 0.2,
-          // PENTING: max_tokens dibatasi ke 750 agar tetap aman di bawah limit OTPM 1000 tier on_demand Groq
-          max_tokens: 750,
+          // PENTING: max_tokens dibatasi ke 500 agar tetap aman di bawah limit OTPM 1000 tier on_demand Groq
+          max_tokens: 500,
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: systemInstruction },

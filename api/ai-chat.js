@@ -166,13 +166,11 @@ async function getAvailableGeminiTargets(apiKey) {
   }
 
   const fallback = [
-    ...(process.env.GEMINI_CHAT_MODEL ? [{ ver: 'v1beta', model: process.env.GEMINI_CHAT_MODEL }] : []),
-    { ver: 'v1beta', model: 'gemini-flash-latest' },
-    { ver: 'v1beta', model: 'gemini-flash-lite-latest' },
-    { ver: 'v1', model: 'gemini-1.5-flash' },
-    { ver: 'v1beta', model: 'gemini-2.0-flash' },
     { ver: 'v1beta', model: 'gemini-1.5-flash' },
-    { ver: 'v1', model: 'gemini-1.5-pro' },
+    { ver: 'v1',     model: 'gemini-1.5-flash' },
+    { ver: 'v1beta', model: 'gemini-2.0-flash' },
+    { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
+    { ver: 'v1',     model: 'gemini-1.5-pro' },
   ];
 
   try {
@@ -189,7 +187,10 @@ async function getAvailableGeminiTargets(apiKey) {
       const validModels = rawList
         .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
         .map(m => m.name.replace(/^models\//, ''))
-        .filter(id => !id.includes('embedding') && !id.includes('aqa'));
+        .filter(id => {
+          const low = id.toLowerCase();
+          return !low.includes('embedding') && !low.includes('aqa') && !low.includes('2.5') && !low.includes('image') && !low.includes('tts') && !low.includes('lite');
+        });
 
       if (validModels.length > 0) {
         validModels.sort((a, b) => {

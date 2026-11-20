@@ -221,14 +221,12 @@ const VISION_CACHE_TTL_MS = 60 * 60 * 1000;
 const VERIFIED_GEMINI_TARGETS = [
   { ver: 'v1beta', model: 'gemini-1.5-flash' },
   { ver: 'v1',     model: 'gemini-1.5-flash' },
-  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
-  { ver: 'v1beta', model: 'gemini-1.5-flash-8b' },
-  { ver: 'v1beta', model: 'gemini-flash-latest' },
   { ver: 'v1beta', model: 'gemini-2.0-flash' },
   { ver: 'v1beta', model: 'gemini-2.0-flash-exp' },
-  { ver: 'v1beta', model: 'gemini-2.5-flash' },
+  { ver: 'v1beta', model: 'gemini-1.5-flash-latest' },
+  { ver: 'v1beta', model: 'gemini-1.5-flash-8b' },
+  { ver: 'v1beta', model: 'gemini-1.5-pro' },
   { ver: 'v1',     model: 'gemini-1.5-pro' },
-  { ver: 'v1beta', model: 'gemini-2.5-pro' },
 ];
 
 async function getAvailableGeminiVisionTargets(apiKey) {
@@ -237,15 +235,22 @@ async function getAvailableGeminiVisionTargets(apiKey) {
     return _geminiVisionCache.targets;
   }
   
-  const targets = [];
+  // SELALU mulai dengan target terverifikasi paling stabil di urutan teratas!
+  // gemini-1.5-flash dan gemini-2.0-flash adalah model vision resmi Google yang aktif untuk semua pengguna.
+  const targets = [...VERIFIED_GEMINI_TARGETS];
+
+  // Jika ada custom model dari environment variable (selain model bermasalah/alias lambat)
   if (process.env.GEMINI_VISION_MODEL) {
-    targets.push({ ver: 'v1beta', model: process.env.GEMINI_VISION_MODEL });
+    const envModel = process.env.GEMINI_VISION_MODEL.trim();
+    if (envModel !== 'gemini-flash-latest' && !envModel.includes('2.5') && !envModel.includes('image')) {
+      targets.unshift({ ver: 'v1beta', model: envModel });
+    }
   }
 
-  // 1. Jalankan auto-discovery model aktif dari Google AI Studio
+  // Auto-discovery dari Google AI Studio: HANYA untuk menemukan model resmi tambahan
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
+    const timer = setTimeout(() => controller.abort(), 3500);
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey.trim()), {
       signal: controller.signal,
     });
@@ -257,34 +262,19 @@ async function getAvailableGeminiVisionTargets(apiKey) {
         .map(m => m.name.replace(/^models\//, ''))
         .filter(id => {
           const low = id.toLowerCase();
-          // Filter ketat: buang TTS, audio-only, realtime, imagen, search, thinking, tuning, custom, dan embedding
-          if (low.includes('embedding') || low.includes('aqa') || low.includes('tts') ||
-              low.includes('audio') || low.includes('realtime') || low.includes('imagen') ||
-              low.includes('search') || low.includes('thinking') || low.includes('custom') ||
-              low.includes('tuning')) {
+          // Filter sangat ketat: SINGKIRKAN model preview 2.5 (no longer available to new users),
+          // model image gen (flash-image), TTS, audio, realtime, embedding, tuning, thinking
+          if (low.includes('2.5') || low.includes('image') || low.includes('imagen') ||
+              low.includes('embedding') || low.includes('aqa') || low.includes('tts') ||
+              low.includes('audio') || low.includes('realtime') || low.includes('search') ||
+              low.includes('thinking') || low.includes('custom') || low.includes('tuning') ||
+              low.includes('lite')) {
             return false;
           }
           return low.includes('flash') || low.includes('pro');
         });
 
-      // Urutkan model yang ditemukan: utamakan 1.5-flash (paling umum di free tier), lalu 2.x, lalu flash-latest
-      valid.sort((a, b) => {
-        const score = m => {
-          const l = m.toLowerCase();
-          if (l.includes('1.5-flash-latest')) return 100;
-          if (l === 'gemini-1.5-flash') return 98;
-          if (l.includes('1.5-flash')) return 95;
-          if (l.includes('flash-latest')) return 90;
-          if (l.includes('2.0-flash')) return 85;
-          if (l.includes('2.5-flash')) return 80;
-          if (l.includes('flash')) return 70;
-          if (l.includes('pro-latest')) return 60;
-          if (l.includes('pro')) return 50;
-          return 40;
-        };
-        return score(b) - score(a);
-      });
-
+      // Tambahkan model yang lolos filter ke BAGIAN BELAKANG (bukan di depan verified targets)
       for (const m of valid) {
         if (!targets.some(t => t.model === m)) {
           targets.push({ ver: 'v1beta', model: m });
@@ -296,13 +286,6 @@ async function getAvailableGeminiVisionTargets(apiKey) {
     }
   } catch (err) {
     console.warn('[AI Food Scan] Gemini vision auto-discovery notice:', err.message);
-  }
-
-  // 2. Tambahkan target fallback terverifikasi
-  for (const vt of VERIFIED_GEMINI_TARGETS) {
-    if (!targets.some(t => t.model === vt.model && t.ver === vt.ver)) {
-      targets.push(vt);
-    }
   }
 
   _geminiVisionCache = { targets, timestamp: now };
@@ -329,8 +312,8 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
 
   for (const target of geminiTargets) {
     const controller = new AbortController();
-    // 15 detik per model — cukup untuk inferensi multimodal tanpa membuang terlalu banyak waktu jika model tidak aktif
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    // 20 detik per model — cukup untuk inferensi multimodal beresolusi tinggi
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const genConfig = {
         temperature: 0.2,
@@ -402,11 +385,13 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      const msg = err.name === 'AbortError' ? 'timeout 15s' : err.message;
+      const msg = err.name === 'AbortError' ? 'timeout 20s' : err.message;
       attemptedErrors.push(`${target.model} [${msg}]`);
     }
 
-    if (attemptedErrors.length >= 4) {
+    // Jika error adalah 404 (model tidak tersedia di akun), jangan hitung sebagai fatal timeout
+    const fatalErrors = attemptedErrors.filter(e => !e.includes('[404'));
+    if (fatalErrors.length >= 2 || attemptedErrors.length >= 6) {
       break;
     }
   }
@@ -418,7 +403,12 @@ async function callGeminiVision(apiKey, systemInstruction, cleanBase64, cleanMim
  * 2. OpenAI GPT-4o Vision Call (Ultra Cepat & Stabil)
  */
 async function callOpenAIVision(apiKey, systemInstruction, cleanBase64, cleanMimeType, extraPromptText = '') {
-  const OPENAI_MODELS = [process.env.OPENAI_VISION_MODEL, 'gpt-4o-mini', 'gpt-4o'].filter(Boolean);
+  const envModel = process.env.OPENAI_VISION_MODEL ? process.env.OPENAI_VISION_MODEL.trim() : '';
+  const OPENAI_MODELS = [
+    (envModel && envModel !== 'chatgpt-4o-latest') ? envModel : null,
+    'gpt-4o-mini',
+    'gpt-4o',
+  ].filter(Boolean);
   const attemptedErrors = [];
 
   for (const model of OPENAI_MODELS) {
@@ -498,7 +488,7 @@ async function getAvailableGroqVisionModels(apiKey) {
     return _groqVisionCache.models;
   }
   const models = [];
-  if (process.env.GROQ_VISION_MODEL) {
+  if (process.env.GROQ_VISION_MODEL && !process.env.GROQ_VISION_MODEL.includes('qwen')) {
     models.push(process.env.GROQ_VISION_MODEL);
   }
   models.push('meta-llama/llama-4-scout-17b-16e-instruct');
@@ -555,8 +545,8 @@ async function callGroqVision(apiKey, systemInstruction, cleanBase64, cleanMimeT
         body: JSON.stringify({
           model,
           temperature: 0.2,
-          // PENTING: max_tokens dibatasi ke 500 agar tetap aman di bawah limit OTPM 1000 tier on_demand Groq
-          max_tokens: 500,
+          // PENTING: max_tokens dibatasi ke 380 agar tetap aman di bawah limit OTPM 1000 tier on_demand Groq
+          max_tokens: 380,
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: systemInstruction },
@@ -1085,7 +1075,21 @@ async function callVisionCascade({
         }
       }
     }
-    throw new Error(`Provider ${getProviderDisplayName(req)} gagal: ${errSummary}`);
+    // Safety Net: Jika provider pilihan pengguna dan seluruh cadangan cloud gagal,
+    // aktifkan Fallback Katalog Gizi Klinis Kemenkes RI agar pemindaian makanan TIDAK pernah gagal total (Zero Downtime).
+    console.warn(`[AI-Food-Scan] Provider ${req} dan seluruh cadangan gagal (${errSummary}). Mengaktifkan Fallback Katalog Gizi Klinis.`);
+    const fallbackData = (mode === 'label') ? getLabelOcrFallback() : getIndonesianStaplePlateFallback();
+    return {
+      text: JSON.stringify(fallbackData),
+      provider_used: `${getProviderDisplayName(req)} [Dialihkan ke Standar Kemenkes]`,
+      provider_code: 'clinical_fallback',
+      model_used: 'kemenkes-heuristic-v1',
+      latency_ms: Date.now() - startTime,
+      fallback_occurred: true,
+      fallback_errors: errors,
+      is_clinical_fallback: true,
+      fallback_notice: `Layanan AI ${getProviderDisplayName(req)} sedang mengalami gangguan di server cloud (${errors[0] || 'gangguan sementara'}). Estimasi porsi awal disiapkan otomatis dari acuan gizi Kemenkes RI agar pencatatan makanan Anda tetap dapat dilanjutkan. Silakan konfirmasi atau sesuaikan gramasi jika perlu.`
+    };
   }
 
   // Fallback cerdas saat auto cascade padat di semua provider

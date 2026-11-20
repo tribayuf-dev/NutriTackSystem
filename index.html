@@ -420,7 +420,7 @@ for(let k=0;k<10;k++)X.push({d:addD(td,-3*k),kg:+(61.5+k*.12).toFixed(1)});for(l
 const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],ex:[],chat:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,lang:'id',exEat:0}}}
 const FIRST=(()=>{try{return!localStorage.getItem('nt2')}catch(e){return true}})();
 let S;try{S=JSON.parse(localStorage.getItem('nt2'))||init()}catch(e){S=init()}
-S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};S.ex=S.ex||[];S.chat=S.chat||[];if(S.set.bkf===undefined)S.set.bkf=7;
+S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};S.ex=S.ex||[];S.chat=S.chat||[];S.notifDismissed=S.notifDismissed||{};if(S.set.bkf===undefined)S.set.bkf=7;
 S.cfg={...JSON.parse(JSON.stringify(CFG0)),...(S.cfg||{})};S.rcp=S.rcp||[];S.del=S.del||[];S.fimg=S.fimg||{};S.pf.g=S.pf.g||'keep';S.cf=(S.cf||[]).map(f=>({...f,cat:CM[f.cat]||f.cat,st:f.st=='Custom'?'Buatan sendiri':f.st}));S.tg=calcT(S.pf,(S.tg&&S.tg.man)||{},S.cfg);
 // IndexedDB Persistent Image Store & Storage Engine
 const IDB_NAME='nutritrack_db',IDB_STORE='images';
@@ -660,6 +660,7 @@ function dash(){const L=lg(D),T=sum(L),g=S.tg,W=wat(D),burned=exK(D),eatExtra=Bo
 S.logs.filter(l=>l.d>=addD(we,-6)&&l.d<=we).forEach(l=>{const o=C5[l.fo]||(C5[l.fo]={n:l.n,i:l.fo,c:0,k:0});o.c++;o.k+=l.sn.k});const t5=Object.values(C5).sort((a,b)=>b.c-a.c||b.k-a.k).slice(0,5),mx=t5[0]?t5[0].c:1;
 return hd(`${tr('welcome')} ${gr}, ${S.u.name}${streak()?` <span class="act" style="font-size:13px;vertical-align:middle">🔥 ${tr('streak')} ${streak()} ${tr('day')}</span>`:''}`)+
 `<div class="mu -mt-3 mb-4">${new Date(D+'T12:00').toLocaleDateString(curLoc(),{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+${renderSmartAlertsBanner()}
 <div class="grid lg:grid-cols-3 gap-4 mb-4"><div class="card"><div class="flex justify-between items-start"><div><div class="ey">${tr('dailyBudget')}</div><h2 class="font-semibold text-lg">${tr('targetKal')}</h2></div><span class="act"><span data-counter="${r0((eatExtra?netK:T.k)/g.kcal*100)}">${r0((eatExtra?netK:T.k)/g.kcal*100)}</span>% ${tr('ofTarget')}</span></div><div class="flex items-center gap-4 mt-3"><div class="relative shrink-0">${ring((eatExtra?netK:T.k)/g.kcal*100)}<div class="absolute inset-0 flex flex-col items-center justify-center"><b class="text-2xl" data-counter="${eatExtra?netK:T.k}">${n0(eatExtra?netK:T.k)}</b><span class="mu text-xs">/ ${n0(g.kcal)} kkal</span></div></div><div class="flex flex-col gap-2 flex-1"><div class="row flex-col" style="align-items:flex-start"><span class="mu text-xs">${remNet>=0?tr('rem'):tr('over')}</span><b class="text-xl pr"><span data-counter="${Math.abs(remNet)}">${n0(Math.abs(remNet))}</span> <span class="text-xs mu font-normal">kkal ${eatExtra?'net':'makan'}</span></b>${burned>0?`<span class="text-[11px] mu mt-0.5">🍽️ ${n0(T.k)} kkal makan · 🔥 ${n0(burned)} kkal olahraga (${eatExtra?'tambah kuota':'defisit murni'})</span>`:''}</div></div></div></div>
 <div class="card"><div class="ey">${tr('macroMicroTarget')}</div><h2 class="font-semibold text-lg mb-3">${tr('nutritionDetails')}</h2>${bar(tr('prot'),T.p,g.p,'var(--P)','g')}${bar(tr('carb'),T.c,g.c,'var(--C)','g')}${bar(tr('fat'),T.f,g.f,'var(--F)','g')}${bar(tr('fib'),T.fi,g.fi,'var(--FI)','g')}${S.set.sod?bm(tr('sug')+' ('+tr('maxLimit')+')',T.su,g.su,'g')+bm(tr('sod')+' ('+tr('maxLimit')+')',T.na,g.na,'mg'):''}</div>
 <div class="card"><div class="ey">${tr('fluidBalance')}</div><h2 class="font-semibold text-lg">${tr('hydrationTracker')}</h2><div class="text-3xl font-extrabold my-2"><span data-counter="${W/1000}" data-decimals="1">${(W/1000).toLocaleString(curLoc(),{minimumFractionDigits:1,maximumFractionDigits:1})}</span><span class="mu text-base"> / ${(g.water/1000).toLocaleString(curLoc(),{minimumFractionDigits:1})} L</span></div><div class="trk mb-3"><i style="width:${Math.min(100,W/g.water*100)}%;background:var(--W)"></i></div><div class="mu text-xs"><span data-counter="${r0(W/g.water*100)}">${r0(W/g.water*100)}</span>% ${tr('ofTodayTarget')}</div></div></div>
@@ -888,8 +889,8 @@ ${vBk()}<div class="card md:col-span-2"><b>Konfigurasi Sistem: Perhitungan Targe
 function login(){const first=!S.u.ph;return`<div class="min-h-screen flex flex-col items-center justify-center p-4"><div class="card w-full max-w-sm"><div class="flex items-center gap-3 mb-2"><img src="/icon-192.png" alt="NutriTrack" style="width:42px;height:42px;border-radius:12px;object-fit:cover;box-shadow:0 4px 12px rgba(16,185,129,.35)"><div class="text-3xl font-extrabold pr">NutriTrack</div></div><div class="mu mb-5">Catat nutrisi harian dengan mudah.</div><label class="text-sm font-semibold">Email<input class="inp mt-1 mb-3" id="le" type="email" autocomplete="username" value="${esc(S.u.email||'')}"></label><label class="text-sm font-semibold">Kata Sandi<input class="inp mt-1" id="lp" type="password" autocomplete="${first?'new-password':'current-password'}"></label><div id="lerr" class="text-sm mt-2" style="color:var(--P)"></div><button class="btn w-full justify-center mt-4" data-a="li">${first?'Buat Akun & Masuk':'Masuk'}</button><p class="mu text-xs mt-3">${first?'Masuk pertama kali akan membuat akun di perangkat ini (kata sandi minimal 8 karakter). ':''}Data tersimpan di browser perangkat ini dan tidak dikirim ke server.</p></div>${FT}</div>`}
 const sb=()=>`<div class="card mb-4 flex items-center gap-3 cursor-pointer" style="background:var(--tk)" data-a="go" data-r="goals">${MS('tune',22,'color:var(--pr)')}<div><b class="text-sm">Lengkapi profil dan Goal Anda</b><div class="mu text-xs">Isi data di Goals & Targets agar target kalori dan nutrisi dihitung sesuai Anda.</div></div></div>`;
 const FT='<div class="ftr">Design By Tribayu · Powered By Claude</div>';
-function shell(c,r){const on=k=>r==k||(k=='rep'&&(r=='weekly'||r=='monthly'))||(k=='foods'&&r.startsWith('food/'));const nl=n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}" title="${tr(n[0])}">${ic(n[2])}<span class="hidden lg:inline">${tr(n[0])}</span></a>`;
-return`<aside class="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-50 py-5 md:w-[72px] lg:w-64" style="background:var(--cd);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex flex-col gap-5 px-3"><div class="flex items-center gap-2 px-2"><img src="/icon-192.png" alt="NutriTrack" style="width:32px;height:32px;border-radius:9px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><span class="hidden lg:flex items-center gap-2 font-bold text-lg">NutriTrack <span class="pro">PRO</span></span></div><nav class="flex flex-col gap-1">${NAV.slice(0,8).map(nl).join('')}</nav></div><nav class="px-3 flex flex-col gap-1">${NAV.slice(8).map(nl).join('')}</nav></aside><header class="hidden md:flex fixed top-0 right-0 md:left-[72px] lg:left-64 h-16 z-40 items-center justify-between px-8" style="background:color-mix(in srgb,var(--cd) 90%,transparent);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex items-center gap-4"><div class="relative flex items-center">${MS('search',20,'position:absolute;left:10px;color:var(--mu)')}<input id="tq" class="inp" style="width:320px;padding-left:38px;padding-top:7px;padding-bottom:7px" placeholder="${tr('search')}"></div><div class="flex items-center gap-2 text-xs font-semibold" style="background:var(--tk);padding:7px 14px;border-radius:12px">${MS('calendar_today',18,'color:var(--mu)')}${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</div></div><div class="flex items-center gap-3"><button class="chip" style="padding:4px 10px;font-size:12px;font-weight:700" data-a="langtoggle" title="Ganti Bahasa / Switch Language">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib relative" aria-label="Notifikasi">${MS('notifications',22)}<i class="dt" style="position:absolute;top:6px;right:6px;background:var(--pc);width:8px;height:8px"></i></button><div class="flex items-center gap-2"><span class="ic" style="width:32px;height:32px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span><div class="hidden xl:flex flex-col"><b class="text-xs">${S.u.name}</b><span class="mu text-xs">${tr('dailyTarget')}: ${n0(S.tg.kcal)} kkal</span></div></div></div></header><header class="md:hidden fixed top-0 inset-x-0 z-50" style="background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(16px);padding-top:env(safe-area-inset-top,0px);box-shadow:0 1px 8px rgba(0,0,0,.04)"><div class="h-16 px-4 flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><img src="/icon-192.png" alt="NutriTrack" style="width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold pr tracking-tight" style="font-size:18px">NutriTrack</span><span class="pro">PRO</span></div><div class="flex items-center gap-1 mu text-xs">${MS('calendar_today',13,'color:var(--pr)')}<span>${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</span></div></div></div><div class="flex items-center gap-1"><button class="chip" style="padding:3px 8px;font-size:11px;font-weight:700" data-a="langtoggle">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib" data-a="more" aria-label="Menu">${MS('menu',26)}</button><a class="cursor-pointer" data-a="go" data-r="profile" aria-label="Profile"><span class="ic" style="width:34px;height:34px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span></a></div></div><div class="px-4 pb-2"><h1 class="font-bold text-xl truncate">${r.startsWith('food/')?tr('foods'):tr(r)}</h1></div></header><main class="mm md:ml-[72px] lg:ml-64 px-4 md:px-8 pb-28 md:pb-8 max-w-[1320px]">${r=='dash'&&!S.setup?sb():''}${r=='dash'?bkBanner():''}${c}${FT}</main><nav class="md:hidden fixed bottom-0 inset-x-0 z-40" style="background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);box-shadow:0 -2px 12px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom,0px)"><div class="relative flex items-center justify-between h-16 px-2">${[['dash','home'],['journal','book']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}<div class="flex-1 flex items-center justify-center"><button class="btn" style="border-radius:9999px;width:56px;height:56px;justify-content:center;padding:0;margin-top:-22px;box-shadow:0 10px 15px -3px rgba(16,185,129,.4)" data-a="ga" aria-label="${tr('addFood')}">${MS('add',30)}</button></div>${[['rep','bar_chart'],['goals','tune']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}</div></nav>${MORE?`<div class="md:hidden fixed inset-0" style="z-index:60;background:rgba(19,27,46,.4);backdrop-filter:blur(4px)" data-a="more"><div class="absolute top-0 right-0 h-full flex flex-col" data-a="nop" style="width:80%;max-width:320px;background:var(--cd);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 20px 25px -5px rgba(15,23,42,.1)"><div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--ln)"><b class="text-lg">Menu</b><button class="ib" data-a="more" aria-label="${tr('close')}">${MS('close',24)}</button></div><div class="flex-1 overflow-y-auto py-2 flex flex-col gap-1">${NAV.map(n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}">${ic(n[2])}${tr(n[0])}</a>${n[0]=='rep'?[['weekly','insights'],['monthly','calendar_month']].map(m=>`<a class="nv cursor-pointer ${r==m[0]?'on':''}" style="margin-left:24px;font-size:14px" data-a="go" data-r="${m[0]}">${MS(m[1],20)}${tr(m[0])}</a>`).join(''):''}`).join('')}</div><div class="pt-3 text-xs mu" style="border-top:1px solid var(--ln)"><b style="color:var(--tx)">${S.u.name}</b><br>${S.u.email}</div></div></div>`:''}${renderMascotButton()}`}
+function shell(c,r){const on=k=>r==k||(k=='rep'&&(r=='weekly'||r=='monthly'))||(k=='foods'&&r.startsWith('food/'));const nl=n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}" title="${tr(n[0])}">${ic(n[2])}<span class="hidden lg:inline">${tr(n[0])}</span></a>`;const activeAlerts=getSmartAlerts(D),notifCount=activeAlerts.length;
+return`<aside class="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-50 py-5 md:w-[72px] lg:w-64" style="background:var(--cd);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex flex-col gap-5 px-3"><div class="flex items-center gap-2 px-2"><img src="/icon-192.png" alt="NutriTrack" style="width:32px;height:32px;border-radius:9px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><span class="hidden lg:flex items-center gap-2 font-bold text-lg">NutriTrack <span class="pro">PRO</span></span></div><nav class="flex flex-col gap-1">${NAV.slice(0,8).map(nl).join('')}</nav></div><nav class="px-3 flex flex-col gap-1">${NAV.slice(8).map(nl).join('')}</nav></aside><header class="hidden md:flex fixed top-0 right-0 md:left-[72px] lg:left-64 h-16 z-40 items-center justify-between px-8" style="background:color-mix(in srgb,var(--cd) 90%,transparent);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.05)"><div class="flex items-center gap-4"><div class="relative flex items-center">${MS('search',20,'position:absolute;left:10px;color:var(--mu)')}<input id="tq" class="inp" style="width:320px;padding-left:38px;padding-top:7px;padding-bottom:7px" placeholder="${tr('search')}"></div><div class="flex items-center gap-2 text-xs font-semibold" style="background:var(--tk);padding:7px 14px;border-radius:12px">${MS('calendar_today',18,'color:var(--mu)')}${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</div></div><div class="flex items-center gap-3"><button class="chip" style="padding:4px 10px;font-size:12px;font-weight:700" data-a="langtoggle" title="Ganti Bahasa / Switch Language">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib relative" data-a="opennotif" aria-label="Notifikasi">${MS('notifications',22)}${notifCount>0?`<span class="badge" style="position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:9999px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px">${notifCount}</span>`:''}</button><div class="flex items-center gap-2"><span class="ic" style="width:32px;height:32px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span><div class="hidden xl:flex flex-col"><b class="text-xs">${S.u.name}</b><span class="mu text-xs">${tr('dailyTarget')}: ${n0(S.tg.kcal)} kkal</span></div></div></div></header><header class="md:hidden fixed top-0 inset-x-0 z-50" style="background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(16px);padding-top:env(safe-area-inset-top,0px);box-shadow:0 1px 8px rgba(0,0,0,.04)"><div class="h-16 px-4 flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><img src="/icon-192.png" alt="NutriTrack" style="width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 2px 8px rgba(16,185,129,.3)"><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold pr tracking-tight" style="font-size:18px">NutriTrack</span><span class="pro">PRO</span></div><div class="flex items-center gap-1 mu text-xs">${MS('calendar_today',13,'color:var(--pr)')}<span>${D==td?tr('today')+', ':''}${new Date(D+'T12:00').toLocaleDateString(curLoc(),{day:'2-digit',month:'short'})}</span></div></div></div><div class="flex items-center gap-1"><button class="chip" style="padding:3px 8px;font-size:11px;font-weight:700" data-a="langtoggle">${curLang()=='en'?'\uD83C\uDDEC\uD83C\uDDE7 EN':curLang()=='ms'?'\uD83C\uDDF2\uD83C\uDDFE MS':'\uD83C\uDDEE\uD83C\uDDDE ID'}</button><button class="ib relative" style="width:34px;height:34px" data-a="opennotif" aria-label="Notifikasi">${MS('notifications',20)}${notifCount>0?`<span class="badge" style="position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;border-radius:9999px;min-width:14px;height:14px;display:flex;align-items:center;justify-content:center;padding:0 2px">${notifCount}</span>`:''}</button><button class="ib" data-a="more" aria-label="Menu">${MS('menu',26)}</button><a class="cursor-pointer" data-a="go" data-r="profile" aria-label="Profile"><span class="ic" style="width:34px;height:34px;border-radius:9999px;background:var(--pc);color:#fff;font-weight:700">${(S.u.name||'U')[0].toUpperCase()}</span></a></div></div><div class="px-4 pb-2"><h1 class="font-bold text-xl truncate">${r.startsWith('food/')?tr('foods'):tr(r)}</h1></div></header><main class="mm md:ml-[72px] lg:ml-64 px-4 md:px-8 pb-28 md:pb-8 max-w-[1320px]">${r=='dash'&&!S.setup?sb():''}${r=='dash'?bkBanner():''}${c}${FT}</main><nav class="md:hidden fixed bottom-0 inset-x-0 z-40" style="background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);box-shadow:0 -2px 12px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom,0px)"><div class="relative flex items-center justify-between h-16 px-2">${[['dash','home'],['journal','book']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}<div class="flex-1 flex items-center justify-center"><button class="btn" style="border-radius:9999px;width:56px;height:56px;justify-content:center;padding:0;margin-top:-22px;box-shadow:0 10px 15px -3px rgba(16,185,129,.4)" data-a="ga" aria-label="${tr('addFood')}">${MS('add',30)}</button></div>${[['rep','bar_chart'],['goals','tune']].map(n=>`<a class="flex-1 flex flex-col items-center justify-center cursor-pointer ${on(n[0])?'pr font-bold':'mu'}" style="min-height:48px" data-a="go" data-r="${n[0]}">${MS(n[1],24)}<span style="font-size:11px">${tr(n[0])}</span></a>`).join('')}</div></nav>${MORE?`<div class="md:hidden fixed inset-0" style="z-index:60;background:rgba(19,27,46,.4);backdrop-filter:blur(4px)" data-a="more"><div class="absolute top-0 right-0 h-full flex flex-col" data-a="nop" style="width:80%;max-width:320px;background:var(--cd);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 20px 25px -5px rgba(15,23,42,.1)"><div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--ln)"><b class="text-lg">Menu</b><button class="ib" data-a="more" aria-label="${tr('close')}">${MS('close',24)}</button></div><div class="flex-1 overflow-y-auto py-2 flex flex-col gap-1">${NAV.map(n=>`<a class="nv cursor-pointer ${on(n[0])?'on':''}" data-a="go" data-r="${n[0]}">${ic(n[2])}${tr(n[0])}</a>${n[0]=='rep'?[['weekly','insights'],['monthly','calendar_month']].map(m=>`<a class="nv cursor-pointer ${r==m[0]?'on':''}" style="margin-left:24px;font-size:14px" data-a="go" data-r="${m[0]}">${MS(m[1],20)}${tr(m[0])}</a>`).join(''):''}`).join('')}</div><div class="pt-3 text-xs mu" style="border-top:1px solid var(--ln)"><b style="color:var(--tx)">${S.u.name}</b><br>${S.u.email}</div></div></div>`:''}${renderMascotButton()}`}
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const TJ=JSON.stringify({foods:[{nama:'Bubur Ayam',kategori:'Makanan',sumber:'Pengguna',status:'Buatan sendiri',merek:'Contoh Merek',kepadatan:1,per_100g:{kalori:120,protein:6,karbohidrat:18,lemak:3,serat:0.5,gula:1,natrium:300},porsi:[{nama:'mangkuk',gram:250},{nama:'piring',gram:300}],mikro:{besi:0.6,besi_heme_persen:0,kalsium:12,seng:0.5,magnesium:10,kalium:80,vit_a:10,vit_d:0.2,vit_e:0.3,vit_k:1,vit_c:1,vit_b12:0.3,folat:10},sifat:{sumber_protein:'hewani',fitat:'rendah',oksalat:'rendah',polifenol:false}}]},null,2),
 TC='nama,kategori,sumber,status,nama_porsi,gram_per_porsi,kalori,protein,karbohidrat,lemak,serat,gula,natrium,merek,kepadatan,besi,besi_heme_persen,kalsium,seng,magnesium,kalium,vit_a,vit_d,vit_e,vit_k,vit_c,vit_b12,folat,sumber_protein,fitat,oksalat,polifenol\nBubur Ayam,Makanan,Pengguna,Buatan sendiri,mangkuk,250,120,6,18,3,0.5,1,300,Contoh Merek,1,0.6,0,12,0.5,10,80,10,0.2,0.3,1,1,0.3,10,hewani,rendah,rendah,tidak\nSambal Terasi,Makanan,Pengguna,Estimasi,sdm,15,70,1.5,8,3.5,1.2,2,900'+','.repeat(19);
@@ -958,6 +959,445 @@ function renderAimKeysModal() {
 }
 
 // ─── Health & Fitness: Aktivitas Fisik (MET) & Mindful Eating ──────────────────
+// ─── Tahap 5: Notifikasi & Smart Momentum Alerts ─────────────────────────────
+let NOTIF_MODAL = false;
+
+function requestWebNotificationPermission() {
+  if (!('Notification' in window)) {
+    tst('Browser Anda tidak mendukung Web Notifications API');
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      tst('Notifikasi Web berhasil diaktifkan! ✅');
+      sendWebNotification('NutriTrack Notifikasi Aktif 🥗', 'Pengingat makan dan hidrasi otomatis siap mendampingi target sehatmu.', 'notif_init');
+    } else if (perm === 'denied') {
+      tst('Izin notifikasi ditolak oleh peramban');
+    }
+    render();
+  }).catch(() => {
+    tst('Gagal meminta izin notifikasi');
+  });
+}
+
+function sendWebNotification(title, body, tag) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      const n = new Notification(title, {
+        body: body || '',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: tag || ('nt_' + Date.now()),
+        renotify: false
+      });
+      n.onclick = function() {
+        window.focus();
+        this.close();
+      };
+    } catch(e) {
+      console.warn('Web Notification error:', e);
+    }
+  }
+}
+
+function testNotification() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    requestWebNotificationPermission();
+    return;
+  }
+  sendWebNotification('Uji Coba NutriTrack 🥗', 'Notifikasi browser berfungsi sempurna! Anda akan diingatkan tepat waktu saat jam sarapan, makan siang, makan malam, dan minum air.', 'test_' + Date.now());
+  tst('Notifikasi uji coba terkirim! 🔔');
+}
+
+function checkScheduledNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const dStr = td;
+  const hh = now.getHours();
+  const mm = now.getMinutes();
+
+  let sentKeys = {};
+  try {
+    sentKeys = JSON.parse(sessionStorage.getItem('nutritrack_sent_notifs') || '{}');
+  } catch(e) {}
+
+  const markSent = (key) => {
+    sentKeys[key] = true;
+    try { sessionStorage.setItem('nutritrack_sent_notifs', JSON.stringify(sentKeys)); } catch(e) {}
+  };
+
+  const L = lg(dStr);
+  const W = wat(dStr);
+  const g = S.tg;
+
+  // 1. Breakfast Notification (~07:30 - 08:30) if s.n1 is ON
+  if (S.set && S.set.n1 && hh === 7 && mm >= 30) {
+    const k = `notif_b_${dStr}`;
+    if (!sentKeys[k] && !L.some(l => l.m === 'b')) {
+      sendWebNotification('Waktunya Sarapan Pagi 🌅', 'Awali harimu dengan sarapan bergizi untuk menjaga fokus dan energi stabil.', k);
+      markSent(k);
+    }
+  }
+
+  // 2. Lunch Notification (~12:30 - 13:30) if s.n1 is ON
+  if (S.set && S.set.n1 && hh === 12 && mm >= 30) {
+    const k = `notif_l_${dStr}`;
+    if (!sentKeys[k] && !L.some(l => l.m === 'l')) {
+      sendWebNotification('Waktu Santap Siang ☀️', 'Jangan lewatkan makan siang! Penuhi kebutuhan makronutrienmu hari ini.', k);
+      markSent(k);
+    }
+  }
+
+  // 3. Dinner Notification (~18:30 - 19:30) if s.n1 is ON
+  if (S.set && S.set.n1 && hh === 18 && mm >= 30) {
+    const k = `notif_d_${dStr}`;
+    if (!sentKeys[k] && !L.some(l => l.m === 'd')) {
+      sendWebNotification('Waktunya Makan Malam 🌙', 'Catat santap malammu sebelum beristirahat agar evaluasi harian lengkap.', k);
+      markSent(k);
+    }
+  }
+
+  // 4. Hydration Notification (~every 2 hours between 09:00 and 20:00) if s.n2 is ON
+  if (S.set && S.set.n2 && hh >= 9 && hh <= 20 && hh % 2 === 1 && mm <= 10) {
+    const k = `notif_w_${dStr}_${hh}`;
+    if (!sentKeys[k]) {
+      const pct = g.water ? Math.round(W / g.water * 100) : 0;
+      if (pct < 100) {
+        sendWebNotification('Waktunya Minum Air 💧', `Capaian hidrasi baru ${n0(W)} / ${n0(g.water)} ml (${pct}%). Minum segelas air putih sekarang!`, k);
+        markSent(k);
+      }
+    }
+  }
+}
+
+function getSmartAlerts(dateStr) {
+  dateStr = dateStr || D;
+  S.notifDismissed = S.notifDismissed || {};
+  const isToday = (dateStr === td);
+  const now = new Date();
+  const hh = now.getHours();
+  const mm = now.getMinutes();
+  const curTimeMins = hh * 60 + mm;
+
+  const L = lg(dateStr);
+  const T = sum(L);
+  const g = S.tg;
+  const W = wat(dateStr);
+  const burned = exK(dateStr);
+  const eatExtra = Boolean(S.set && S.set.exEat);
+  const netK = Math.max(0, T.k - (eatExtra ? burned : 0));
+  const remNet = eatExtra ? (g.kcal - netK) : (g.kcal - T.k);
+
+  const hasB = L.some(l => l.m === 'b');
+  const hasL = L.some(l => l.m === 'l');
+  const hasD = L.some(l => l.m === 'd');
+
+  const alerts = [];
+
+  // 1. Breakfast missing (jam 08:30 - 11:30)
+  if (isToday && curTimeMins >= 510 && curTimeMins <= 690 && !hasB) {
+    alerts.push({
+      id: 'b_missing',
+      type: 'meal',
+      prio: 'high',
+      icon: 'wb_sunny',
+      color: '#f59e0b',
+      title: 'Sarapan Belum Tercatat',
+      desc: `Sudah pukul ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}. Memulai hari dengan sarapan bergizi membantu menjaga energi dan fokus seharian.`,
+      actionLabel: '+ Catat Sarapan',
+      act: 'add-meal',
+      meal: 'b'
+    });
+  }
+
+  // 2. Lunch missing (jam 12:45 - 15:30)
+  if (isToday && curTimeMins >= 765 && curTimeMins <= 930 && !hasL) {
+    alerts.push({
+      id: 'l_missing',
+      type: 'meal',
+      prio: 'high',
+      icon: 'restaurant',
+      color: '#10b981',
+      title: 'Makan Siang Belum Dicatat',
+      desc: 'Waktu makan siang telah tiba. Catat porsi santap siangmu agar kuota kalori tetap terpantau.',
+      actionLabel: '+ Catat Makan Siang',
+      act: 'add-meal',
+      meal: 'l'
+    });
+  }
+
+  // 3. Dinner missing (jam 18:45 - 21:30)
+  if (isToday && curTimeMins >= 1125 && curTimeMins <= 1290 && !hasD) {
+    alerts.push({
+      id: 'd_missing',
+      type: 'meal',
+      prio: 'medium',
+      icon: 'nights_stay',
+      color: '#8b5cf6',
+      title: 'Makan Malam Belum Dicatat',
+      desc: 'Jangan lupa mendata makan malam sebelum beristirahat agar evaluasi nutrisi hari ini lengkap.',
+      actionLabel: '+ Catat Makan Malam',
+      act: 'add-meal',
+      meal: 'd'
+    });
+  }
+
+  // 4. Hydration low (siang > 13:00 air < 45% atau sore > 17:00 air < 70%)
+  if (isToday && g.water > 0) {
+    const pct = Math.round(W / g.water * 100);
+    if ((curTimeMins >= 780 && pct < 45) || (curTimeMins >= 1020 && pct < 70)) {
+      alerts.push({
+        id: 'water_low',
+        type: 'water',
+        prio: 'high',
+        icon: 'water_drop',
+        color: '#0284c7',
+        title: 'Target Hidrasi Belum Optimal',
+        desc: `Asupan cairan baru ${n0(W)} ml dari target ${n0(g.water)} ml (${pct}%). Minum segelas air putih sekarang untuk menjaga konsentrasi.`,
+        actionLabel: '+ 250 ml Air',
+        act: 'water-add',
+        ml: 250
+      });
+    }
+  }
+
+  // 5. Exceeded calorie budget
+  if (remNet < 0) {
+    alerts.push({
+      id: 'cal_over',
+      type: 'calorie',
+      prio: 'high',
+      icon: 'warning',
+      color: '#ef4444',
+      title: 'Batas Kalori Harian Terlampaui',
+      desc: `Total asupan kalori melebihi batas target sebesar ${n0(Math.abs(remNet))} kkal. Pertimbangkan jalan santai atau aktivitas fisik ringan untuk menyeimbangkan energi.`,
+      actionLabel: '+ Catat Olahraga',
+      act: 'open-ex'
+    });
+  } else if (remNet <= 200 && T.k > 0) {
+    // 6. Nearing calorie limit
+    alerts.push({
+      id: 'cal_near',
+      type: 'calorie',
+      prio: 'low',
+      icon: 'info',
+      color: '#f59e0b',
+      title: 'Mendekati Batas Kalori Hari Ini',
+      desc: `Sisa kuota kalori Anda tinggal ${n0(remNet)} kkal. Prioritaskan camilan tinggi serat dan rendah gula jika masih lapar.`,
+      actionLabel: 'Periksa Jurnal',
+      act: 'go-journal'
+    });
+  }
+
+  // 7. High Glycemic Load (> 120)
+  try {
+    const dGl = calcDayGL(dateStr);
+    if (dGl && dGl.eff >= 120) {
+      alerts.push({
+        id: 'gl_high',
+        type: 'gl',
+        prio: 'medium',
+        icon: 'bloodtype',
+        color: '#ea580c',
+        title: `Beban Glikemik Tinggi (GL ${Math.round(dGl.eff)})`,
+        desc: `Beban glikemik harian mencapai ${Math.round(dGl.eff)} (kategori tinggi). Perbanyak minum air dan konsumsi serat untuk menstabilkan lonjakan gula darah.`,
+        actionLabel: 'Lihat Analisis GL',
+        act: 'go-rep'
+      });
+    }
+  } catch(e) {}
+
+  // 8. Streak milestone
+  const st = streak();
+  if (isToday && st >= 3 && L.length > 0) {
+    alerts.push({
+      id: 'streak_cheer',
+      type: 'streak',
+      prio: 'low',
+      icon: 'local_fire_department',
+      color: '#10b981',
+      title: `Momentum Hebat! 🔥 ${st} Hari Beruntun`,
+      desc: `Selamat! Anda konsisten mencatat nutrisi selama ${st} hari tanpa putus. Pertahankan pola hidup sehat ini!`,
+      actionLabel: 'Buka Laporan',
+      act: 'go-rep'
+    });
+  }
+
+  // Filter out dismissed alerts for this date
+  const filtered = alerts.filter(a => !S.notifDismissed[a.id + '_' + dateStr]);
+
+  // Sort by priority: high > medium > low
+  const prioWeight = { high: 1, medium: 2, low: 3 };
+  filtered.sort((a, b) => (prioWeight[a.prio] || 9) - (prioWeight[b.prio] || 9));
+
+  return filtered;
+}
+
+function renderSmartAlertsBanner() {
+  const alerts = getSmartAlerts(D);
+  if (!alerts.length) return '';
+  const topAlerts = alerts.slice(0, 2);
+  const remainingCount = alerts.length - topAlerts.length;
+
+  return `<div class="mb-4 space-y-2.5">
+    ${topAlerts.map(a => `
+      <div class="card p-3.5 flex items-start gap-3 relative overflow-hidden" style="border-left:4px solid ${a.color};background:color-mix(in srgb, var(--cd) 96%, ${a.color} 4%);box-shadow:0 2px 10px rgba(0,0,0,0.04)">
+        <div class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style="background:color-mix(in srgb, ${a.color} 16%, transparent);color:${a.color}">
+          ${MS(a.icon, 20)}
+        </div>
+        <div class="flex-1 min-w-0 pr-6">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-xs uppercase tracking-wider" style="color:${a.color}">${a.title}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold" style="background:var(--tk);color:var(--mu)">Smart Alert</span>
+          </div>
+          <p class="text-xs mt-0.5 leading-relaxed" style="color:var(--tx)">${a.desc}</p>
+          <div class="flex items-center gap-2 mt-2">
+            ${a.actionLabel ? `<button class="chip font-bold text-xs py-1 px-3" style="background:${a.color};color:#fff;border:none" data-a="notifact" data-act="${a.act}" ${a.meal ? `data-m="${a.meal}"` : ''} ${a.ml ? `data-ml="${a.ml}"` : ''}>${a.actionLabel}</button>` : ''}
+            <button class="gh text-xs py-0.5 px-2" style="font-size:11px" data-a="notifdismiss" data-id="${a.id}">Sembunyikan</button>
+          </div>
+        </div>
+        <button class="ib dl absolute top-2 right-2 text-xs" style="width:26px;height:26px;padding:0" data-a="notifdismiss" data-id="${a.id}" title="Tutup">${MS('close',15)}</button>
+      </div>
+    `).join('')}
+    <div class="flex justify-between items-center px-1 text-xs mu">
+      <span class="flex items-center gap-1.5">
+        <i class="dt" style="background:var(--pr);width:7px;height:7px"></i>
+        <span>${alerts.length} Smart Alert aktif hari ini</span>
+        ${remainingCount > 0 ? `<span class="chip text-[10px] py-0 px-1.5">+${remainingCount} lainnya</span>` : ''}
+      </span>
+      <button class="pr font-bold text-xs hover:underline flex items-center gap-1" data-a="opennotif">
+        Pusat Notifikasi ${MS('chevron_right', 16)}
+      </button>
+    </div>
+  </div>`;
+}
+
+function vNotifModal() {
+  if (!NOTIF_MODAL) return '';
+  const alerts = getSmartAlerts(D);
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const hasDismissed = Object.keys(S.notifDismissed || {}).length > 0;
+
+  return `<div class="ov" role="dialog" aria-modal="true" style="z-index:110">
+    <div class="card w-full max-w-lg p-5" style="border-radius:20px;max-height:calc(100vh - 48px);overflow-y:auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.12);color:var(--pr)">
+            ${MS('notifications_active', 22)}
+          </div>
+          <div>
+            <b class="text-base block">Pusat Notifikasi & Smart Alerts</b>
+            <span class="mu text-xs">Pengingat real-time & rekomendasi nutrisi</span>
+          </div>
+        </div>
+        <button class="ib" data-a="notifclose" aria-label="Tutup">${MS('close', 20)}</button>
+      </div>
+
+      <!-- Web Push / Web Notifications API Status -->
+      <div class="p-3.5 rounded-xl mb-4" style="background:var(--tk);border:1px solid var(--ln)">
+        <div class="flex items-center justify-between mb-1.5">
+          <b class="text-xs flex items-center gap-1.5">
+            ${MS('cell_tower', 16, 'color:var(--pr)')} Notifikasi Browser (Web Push)
+          </b>
+          <span class="chip text-[11px] font-bold" style="${perm==='granted'?'background:rgba(16,185,129,0.15);color:var(--pr)':perm==='denied'?'background:rgba(239,68,68,0.15);color:#ef4444':'background:rgba(245,158,11,0.15);color:#f59e0b'}">
+            ${perm==='granted'?'✅ Aktif':perm==='denied'?'🚫 Diblokir':'🔔 Belum Diizinkan'}
+          </span>
+        </div>
+        <p class="mu text-xs leading-relaxed mb-3">
+          ${perm==='granted' 
+            ? 'Notifikasi web aktif di perangkat ini. Anda akan menerima notifikasi terjadwal untuk sarapan, makan siang, makan malam, dan minum air.' 
+            : perm==='denied' 
+            ? 'Izin notifikasi diblokir pada setelan peramban Anda. Buka ikon gembok di bilah URL browser untuk mengizinkan notifikasi.' 
+            : 'Aktifkan izin notifikasi peramban agar Anda tetap menerima pengingat makan dan minum tepat waktu meskipun sedang membuka tab lain.'}
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          ${perm !== 'granted' && perm !== 'unsupported' ? `
+            <button class="btn text-xs py-1.5 px-3.5" data-a="notifreq">
+              ${MS('notifications', 15)} Aktifkan Notifikasi Web
+            </button>
+          ` : ''}
+          ${perm === 'granted' ? `
+            <button class="gh text-xs py-1.5 px-3 flex items-center gap-1" data-a="notiftest">
+              ${MS('send', 14)} Uji Coba Kirim Notifikasi
+            </button>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Jadwal Pengingat Harian -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <b class="text-xs uppercase tracking-wider mu">Jadwal Pengingat Terjadwal</b>
+          <a class="text-xs pr font-semibold cursor-pointer" data-a="go" data-r="settings">Atur di Settings →</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+            <div class="text-lg">🌅</div>
+            <div class="font-bold mt-1">07:30</div>
+            <div class="mu text-[11px]">Sarapan</div>
+            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+          </div>
+          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+            <div class="text-lg">☀️</div>
+            <div class="font-bold mt-1">12:30</div>
+            <div class="mu text-[11px]">Makan Siang</div>
+            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+          </div>
+          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+            <div class="text-lg">🌙</div>
+            <div class="font-bold mt-1">18:30</div>
+            <div class="mu text-[11px]">Makan Malam</div>
+            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+          </div>
+          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+            <div class="text-lg">💧</div>
+            <div class="font-bold mt-1">Tiap 2 Jam</div>
+            <div class="mu text-[11px]">Hidrasi Air</div>
+            <div class="text-[10px] mt-0.5 ${S.set.n2?'text-emerald-500 font-semibold':'mu'}">${S.set.n2?'Aktif':'Mati'}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active In-App Smart Momentum Alerts -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <b class="text-xs uppercase tracking-wider mu">Smart Momentum Alerts Hari Ini (${alerts.length})</b>
+          ${hasDismissed ? `<button class="text-[11px] mu underline" data-a="notifresetdismiss">Pulihkan yang disembunyikan</button>` : ''}
+        </div>
+        ${alerts.length ? `
+          <div class="space-y-2">
+            ${alerts.map(a => `
+              <div class="p-3 rounded-xl flex items-start gap-3" style="background:var(--tk);border-left:3.5px solid ${a.color}">
+                <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5" style="background:color-mix(in srgb, ${a.color} 15%, transparent);color:${a.color}">
+                  ${MS(a.icon, 18)}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-xs" style="color:var(--tx)">${a.title}</div>
+                  <div class="text-xs mu mt-0.5 leading-relaxed">${a.desc}</div>
+                  <div class="flex items-center gap-2 mt-2">
+                    ${a.actionLabel ? `<button class="chip font-bold text-xs py-1 px-3" style="background:${a.color};color:#fff;border:none" data-a="notifact" data-act="${a.act}" ${a.meal ? `data-m="${a.meal}"` : ''} ${a.ml ? `data-ml="${a.ml}"` : ''}>${a.actionLabel}</button>` : ''}
+                    <button class="gh text-xs py-0.5 px-2" style="font-size:11px" data-a="notifdismiss" data-id="${a.id}">Sembunyikan</button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div class="p-4 text-center rounded-xl" style="background:var(--tk)">
+            <div class="text-2xl mb-1">🎉</div>
+            <b class="text-xs block">Semua Terkendali dengan Baik!</b>
+            <p class="mu text-xs mt-1">Tidak ada peringatan aktif untuk hari ini. Jadwal makan, hidrasi, dan kalori Anda berada di jalur yang benar.</p>
+          </div>
+        `}
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button class="gh text-xs py-2 px-4" data-a="notifclose">Tutup</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 const EX_PRESETS = [
   { id: 'walk_slow', name: 'Jalan Santai (~4 km/jam)', met: 3.0, icon: 'directions_walk' },
   { id: 'walk_brisk', name: 'Jalan Cepat (~6 km/jam)', met: 4.3, icon: 'directions_walk' },
@@ -2120,7 +2560,7 @@ function vChatModal(){
   </div>`;
 }
 
-function vModal(){if(CHAT_OPEN)return vChatModal();if(AIM_KEYS_MODAL)return renderAimKeysModal();if(EX_MODAL)return vExModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
+function vModal(){if(CHAT_OPEN)return vChatModal();if(AIM_KEYS_MODAL)return renderAimKeysModal();if(NOTIF_MODAL)return vNotifModal();if(EX_MODAL)return vExModal();if(BCM)return vBcm();if(AIM)return vAim();const cm=(t,d,bt,y,n)=>`<div class="ov" role="dialog" aria-modal="true"><div class="card max-w-sm w-full"><b>${t}</b><p class="mu text-sm my-2">${d}</p><div class="flex gap-2 justify-end"><button class="gh" data-a="${n}">Batal</button><button class="btn" style="background:var(--P);color:#fff" data-a="${y}">${bt}</button></div></div></div>`;
 if(DF)return cm('Hapus item makanan?','Item dihapus dari Food Database dan tidak muncul lagi saat mencatat makanan. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','dfy','dfn');if(RD)return cm('Hapus resep?','Resep dan menu terkait di Food Database akan dihapus. Catatan jurnal yang sudah ada tetap tersimpan.','Hapus','rdy','rdn');if(CF)return cm('Hapus catatan makanan?','Data yang dihapus tidak dapat dikembalikan.','Hapus','cy','cn');if(RC)return cm('Reset data?','Seluruh catatan, target, resep, dan pengaturan akan dikosongkan, dan Food Database kembali ke master awal. Akun login tetap. Disarankan mengunduh cadangan terlebih dahulu.','Reset','rcy','rcn');
 if(CPM){const c=CPM,mnm=MEALS.find(m=>m[0]==c.m)[1],tg=`<div class="grid grid-cols-2 gap-2 mt-3"><input class="inp" id="cd" type="date" max="${td}" value="${c.d}"><select class="inp" id="ctm">${MEALS.map(m=>`<option value="${m[0]}" ${m[0]==c.tm?'selected':''}>${m[1]}</option>`).join('')}</select></div>`,err=c.e?`<div class="text-sm mt-2" style="color:var(--P)">${c.e}</div>`:'';
 return`<div class="ov" role="dialog" aria-modal="true"><div class="card w-full max-w-md overflow-auto" style="max-height:calc(100vh - 48px)"><div class="flex justify-between mb-2"><b>${c.t=='copy'?'Salin '+mnm:c.t=='save'?'Simpan sebagai Template':'Pakai Template'}</b><button data-a="cpx" aria-label="Tutup">✕</button></div>${c.t=='copy'?`<p class="mu text-sm">Salin semua item ${mnm} pada ${fD(D)} ke tanggal dan waktu makan tujuan.</p>${tg}${err}<button class="btn w-full justify-center mt-4" data-a="cmy">Salin</button>`:c.t=='save'?`<p class="mu text-sm">Simpan item ${mnm} hari ini sebagai template untuk dipakai ulang.</p><input class="inp mt-3" id="cn" maxlength="40" placeholder="Nama template (mis. Sarapan Biasa)" value="${esc(c.name)}">${err}<button class="btn w-full justify-center mt-4" data-a="stz">Simpan Template</button>`:`<p class="mu text-sm">Pilih tujuan, lalu template yang akan dipakai. Nilai gizi sesuai saat template disimpan.</p>${tg}${err}<div class="mt-3">${S.tpl.map(t=>{const k=t.items.reduce((a,x)=>a+(x.sn?x.sn.k:0),0);return`<div class="flex items-center gap-2 py-2" style="border-top:1px solid var(--ln)"><div class="flex-1 min-w-0"><b class="text-sm block truncate">${esc(t.name)}</b><span class="mu text-xs">${t.items.length} item · ${n0(k)} kkal</span></div><button class="btn" style="padding:6px 12px" data-a="tpy" data-id="${t.id}">Pakai</button><button class="ib dl" data-a="tpd" data-id="${t.id}" aria-label="Hapus template">${MS('delete',18)}</button></div>`}).join('')||'<div class="mu text-sm">Belum ada template.</div>'}</div>`}</div></div>`}
@@ -3693,6 +4133,21 @@ else if(a=='chatlogfood'){
   return;
 }
 else if(a=='voiceinput'){toggleVoiceInput();return}
+else if(a=='opennotif'){NOTIF_MODAL=true;render();return}
+else if(a=='notifclose'){NOTIF_MODAL=false;render();return}
+else if(a=='notifdismiss'){S.notifDismissed=S.notifDismissed||{};S.notifDismissed[id+'_'+D]=true;save();render();tst('Peringatan disembunyikan');return}
+else if(a=='notifresetdismiss'){S.notifDismissed={};save();render();tst('Daftar peringatan dipulihkan');return}
+else if(a=='notifreq'){requestWebNotificationPermission();return}
+else if(a=='notiftest'){testNotification();return}
+else if(a=='notifact'){
+  const act=b.dataset.act;
+  if(act==='add-meal'){NOTIF_MODAL=false;openM({m:b.dataset.m||'b'});return}
+  else if(act==='water-add'){S.water.push({id:'n'+Date.now(),d:D,ml:+(b.dataset.ml||250),t:new Date().toTimeString().slice(0,5)});save();tst('+'+(b.dataset.ml||250)+' ml air ditambahkan! 💧');render();return}
+  else if(act==='open-ex'){NOTIF_MODAL=false;EX_MODAL={id:null,d:D,t:new Date().toTimeString().slice(0,5),preset:'walk_brisk',name:'Jalan Cepat (~6 km/jam)',met:4.3,min:'30',kcal:'',e:''};EX_SHOW_FORMULA=false;render();return}
+  else if(act==='go-journal'){NOTIF_MODAL=false;go('journal');return}
+  else if(act==='go-rep'){NOTIF_MODAL=false;go('rep');return}
+  return;
+}
 else if(a=='extoggleformula'){EX_SHOW_FORMULA=!EX_SHOW_FORMULA;render();return}
 else if(a=='openex'){EX_MODAL={id:null,d:D,t:new Date().toTimeString().slice(0,5),preset:'run_jog',name:'Lari / Jogging (~8 km/jam)',met:7.5,min:'30',kcal:'',e:''};EX_SHOW_FORMULA=false;render()}
 else if(a=='exedit'){const it=(S.ex||[]).find(x=>x.id==id);if(it){EX_MODAL={id:it.id,d:it.d,t:it.t,preset:it.preset||'custom',name:it.name,met:it.met||5.0,min:String(it.min),kcal:it.kcal?String(it.kcal):'',e:''};EX_SHOW_FORMULA=false;render()}}
@@ -4040,10 +4495,10 @@ function calcLd2(id){clearTimeout(window._c);window._c=setTimeout(()=>{render();
 const ceF=e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ce!==undefined&&typeof t.setSelectionRange=='function'){const L=t.value.length;setTimeout(()=>{try{t.setSelectionRange(L,L)}catch(_){}},0)}};
 document.addEventListener('focusin',ceF);document.addEventListener('click',ceF);document.addEventListener('touchend',ceF);
 document.addEventListener('keydown',e=>{if(e.target.id=='chat-input'&&e.key=='Enter'&&!e.shiftKey){e.preventDefault();sendNutriBotMessage();return}
-if(e.key=='Escape'&&CHAT_OPEN){closeNutriBotChat();return}
+if(e.key=='Escape'&&CHAT_OPEN){closeNutriBotChat();return}if(e.key=='Escape'&&NOTIF_MODAL){NOTIF_MODAL=false;render();return}
 if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e.target.id=='tq'&&e.key=='Enter'){FS.q=e.target.value;go('foods');return}if(e.target.id=='bc-manual-input'&&e.key=='Enter'){e.preventDefault();const c=e.target.value.trim();if(c){if(BCM)BCM.manualCode=c;onBarcodeScanned(c)}else{tst(tr('typeBarcodeFirst'))}return}if(e.key=='Escape'&&BCM){stopBcCamera();BCM=null;render();return}
 if(e.key=='Escape'&&AIM){stopAimCamera();AIM=null;render();return}});
 try{window.matchMedia('(max-width:767px)').addEventListener('change',render)}catch(e){}
 let _mb=MOB();window.addEventListener('resize',()=>{const m=MOB();if(m!==_mb){_mb=m;render()}});
-window.addEventListener('hashchange',render);render();initStorageEngine();if(FIRST)seedMaster();
+window.addEventListener('hashchange',render);render();initStorageEngine();if(FIRST)seedMaster();setInterval(checkScheduledNotifications,60000);setTimeout(checkScheduledNotifications,2500);
 </script></body></html>

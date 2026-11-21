@@ -419,7 +419,7 @@ return{bmr:r0(bmr),tdee:r0(tdee),rec:r0(rec),kcal:r0(k),p:r0(pg),f:r0(fk/9),c:r0
 function init(){const L=[],W=[],X=[],T={b:'08:15',l:'12:30',s:'16:00',d:'19:30'},V=[[['telur',2,'butir','b'],['nasi',150,'g','b'],['kopi',1,'gelas','b'],['ayam',150,'g','l'],['nasi',1,'piring','l'],['brokoli',1,'mangkuk','l'],['pisang',1,'buah','s'],['teht',1,'gelas','s'],['tempe',3,'potong','d'],['tahu',2,'potong','d'],['nasi',1,'mangkuk','d'],['apel',1,'buah','d']],[['roti',3,'lembar','b'],['telur',2,'butir','b'],['susu',1,'gelas','b'],['ayamg',2,'potong','l'],['nasim',1,'piring','l'],['apel',1,'buah','s'],['ayam',150,'g','d'],['brokoli',1,'mangkuk','d'],['nasim',1,'mangkuk','d']]];
 for(let i=0;i<35;i++){const d=addD(td,-i);W.push({id:'w'+i,d,ml:i?1400+((i*53)%13)*90:1500,t:'12:00'});if(i&&i%11==5)continue;const z=i?.8+((i*37)%9)/20:1;V[i%2].forEach((a,j)=>{const fo=FD.find(f=>f.id==a[0]);if(!fo)return;const q=['g','piring','mangkuk'].includes(a[2])?+(a[1]*z).toFixed(1):a[1],c=toG(fo,q,a[2]);L.push({id:d+j,d,m:a[3],t:T[a[3]],fo:fo.id,n:fo.n,q,u:a[2],g:c.g,est:c.est,sn:snap(fo,c.g)})})}
 for(let k=0;k<10;k++)X.push({d:addD(td,-3*k),kg:+(61.5+k*.12).toFixed(1)});for(let k=5;k<60;k++)X.push({d:addD(td,-7*k),kg:+(61.5+k*.06+Math.sin(k)*.4).toFixed(1)});
-const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],ex:[],chat:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,lang:'id',exEat:0}}}
+const pf={age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep'};return{u:{name:'',email:'',in:false},pf,tg:calcT(pf,{},CFG0),cfg:JSON.parse(JSON.stringify(CFG0)),fimg:{},rcp:[],del:[],setup:false,logs:[],water:[],wt:[],ex:[],chat:[],cf:[],bk:{last:null,dirty:0,snz:'',since:td},fav:[],tpl:[],tw:{w:null,d:'',s0:null},set:{unit:'m',n1:1,n2:1,n3:0,nB:1,nL:1,nD:1,nW:1,nWk:1,tB:'07:30',tL:'12:30',tD:'18:30',tW:'2',sod:1,pv:1,bkf:7,lang:'id',exEat:0}}}
 const FIRST=(()=>{try{return!localStorage.getItem('nt2')}catch(e){return true}})();
 let S;try{S=JSON.parse(localStorage.getItem('nt2'))||init()}catch(e){S=init()}
 S.bk=S.bk||{last:null,dirty:0,snz:'',since:td};S.fav=S.fav||[];S.tpl=S.tpl||[];S.tw=S.tw||{w:null,d:'',s0:null};S.ex=S.ex||[];S.chat=S.chat||[];S.notifDismissed=S.notifDismissed||{};if(S.set.bkf===undefined)S.set.bkf=7;
@@ -856,7 +856,7 @@ let bad=0;const ok=(a,f)=>a.filter(x=>{const v=x&&typeof x=='object'&&f(x);if(!v
 d.logs=ok(d.logs,l=>typeof l.d=='string'&&typeof l.fo=='string'&&l.id!==undefined&&l.sn&&typeof l.sn.k=='number'&&MEALS.some(m=>m[0]==l.m));d.water=ok(d.water,x=>typeof x.d=='string'&&x.ml>0&&x.id!==undefined);d.wt=ok(d.wt,x=>typeof x.d=='string'&&x.kg>0);d.cf=ok(d.cf,f=>typeof f.id=='string'&&typeof f.n=='string'&&typeof f.k=='number');d.rcp=ok(Array.isArray(d.rcp)?d.rcp:[],x=>typeof x.id=='string'&&Array.isArray(x.r));
 d.tpl=ok(Array.isArray(d.tpl)?d.tpl:[],t=>typeof t.name=='string'&&Array.isArray(t.items));d.fav=Array.isArray(d.fav)?d.fav.filter(x=>typeof x=='string'):[];
 o.d=d;o.bad=bad;o.when=j.diekspor;o.c={logs:d.logs.length,water:d.water.length,wt:d.wt.length,cf:d.cf.length,rcp:d.rcp.length,img:Object.keys(d.fimg||{}).length};return o}
-function normBk(d){const c=d.cfg||{};const o={u:{...(d.u||{}),in:true},pf:{age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep',...d.pf},cfg:{...JSON.parse(JSON.stringify(CFG0)),...c,pf:{...CFG0.pf,...(c.pf||{})},floor:{...CFG0.floor,...(c.floor||{})}},fimg:d.fimg&&typeof d.fimg=='object'?d.fimg:{},mic:d.mic&&typeof d.mic=='object'?d.mic:{},ov:d.ov&&typeof d.ov=='object'?d.ov:{},del:Array.isArray(d.del)?d.del:[],rcp:d.rcp||[],logs:d.logs,water:d.water,wt:d.wt,ex:d.ex||[],cf:d.cf,setup:true,fav:Array.isArray(d.fav)?d.fav:[],tpl:Array.isArray(d.tpl)?d.tpl:[],tw:d.tw&&typeof d.tw=='object'?d.tw:{w:null,d:'',s0:null},bk:S.bk,set:{unit:'m',n1:1,n2:1,n3:0,sod:1,pv:1,bkf:7,exEat:0,...(d.set||{})}};o.tg=calcT(o.pf,(d.tg&&d.tg.man)||{},o.cfg);return o}
+function normBk(d){const c=d.cfg||{};const o={u:{...(d.u||{}),in:true},pf:{age:28,sex:'f',h:168,w:61.5,act:1.55,g:'keep',...d.pf},cfg:{...JSON.parse(JSON.stringify(CFG0)),...c,pf:{...CFG0.pf,...(c.pf||{})},floor:{...CFG0.floor,...(c.floor||{})}},fimg:d.fimg&&typeof d.fimg=='object'?d.fimg:{},mic:d.mic&&typeof d.mic=='object'?d.mic:{},ov:d.ov&&typeof d.ov=='object'?d.ov:{},del:Array.isArray(d.del)?d.del:[],rcp:d.rcp||[],logs:d.logs,water:d.water,wt:d.wt,ex:d.ex||[],cf:d.cf,setup:true,fav:Array.isArray(d.fav)?d.fav:[],tpl:Array.isArray(d.tpl)?d.tpl:[],tw:d.tw&&typeof d.tw=='object'?d.tw:{w:null,d:'',s0:null},bk:S.bk,set:{unit:'m',n1:1,n2:1,n3:0,nB:1,nL:1,nD:1,nW:1,nWk:1,tB:'07:30',tL:'12:30',tD:'18:30',tW:'2',sod:1,pv:1,bkf:7,exEat:0,...(d.set||{})}};o.tg=calcT(o.pf,(d.tg&&d.tg.man)||{},o.cfg);return o}
 function doBk(mode){const r=parseBk(XI.txt);if(r.fatal){XI.res=r;return false}const d=r.d;let m;
 if(mode=='rep'){const ph=S.u.ph;S=normBk(d);if(ph)S.u.ph=ph;m='Seluruh data berhasil dipulihkan: '+r.c.logs+' catatan makanan, '+r.c.wt+' data berat, '+r.c.cf+' item makanan kustom.'}
 else{const ids=new Set(S.logs.map(l=>String(l.id))),wid=new Set(S.water.map(x=>String(x.id))),wd=new Set(S.wt.map(x=>x.d)),cn=new Set(all().map(f=>f.n.trim().toLowerCase())),cid=new Set(S.cf.map(f=>f.id)),rid=new Set(S.rcp.map(x=>x.id)),a={l:0,w:0,t:0,f:0,r:0};S.mic=S.mic||{};
@@ -885,8 +885,146 @@ async function seedMaster(){try{const r=await fetch('food-master.json',{cache:'n
 function vBk(){const r=XI.res,c=(l,v)=>`<div class="card" style="padding:10px;background:var(--tk)"><div class="mu text-xs">${l}</div><b class="text-lg">${v}</b></div>`;
 return`<div class="card md:col-span-2"><b>Cadangan dan Pemindahan Data</b><p class="mu text-xs mt-1 mb-3">Ekspor seluruh data (catatan makanan, air, berat badan, target, profil, Food Database kustom beserta gambar, resep, dan pengaturan) ke satu berkas JSON. Impor berkas itu di perangkat atau browser lain untuk melanjutkan. Kata sandi tidak ikut diekspor.</p>${bkCtl()}<div class="grid md:grid-cols-2 gap-6"><div><div class="font-semibold text-sm mb-2">Ekspor</div><div class="flex flex-wrap gap-2"><button class="btn" data-a="xe">${MS('download',18)} Unduh Cadangan (.json)</button><button class="gh" data-a="xc">Salin Teks Cadangan</button><button class="gh" data-a="bksh">Bagikan…</button></div><p class="mu text-xs mt-2">Data saat ini: ${n0(S.logs.length)} catatan makanan, ${n0(S.water.length)} input air, ${n0(S.wt.length)} data berat, ${n0(S.cf.length)} item makanan kustom, ${n0(S.rcp.length)} resep, ${n0(Object.keys(S.fimg).length)} gambar.</p>${XO?`<textarea class="inp text-xs mt-2" rows="4" readonly id="xo">${esc(XO)}</textarea>`:''}</div>
 <div><div class="font-semibold text-sm mb-2">Impor</div><label class="gh cursor-pointer inline-block mb-2">Pilih Berkas Cadangan<input type="file" id="xif" accept=".json,.txt,application/json" style="display:none"></label><textarea class="inp text-xs" rows="3" data-i="xi-txt" placeholder="atau tempel isi berkas cadangan di sini">${esc(XI.txt)}</textarea><button class="gh mt-2" data-a="xp">Periksa Cadangan</button>${r?(r.fatal?`<div class="text-sm mt-3" style="color:var(--P)">${esc(r.fatal)}</div>`:`<div class="mt-3"><div class="mu text-xs mb-2">Diekspor: ${r.when?new Date(r.when).toLocaleString('id-ID'):'tidak diketahui'}</div><div class="grid grid-cols-3 gap-2">${c('Catatan makanan',n0(r.c.logs))}${c('Berat',n0(r.c.wt))}${c('Item kustom',n0(r.c.cf))}${c('Resep',n0(r.c.rcp))}${c('Input air',n0(r.c.water))}${c('Gambar',n0(r.c.img))}</div>${r.bad?`<div class="text-xs mt-2" style="color:var(--C)">${r.bad} entri tidak valid akan diabaikan.</div>`:''}<div class="flex flex-wrap gap-2 mt-3"><button class="btn" data-a="xm">Gabungkan dengan Data Saat Ini</button><button class="btn" style="background:var(--C);color:#1d1200" data-a="xr">Timpa Semua Data</button></div><p class="mu text-xs mt-2"><b>Gabungkan</b>: menambahkan data yang belum ada, yang sudah ada dilewati. <b>Timpa Semua</b>: mengganti seluruh isi sistem di perangkat ini dengan cadangan.</p></div>`):''}</div></div></div>`}
-function set(){const s=S.set,c=S.cfg,tg=(k,l)=>`<label class="flex justify-between items-center py-2"><span>${l}</span><input type="checkbox" data-i="s-${k}" ${s[k]?'checked':''} style="width:20px;height:20px;accent-color:var(--pc)"></label>`,cf=(k,l,v,u)=>`<label class="text-sm font-semibold">${l} (${u})<input class="inp mt-1" type="number" step="any" min="0" data-i="${k}" value="${v}"></label>`,csv='tanggal,waktu_makan,jam,makanan,jumlah,satuan,gram,kkal,protein,karbohidrat,lemak\n'+S.logs.map(l=>[l.d,l.m,l.t,l.n,l.q,l.u,r0(l.g),r0(l.sn.k),r1(l.sn.p),r1(l.sn.c),r1(l.sn.f)].join(',')).join('\n');
-return hd('Settings')+`<div class="grid md:grid-cols-2 gap-4"><div class="card"><b>${tr('langTitle')}</b><div class="flex gap-2 mt-3 flex-wrap">${LANGS.map(x=>`<button class="chip ${(s.lang||'id')==x[0]?'on':''}" data-a="lang" data-v="${x[0]}">${x[2]} ${x[1]}</button>`).join('')}</div><p class="mu text-xs mt-2">${tr('langDesc')}</p></div><div class="card"><b>${tr('themeTitle')}</b><div class="flex gap-2 mt-3 flex-wrap">${[['light','Putih'],['dark','Biru Gelap'],['auto','Ikuti Perangkat']].map(x=>`<button class="chip ${(s.theme||'auto')==x[0]?'on':''}" data-a="th" data-v="${x[0]}">${x[1]}</button>`).join('')}</div><p class="mu text-xs mt-2">Putih = tampilan terang. Biru Gelap = tampilan malam. Pilihan tersimpan di peramban ini.</p></div><div class="card"><b>Pengaturan Notifikasi</b>${tg('n1','Pengingat mencatat makan')}${tg('n2','Pengingat minum air')}${tg('n3','Ringkasan mingguan')}</div><div class="card"><b>Preferensi Satuan</b><div class="flex gap-2 mt-3"><button class="chip ${s.unit=='m'?'on':''}" data-a="un" data-v="m">Metrik</button><button class="chip ${s.unit=='i'?'on':''}" data-a="un" data-v="i">Imperial</button></div><p class="mu text-xs mt-2">Memengaruhi tampilan berat badan.</p></div><div class="card"><b>Preferensi Nutrisi & Olahraga</b>${tg('sod','Tampilkan gula dan natrium di Dashboard')}${tg('exEat','Tambahkan kalori olahraga ke kuota makan harian')}<p class="mu text-xs mt-1">Jika dinonaktifkan (default), kalori olahraga murni dihitung sebagai pembakaran/defisit dan tidak menambah sisa jatah makan harian.</p></div><div class="card"><b>Privasi</b>${tg('pv','Izinkan analitik penggunaan anonim')}<p class="mu text-xs">Data prototipe ini hanya tersimpan di peramban Anda.</p></div><div class="card"><b>Ekspor Data</b><textarea class="inp mt-2 text-xs" rows="5" readonly id="csv">${csv}</textarea><button class="gh mt-2" data-a="cp">Salin CSV</button></div>
+function set(){const s=S.set,c=S.cfg,perm=('Notification' in window)?Notification.permission:'unsupported',nB=s.nB!==undefined?s.nB:(s.n1!==undefined?s.n1:1),nL=s.nL!==undefined?s.nL:(s.n1!==undefined?s.n1:1),nD=s.nD!==undefined?s.nD:(s.n1!==undefined?s.n1:1),nW=s.nW!==undefined?s.nW:(s.n2!==undefined?s.n2:1),tg=(k,l)=>`<label class="flex justify-between items-center py-2"><span>${l}</span><input type="checkbox" data-i="s-${k}" ${s[k]?'checked':''} style="width:20px;height:20px;accent-color:var(--pc)"></label>`,cf=(k,l,v,u)=>`<label class="text-sm font-semibold">${l} (${u})<input class="inp mt-1" type="number" step="any" min="0" data-i="${k}" value="${v}"></label>`,csv='tanggal,waktu_makan,jam,makanan,jumlah,satuan,gram,kkal,protein,karbohidrat,lemak\n'+S.logs.map(l=>[l.d,l.m,l.t,l.n,l.q,l.u,r0(l.g),r0(l.sn.k),r1(l.sn.p),r1(l.sn.c),r1(l.sn.f)].join(',')).join('\n');
+return hd('Settings')+`<div class="grid md:grid-cols-2 gap-4"><div class="card"><b>${tr('langTitle')}</b><div class="flex gap-2 mt-3 flex-wrap">${LANGS.map(x=>`<button class="chip ${(s.lang||'id')==x[0]?'on':''}" data-a="lang" data-v="${x[0]}">${x[2]} ${x[1]}</button>`).join('')}</div><p class="mu text-xs mt-2">${tr('langDesc')}</p></div><div class="card"><b>${tr('themeTitle')}</b><div class="flex gap-2 mt-3 flex-wrap">${[['light','Putih'],['dark','Biru Gelap'],['auto','Ikuti Perangkat']].map(x=>`<button class="chip ${(s.theme||'auto')==x[0]?'on':''}" data-a="th" data-v="${x[0]}">${x[1]}</button>`).join('')}</div><p class="mu text-xs mt-2">Putih = tampilan terang. Biru Gelap = tampilan malam. Pilihan tersimpan di peramban ini.</p></div><div class="card md:col-span-2" id="notif-settings-card">
+  <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 flex-wrap gap-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(16,185,129,0.12);color:var(--pr)">
+        ${MS('notifications_active', 22)}
+      </div>
+      <div>
+        <b class="text-base block">Pengaturan Notifikasi &amp; Jadwal Pengingat</b>
+        <span class="mu text-xs">Atur jam pengingat harian, integrasi Layar Kunci (Web Push), dan uji coba</span>
+      </div>
+    </div>
+    <span class="chip text-xs font-bold" style="${_pushSubscription?'background:rgba(16,185,129,0.18);color:var(--pr)':perm==='granted'?'background:rgba(16,185,129,0.15);color:var(--pr)':perm==='denied'?'background:rgba(239,68,68,0.15);color:#ef4444':'background:rgba(245,158,11,0.15);color:#f59e0b'}">
+      ${_pushSubscription?'✅ Terhubung ke Layar Kunci':perm==='granted'?'✅ Izin Aktif':perm==='denied'?'🚫 Diblokir':'🔔 Belum Diizinkan'}
+    </span>
+  </div>
+
+  <!-- Integrasi Notifikasi Layar Kunci (Web Push) -->
+  <div class="p-3.5 rounded-xl mb-4" style="background:var(--tk);border:1px solid var(--ln)">
+    <div class="flex items-center justify-between mb-1.5">
+      <b class="text-xs flex items-center gap-1.5">
+        ${MS('cell_tower', 16, 'color:var(--pr)')} Notifikasi Layar Kunci HP (Web Push)
+      </b>
+      <span class="text-[11px] mu">Status: <b>${_pushSubscription ? 'Aktif' : (perm==='granted'?'Izin Siap':'Perlu Izin')}</b></span>
+    </div>
+    <p class="mu text-xs leading-relaxed mb-3">
+      Notifikasi push memungkinkan HP Anda menerima pengingat jadwal makan dan minum air di Layar Kunci (Lock Screen), bahkan saat browser atau aplikasi NutriTrack sudah ditutup/dihapus dari riwayat (recent apps).
+    </p>
+
+    ${isIosDevice() && !isStandalonePwa() ? `
+      <div class="p-3 rounded-xl mb-3 flex items-start gap-2.5" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25)">
+        <span class="text-base shrink-0 mt-0.5">📱</span>
+        <div class="text-[11.5px] leading-relaxed">
+          <b class="text-blue-600 dark:text-blue-400 block mb-0.5">Petunjuk Khusus Pengguna iPhone (iOS 16.4+)</b>
+          <span class="mu">Agar notifikasi muncul di <b>Layar Kunci &amp; Dynamic Island</b> saat aplikasi ditutup: tekan tombol <b>Bagikan (Share ⬆️)</b> di Safari bawah, lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.</span>
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="flex gap-2 flex-wrap">
+      ${perm !== 'granted' && perm !== 'unsupported' ? `
+        <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" data-a="notifreq">
+          ${MS('notifications', 15)} Aktifkan Notifikasi Layar Kunci
+        </button>
+      ` : ''}
+      ${perm === 'granted' ? `
+        <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" style="background:#0284c7;color:#fff" data-a="notifpushtest" title="Kunci layar HP dalam 4 detik untuk melihat notifikasi muncul">
+          ${MS('vibration', 16)} Uji Notifikasi Layar Kunci (Kunci HP)
+        </button>
+        <button class="gh text-xs py-1.5 px-3 flex items-center gap-1" data-a="notiftest">
+          ${MS('send', 14)} Tes Notifikasi Cepat
+        </button>
+      ` : ''}
+    </div>
+  </div>
+
+  <!-- Kustomisasi Jam & Jadwal Pengingat -->
+  <div>
+    <b class="text-xs uppercase tracking-wider mu block mb-2.5">Kustomisasi Jam &amp; Jadwal Pengingat</b>
+    <div class="grid sm:grid-cols-2 gap-3">
+      
+      <!-- Sarapan -->
+      <div class="p-3 rounded-xl flex items-center justify-between gap-3" style="background:var(--tk);border:1px solid var(--ln)">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl">🌅</span>
+          <div>
+            <b class="text-xs block">Pengingat Sarapan</b>
+            <span class="mu text-[11px]">Awali hari dengan energi stabil</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <input type="time" class="inp py-1 px-2 text-xs font-bold" data-i="s-tB" value="${s.tB||'07:30'}" style="width:105px" title="Jam Sarapan">
+          <input type="checkbox" data-i="s-nB" ${nB?'checked':''} style="width:18px;height:18px;accent-color:var(--pc)" title="Aktifkan/Matikan">
+        </div>
+      </div>
+
+      <!-- Makan Siang -->
+      <div class="p-3 rounded-xl flex items-center justify-between gap-3" style="background:var(--tk);border:1px solid var(--ln)">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl">☀️</span>
+          <div>
+            <b class="text-xs block">Pengingat Makan Siang</b>
+            <span class="mu text-[11px]">Kontrol kalori &amp; makronutrien siang</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <input type="time" class="inp py-1 px-2 text-xs font-bold" data-i="s-tL" value="${s.tL||'12:30'}" style="width:105px" title="Jam Makan Siang">
+          <input type="checkbox" data-i="s-nL" ${nL?'checked':''} style="width:18px;height:18px;accent-color:var(--pc)" title="Aktifkan/Matikan">
+        </div>
+      </div>
+
+      <!-- Makan Malam -->
+      <div class="p-3 rounded-xl flex items-center justify-between gap-3" style="background:var(--tk);border:1px solid var(--ln)">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl">🌙</span>
+          <div>
+            <b class="text-xs block">Pengingat Makan Malam</b>
+            <span class="mu text-[11px]">Catat sebelum tidur malam</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <input type="time" class="inp py-1 px-2 text-xs font-bold" data-i="s-tD" value="${s.tD||'18:30'}" style="width:105px" title="Jam Makan Malam">
+          <input type="checkbox" data-i="s-nD" ${nD?'checked':''} style="width:18px;height:18px;accent-color:var(--pc)" title="Aktifkan/Matikan">
+        </div>
+      </div>
+
+      <!-- Hidrasi Air -->
+      <div class="p-3 rounded-xl flex items-center justify-between gap-3" style="background:var(--tk);border:1px solid var(--ln)">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl">💧</span>
+          <div>
+            <b class="text-xs block">Pengingat Minum Air</b>
+            <span class="mu text-[11px]">Interval waktu hidrasi berkala</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <select class="inp py-1 px-2 text-xs font-bold" data-i="s-tW" style="width:105px" title="Interval Pengingat Air">
+            <option value="1" ${(s.tW==1)?'selected':''}>Tiap 1 Jam</option>
+            <option value="2" ${(s.tW==2||!s.tW)?'selected':''}>Tiap 2 Jam</option>
+            <option value="3" ${(s.tW==3)?'selected':''}>Tiap 3 Jam</option>
+          </select>
+          <input type="checkbox" data-i="s-nW" ${nW?'checked':''} style="width:18px;height:18px;accent-color:var(--pc)" title="Aktifkan/Matikan">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ringkasan Mingguan -->
+    <div class="mt-3 p-3 rounded-xl flex items-center justify-between" style="background:var(--tk);border:1px solid var(--ln)">
+      <div class="flex items-center gap-2.5">
+        <span class="text-xl">📊</span>
+        <div>
+          <b class="text-xs block">Ringkasan Mingguan</b>
+          <span class="mu text-[11px]">Kirim evaluasi tren kalori dan kepatuhan nutrisi setiap akhir pekan</span>
+        </div>
+      </div>
+      <input type="checkbox" data-i="s-nWk" ${s.nWk?'checked':''} style="width:18px;height:18px;accent-color:var(--pc)">
+    </div>
+  </div>
+</div><div class="card"><b>Preferensi Satuan</b><div class="flex gap-2 mt-3"><button class="chip ${s.unit=='m'?'on':''}" data-a="un" data-v="m">Metrik</button><button class="chip ${s.unit=='i'?'on':''}" data-a="un" data-v="i">Imperial</button></div><p class="mu text-xs mt-2">Memengaruhi tampilan berat badan.</p></div><div class="card"><b>Preferensi Nutrisi & Olahraga</b>${tg('sod','Tampilkan gula dan natrium di Dashboard')}${tg('exEat','Tambahkan kalori olahraga ke kuota makan harian')}<p class="mu text-xs mt-1">Jika dinonaktifkan (default), kalori olahraga murni dihitung sebagai pembakaran/defisit dan tidak menambah sisa jatah makan harian.</p></div><div class="card"><b>Privasi</b>${tg('pv','Izinkan analitik penggunaan anonim')}<p class="mu text-xs">Data prototipe ini hanya tersimpan di peramban Anda.</p></div><div class="card"><b>Ekspor Data</b><textarea class="inp mt-2 text-xs" rows="5" readonly id="csv">${csv}</textarea><button class="gh mt-2" data-a="cp">Salin CSV</button></div>
 ${vBk()}<div class="card md:col-span-2"><b>Konfigurasi Sistem: Perhitungan Target</b><p class="mu text-xs mb-3">Nilai default perhitungan Goals & Targets. Pada versi produksi, pengaturan ini hanya dapat diubah oleh admin.</p><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${cf('cfg-deficit','Defisit kalori',c.deficit,'kkal/hari')}${cf('cfg-surplus','Surplus kalori',c.surplus,'kkal/hari')}${cf('cfgp-lose','Faktor protein: menurunkan',c.pf.lose,'g/kg')}${cf('cfgp-keep','Faktor protein: menjaga',c.pf.keep,'g/kg')}${cf('cfgp-gain','Faktor protein: menaikkan',c.pf.gain,'g/kg')}${cf('cfgp-custom','Faktor protein: kustom',c.pf.custom,'g/kg')}${cf('cfg-fat','Lemak',c.fat,'% kalori')}${cf('cfg-fiber','Serat',c.fiber,'g per 1.000 kkal')}${cf('cfg-water','Air',c.water,'ml per kg')}${cf('cfg-sugar','Batas gula',c.sugar,'% kalori')}${cf('cfg-sodium','Batas natrium',c.sodium,'mg')}</div><button class="gh mt-3" data-a="cfr">Kembalikan ke Default</button></div></div>`}
 function login(){const first=!S.u.ph;return`<div class="min-h-screen flex flex-col items-center justify-center p-4"><div class="card w-full max-w-sm"><div class="flex items-center gap-3 mb-2"><img src="/icon-192.png" alt="NutriTrack" style="width:42px;height:42px;border-radius:12px;object-fit:cover;box-shadow:0 4px 12px rgba(16,185,129,.35)"><div class="text-3xl font-extrabold pr">NutriTrack</div></div><div class="mu mb-5">Catat nutrisi harian dengan mudah.</div><label class="text-sm font-semibold">Email<input class="inp mt-1 mb-3" id="le" type="email" autocomplete="username" value="${esc(S.u.email||'')}"></label><label class="text-sm font-semibold">Kata Sandi<input class="inp mt-1" id="lp" type="password" autocomplete="${first?'new-password':'current-password'}"></label><div id="lerr" class="text-sm mt-2" style="color:var(--P)"></div><button class="btn w-full justify-center mt-4" data-a="li">${first?'Buat Akun & Masuk':'Masuk'}</button><p class="mu text-xs mt-3">${first?'Masuk pertama kali akan membuat akun di perangkat ini (kata sandi minimal 8 karakter). ':''}Data tersimpan di browser perangkat ini dan tidak dikirim ke server.</p></div>${FT}</div>`}
 const sb=()=>`<div class="card mb-4 flex items-center gap-3 cursor-pointer" style="background:var(--tk)" data-a="go" data-r="goals">${MS('tune',22,'color:var(--pr)')}<div><b class="text-sm">Lengkapi profil dan Goal Anda</b><div class="mu text-xs">Isi data di Goals & Targets agar target kalori dan nutrisi dihitung sesuai Anda.</div></div></div>`;
@@ -1124,6 +1262,7 @@ function checkScheduledNotifications() {
   const dStr = td;
   const hh = now.getHours();
   const mm = now.getMinutes();
+  const curTimeMins = hh * 60 + mm;
 
   let sentKeys = {};
   try {
@@ -1138,9 +1277,26 @@ function checkScheduledNotifications() {
   const L = lg(dStr);
   const W = wat(dStr);
   const g = S.tg;
+  const s = S.set || {};
 
-  // 1. Breakfast Notification (~07:30 - 08:30) if s.n1 is ON
-  if (S.set && S.set.n1 && hh === 7 && mm >= 30) {
+  const nB = s.nB !== undefined ? s.nB : (s.n1 !== undefined ? s.n1 : 1);
+  const nL = s.nL !== undefined ? s.nL : (s.n1 !== undefined ? s.n1 : 1);
+  const nD = s.nD !== undefined ? s.nD : (s.n1 !== undefined ? s.n1 : 1);
+  const nW = s.nW !== undefined ? s.nW : (s.n2 !== undefined ? s.n2 : 1);
+
+  const parseMins = (tStr, defH, defM) => {
+    if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return defH * 60 + defM;
+    const [h, m] = tStr.split(':').map(Number);
+    return (Number.isFinite(h) && Number.isFinite(m)) ? h * 60 + m : defH * 60 + defM;
+  };
+
+  const bMins = parseMins(s.tB, 7, 30);
+  const lMins = parseMins(s.tL, 12, 30);
+  const dMins = parseMins(s.tD, 18, 30);
+  const wInterval = Math.max(1, parseInt(s.tW, 10) || 2);
+
+  // 1. Breakfast Notification if nB is ON
+  if (nB && curTimeMins >= bMins && curTimeMins < bMins + 60) {
     const k = `notif_b_${dStr}`;
     if (!sentKeys[k] && !L.some(l => l.m === 'b')) {
       sendWebNotification('Waktunya Sarapan Pagi 🌅', 'Awali harimu dengan sarapan bergizi untuk menjaga fokus dan energi stabil.', k);
@@ -1148,8 +1304,8 @@ function checkScheduledNotifications() {
     }
   }
 
-  // 2. Lunch Notification (~12:30 - 13:30) if s.n1 is ON
-  if (S.set && S.set.n1 && hh === 12 && mm >= 30) {
+  // 2. Lunch Notification if nL is ON
+  if (nL && curTimeMins >= lMins && curTimeMins < lMins + 60) {
     const k = `notif_l_${dStr}`;
     if (!sentKeys[k] && !L.some(l => l.m === 'l')) {
       sendWebNotification('Waktu Santap Siang ☀️', 'Jangan lewatkan makan siang! Penuhi kebutuhan makronutrienmu hari ini.', k);
@@ -1157,8 +1313,8 @@ function checkScheduledNotifications() {
     }
   }
 
-  // 3. Dinner Notification (~18:30 - 19:30) if s.n1 is ON
-  if (S.set && S.set.n1 && hh === 18 && mm >= 30) {
+  // 3. Dinner Notification if nD is ON
+  if (nD && curTimeMins >= dMins && curTimeMins < dMins + 60) {
     const k = `notif_d_${dStr}`;
     if (!sentKeys[k] && !L.some(l => l.m === 'd')) {
       sendWebNotification('Waktunya Makan Malam 🌙', 'Catat santap malammu sebelum beristirahat agar evaluasi harian lengkap.', k);
@@ -1166,8 +1322,8 @@ function checkScheduledNotifications() {
     }
   }
 
-  // 4. Hydration Notification (~every 2 hours between 09:00 and 20:00) if s.n2 is ON
-  if (S.set && S.set.n2 && hh >= 9 && hh <= 20 && hh % 2 === 1 && mm <= 10) {
+  // 4. Hydration Notification if nW is ON
+  if (nW && hh >= 8 && hh <= 21 && (hh % wInterval === 0) && mm <= 10) {
     const k = `notif_w_${dStr}_${hh}`;
     if (!sentKeys[k]) {
       const pct = g.water ? Math.round(W / g.water * 100) : 0;
@@ -1201,10 +1357,24 @@ function getSmartAlerts(dateStr) {
   const hasL = L.some(l => l.m === 'l');
   const hasD = L.some(l => l.m === 'd');
 
+  const s = S.set || {};
+  const parseMins = (tStr, defH, defM) => {
+    if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return defH * 60 + defM;
+    const [h, m] = tStr.split(':').map(Number);
+    return (Number.isFinite(h) && Number.isFinite(m)) ? h * 60 + m : defH * 60 + defM;
+  };
+  const bMins = parseMins(s.tB, 7, 30);
+  const lMins = parseMins(s.tL, 12, 30);
+  const dMins = parseMins(s.tD, 18, 30);
+  const nB = s.nB !== undefined ? s.nB : (s.n1 !== undefined ? s.n1 : 1);
+  const nL = s.nL !== undefined ? s.nL : (s.n1 !== undefined ? s.n1 : 1);
+  const nD = s.nD !== undefined ? s.nD : (s.n1 !== undefined ? s.n1 : 1);
+  const nW = s.nW !== undefined ? s.nW : (s.n2 !== undefined ? s.n2 : 1);
+
   const alerts = [];
 
-  // 1. Breakfast missing (jam 08:00 - 11:30)
-  if (isToday && curTimeMins >= 480 && curTimeMins <= 690 && !hasB) {
+  // 1. Breakfast missing
+  if (isToday && nB && curTimeMins >= bMins && curTimeMins <= (bMins + 210) && !hasB) {
     const bKcal = Math.round(g.kcal * 0.2 / 50) * 50 || 450;
     alerts.push({
       id: 'b_missing',
@@ -1223,8 +1393,8 @@ function getSmartAlerts(dateStr) {
     });
   }
 
-  // 2. Lunch missing (jam 11:45 - 15:45)
-  if (isToday && curTimeMins >= 705 && curTimeMins <= 945 && !hasL) {
+  // 2. Lunch missing
+  if (isToday && nL && curTimeMins >= lMins && curTimeMins <= (lMins + 240) && !hasL) {
     const lKcal = Math.round(g.kcal * 0.3 / 50) * 50 || 650;
     alerts.push({
       id: 'l_missing',
@@ -1243,8 +1413,8 @@ function getSmartAlerts(dateStr) {
     });
   }
 
-  // 3. Dinner missing (jam 18:00 - 21:45)
-  if (isToday && curTimeMins >= 1080 && curTimeMins <= 1305 && !hasD) {
+  // 3. Dinner missing
+  if (isToday && nD && curTimeMins >= dMins && curTimeMins <= (dMins + 240) && !hasD) {
     const dKcal = Math.round(g.kcal * 0.28 / 50) * 50 || 600;
     alerts.push({
       id: 'd_missing',
@@ -1263,8 +1433,8 @@ function getSmartAlerts(dateStr) {
     });
   }
 
-  // 4. Hydration low (siang > 11:30 air < 45% atau sore > 16:30 air < 70%)
-  if (isToday && g.water > 0) {
+  // 4. Hydration low
+  if (isToday && nW && g.water > 0) {
     const pct = Math.round(W / g.water * 100);
     if ((curTimeMins >= 690 && pct < 45) || (curTimeMins >= 990 && pct < 70)) {
       alerts.push({
@@ -1466,8 +1636,12 @@ function renderSmartAlertsBanner() {
 function vNotifModal() {
   if (!NOTIF_MODAL) return '';
   const alerts = getSmartAlerts(D);
-  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const hasDismissed = Object.keys(S.notifDismissed || {}).length > 0;
+  const s = S.set || {};
+  const nB = s.nB !== undefined ? s.nB : (s.n1 !== undefined ? s.n1 : 1);
+  const nL = s.nL !== undefined ? s.nL : (s.n1 !== undefined ? s.n1 : 1);
+  const nD = s.nD !== undefined ? s.nD : (s.n1 !== undefined ? s.n1 : 1);
+  const nW = s.nW !== undefined ? s.nW : (s.n2 !== undefined ? s.n2 : 1);
 
   return `<div class="ov" role="dialog" aria-modal="true" style="z-index:110">
     <div class="card w-full max-w-lg p-5" style="border-radius:20px;max-height:calc(100vh - 48px);overflow-y:auto">
@@ -1484,81 +1658,38 @@ function vNotifModal() {
         <button class="ib" data-a="notifclose" aria-label="Tutup">${MS('close', 20)}</button>
       </div>
 
-      <!-- Web Push / Web Notifications API Status -->
-      <div class="p-3.5 rounded-xl mb-4" style="background:var(--tk);border:1px solid var(--ln)">
-        <div class="flex items-center justify-between mb-1.5">
-          <b class="text-xs flex items-center gap-1.5">
-            ${MS('cell_tower', 16, 'color:var(--pr)')} Notifikasi Layar Kunci (Web Push)
-          </b>
-          <span class="chip text-[11px] font-bold" style="${_pushSubscription?'background:rgba(16,185,129,0.18);color:var(--pr)':perm==='granted'?'background:rgba(16,185,129,0.15);color:var(--pr)':perm==='denied'?'background:rgba(239,68,68,0.15);color:#ef4444':'background:rgba(245,158,11,0.15);color:#f59e0b'}">
-            ${_pushSubscription?'✅ Terhubung ke Layar Kunci':perm==='granted'?'✅ Izin Aktif':perm==='denied'?'🚫 Diblokir':'🔔 Belum Diizinkan'}
-          </span>
-        </div>
-        <p class="mu text-xs leading-relaxed mb-3">
-          ${perm==='granted' 
-            ? 'Notifikasi aktif untuk perangkat ini. Pengingat sarapan, makan siang, makan malam, dan minum air akan tetap muncul di Layar Kunci HP meskipun aplikasi atau browser sedang ditutup.' 
-            : perm==='denied' 
-            ? 'Izin notifikasi diblokir pada setelan peramban Anda. Buka ikon gembok di bilah URL browser atau Pengaturan HP untuk mengizinkan notifikasi.' 
-            : 'Aktifkan izin notifikasi agar pengingat jadwal makan dan hidrasi air tetap muncul di Layar Kunci HP Anda meskipun aplikasi sedang ditutup.'}
-        </p>
-
-        ${isIosDevice() && !isStandalonePwa() ? `
-          <div class="p-3 rounded-xl mb-3 flex items-start gap-2.5" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25)">
-            <span class="text-base shrink-0 mt-0.5">📱</span>
-            <div class="text-[11.5px] leading-relaxed">
-              <b class="text-blue-600 dark:text-blue-400 block mb-0.5">Petunjuk Layar Kunci iPhone (iOS 16.4+)</b>
-              <span class="mu">Agar notifikasi muncul di <b>Layar Kunci &amp; Dynamic Island</b> saat aplikasi ditutup: tekan tombol <b>Bagikan (Share ⬆️)</b> di Safari bawah, lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.</span>
-            </div>
-          </div>
-        ` : ''}
-
-        <div class="flex gap-2 flex-wrap">
-          ${perm !== 'granted' && perm !== 'unsupported' ? `
-            <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" data-a="notifreq">
-              ${MS('notifications', 15)} Aktifkan Notifikasi Layar Kunci
-            </button>
-          ` : ''}
-          ${perm === 'granted' ? `
-            <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" style="background:#0284c7;color:#fff" data-a="notifpushtest" title="Kunci layar HP dalam 4 detik untuk melihat notifikasi muncul">
-              ${MS('vibration', 16)} Uji Notifikasi Layar Kunci (Kunci HP)
-            </button>
-            <button class="gh text-xs py-1.5 px-3 flex items-center gap-1" data-a="notiftest">
-              ${MS('send', 14)} Tes Cepat
-            </button>
-          ` : ''}
-        </div>
-      </div>
-
-      <!-- Jadwal Pengingat Harian -->
-      <div class="mb-4">
-        <div class="flex items-center justify-between mb-2">
+      <!-- Jadwal Pengingat Terjadwal -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-2.5">
           <b class="text-xs uppercase tracking-wider mu">Jadwal Pengingat Terjadwal</b>
-          <a class="text-xs pr font-semibold cursor-pointer" data-a="go" data-r="settings">Atur di Settings →</a>
+          <button class="text-xs pr font-semibold cursor-pointer flex items-center gap-1 bg-transparent border-none p-0 hover:underline" data-a="notifgosettings">
+            <span>Atur di Settings</span><span>→</span>
+          </button>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+          <div class="p-2.5 rounded-xl text-center" style="background:var(--tk);border:1px solid var(--ln)">
             <div class="text-lg">🌅</div>
-            <div class="font-bold mt-1">07:30</div>
+            <div class="font-bold mt-1 text-sm">${s.tB || '07:30'}</div>
             <div class="mu text-[11px]">Sarapan</div>
-            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+            <div class="text-[10px] mt-0.5 ${nB?'text-emerald-500 font-semibold':'mu'}">${nB?'Aktif':'Mati'}</div>
           </div>
-          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+          <div class="p-2.5 rounded-xl text-center" style="background:var(--tk);border:1px solid var(--ln)">
             <div class="text-lg">☀️</div>
-            <div class="font-bold mt-1">12:30</div>
+            <div class="font-bold mt-1 text-sm">${s.tL || '12:30'}</div>
             <div class="mu text-[11px]">Makan Siang</div>
-            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+            <div class="text-[10px] mt-0.5 ${nL?'text-emerald-500 font-semibold':'mu'}">${nL?'Aktif':'Mati'}</div>
           </div>
-          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+          <div class="p-2.5 rounded-xl text-center" style="background:var(--tk);border:1px solid var(--ln)">
             <div class="text-lg">🌙</div>
-            <div class="font-bold mt-1">18:30</div>
+            <div class="font-bold mt-1 text-sm">${s.tD || '18:30'}</div>
             <div class="mu text-[11px]">Makan Malam</div>
-            <div class="text-[10px] mt-0.5 ${S.set.n1?'text-emerald-500 font-semibold':'mu'}">${S.set.n1?'Aktif':'Mati'}</div>
+            <div class="text-[10px] mt-0.5 ${nD?'text-emerald-500 font-semibold':'mu'}">${nD?'Aktif':'Mati'}</div>
           </div>
-          <div class="p-2.5 rounded-lg text-center" style="background:var(--tk)">
+          <div class="p-2.5 rounded-xl text-center" style="background:var(--tk);border:1px solid var(--ln)">
             <div class="text-lg">💧</div>
-            <div class="font-bold mt-1">Tiap 2 Jam</div>
+            <div class="font-bold mt-1 text-sm">Tiap ${s.tW || 2} Jam</div>
             <div class="mu text-[11px]">Hidrasi Air</div>
-            <div class="text-[10px] mt-0.5 ${S.set.n2?'text-emerald-500 font-semibold':'mu'}">${S.set.n2?'Aktif':'Mati'}</div>
+            <div class="text-[10px] mt-0.5 ${nW?'text-emerald-500 font-semibold':'mu'}">${nW?'Aktif':'Mati'}</div>
           </div>
         </div>
       </div>
@@ -4415,6 +4546,15 @@ else if(a=='chatlogfood'){
 else if(a=='voiceinput'){toggleVoiceInput();return}
 else if(a=='opennotif'){NOTIF_MODAL=true;render();return}
 else if(a=='notifclose'){NOTIF_MODAL=false;render();return}
+else if(a=='notifgosettings'){
+  NOTIF_MODAL=false;
+  go('set');
+  setTimeout(()=>{
+    const el=document.getElementById('notif-settings-card');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },80);
+  return;
+}
 else if(a=='notifdismiss'){S.notifDismissed=S.notifDismissed||{};S.notifDismissed[id+'_'+D]=true;save();render();tst('Peringatan disembunyikan');return}
 else if(a=='notifresetdismiss'){S.notifDismissed={};save();render();tst('Daftar peringatan dipulihkan');return}
 else if(a=='notifreq'){requestWebNotificationPermission();return}
@@ -4674,6 +4814,15 @@ else{if(pw.length<8){er.textContent='Kata sandi minimal 8 karakter untuk membuat
 S.u.in=true;save();go('dash');render()}
 async function chPw(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){tst('Kata sandi baru minimal 8 karakter');return}if(a!==b){tst('Konfirmasi kata sandi tidak sama');return}S.u.ph=await hx(a);save();tst('Kata sandi berhasil diubah')}
 document.addEventListener('change',e=>{const t=e.target,i=t.dataset&&t.dataset.i;
+if(i&&i.startsWith('s-')){
+  const n=i.slice(2);
+  S.set[n]=(t.type=='checkbox'?(t.checked?1:0):t.value);
+  if(n==='nB'||n==='nL'||n==='nD'){S.set.n1=(S.set.nB||S.set.nL||S.set.nD)?1:0;}
+  if(n==='nW'){S.set.n2=S.set.nW?1:0;}
+  save();
+  render();
+  return;
+}
 if(t.id=='chat-provider-select'){CHAT_PROVIDER=t.value;return}
 if(t.id=='ex-preset'&&EX_MODAL){const found=EX_PRESETS.find(p=>p.id===t.value);if(found){EX_MODAL.preset=found.id;EX_MODAL.met=found.met;if(!EX_MODAL.name||EX_PRESETS.some(p=>p.name===EX_MODAL.name)){EX_MODAL.name=found.name}render()}return}
 if(i&&/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B&&B.r&&B.r[j];if(x){if(i[1]=='f'){x[0]=t.value;const fo=fOf(t.value);x[2]=(fo&&un(fo)[0])||'g'}else if(i[1]=='q'){const qv=num(t.value);x[1]=Number.isFinite(qv)?qv:t.value}else{x[2]=t.value}render()}return}
@@ -4770,7 +4919,7 @@ if(/^b[fqu]\d+$/.test(i)){const j=+i.slice(2),x=B&&B.r&&B.r[j];if(x){if(i[1]=='f
 if(k=='pf'){S.pf[n]=n=='sex'||n=='g'||n=='diet'?t.value:num(t.value);if(n=='w')syncW(S.pf.w);if(S.pf.age>0&&S.pf.h>0&&S.pf.w>0){S.setup=true;recalc();render();f=document.querySelector(`[data-i="${i}"]`);if(f&&f.tagName=='INPUT'){fc(f)}}return}
 if(k=='u'){S.u[n]=t.value;save();return}
 if(k=='tg'){const v=num(t.value);if(t.value!==''&&v>=0){S.tg.man[n]=v;recalc();render();f=document.querySelector(`[data-i="${i}"]`);if(f){fc(f)}}return}
-if(k=='s'){S.set[n]=t.checked?1:0;save()}});
+if(k=='s'){S.set[n]=(t.type=='checkbox'?(t.checked?1:0):t.value);if(n==='nB'||n==='nL'||n==='nD'){S.set.n1=(S.set.nB||S.set.nL||S.set.nD)?1:0;}if(n==='nW'){S.set.n2=S.set.nW?1:0;}save();if(t.type=='checkbox'||t.tagName=='SELECT'){render();}}});
 const fc=f=>{if(f){f.focus();try{f.setSelectionRange(99,99)}catch(e){}}};
 function calcLd2(id){clearTimeout(window._c);window._c=setTimeout(()=>{render();const f=$('#'+(id||'mq'));if(f){fc(f)}},250)}
 const ceF=e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ce!==undefined&&typeof t.setSelectionRange=='function'){const L=t.value.length;setTimeout(()=>{try{t.setSelectionRange(L,L)}catch(_){}},0)}};

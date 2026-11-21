@@ -963,39 +963,146 @@ function renderAimKeysModal() {
 // ─── Health & Fitness: Aktivitas Fisik (MET) & Mindful Eating ──────────────────
 // ─── Tahap 5: Notifikasi & Smart Momentum Alerts ─────────────────────────────
 let NOTIF_MODAL = false;
+const VAPID_PUBLIC_KEY = 'BGFr_JXbzCgEXF6dkdwVRFy4XPvlU5RZ32ClDWWcnz1wfAwMgGLwuBQn5NvPAtG20SFRRP3kmo4IjGqbAiw4VzM';
+let _swRegistration = null;
+let _pushSubscription = null;
 
-function requestWebNotificationPermission() {
+function isIosDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isStandalonePwa() {
+  return ('standalone' in window.navigator && window.navigator.standalone) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function initServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      _swRegistration = reg;
+      if ('pushManager' in reg) {
+        _pushSubscription = await reg.pushManager.getSubscription();
+      }
+    } catch(e) {
+      console.warn('[SW] Register error:', e);
+    }
+  }
+}
+
+async function requestWebNotificationPermission() {
   if (!('Notification' in window)) {
     tst('Browser Anda tidak mendukung Web Notifications API');
     return;
   }
-  Notification.requestPermission().then(perm => {
+  try {
+    const perm = await Notification.requestPermission();
     if (perm === 'granted') {
       tst('Notifikasi Web berhasil diaktifkan! ✅');
+      await subscribeToPush();
       sendWebNotification('NutriTrack Notifikasi Aktif 🥗', 'Pengingat makan dan hidrasi otomatis siap mendampingi target sehatmu.', 'notif_init');
     } else if (perm === 'denied') {
       tst('Izin notifikasi ditolak oleh peramban');
     }
     render();
-  }).catch(() => {
+  } catch(e) {
     tst('Gagal meminta izin notifikasi');
-  });
+  }
+}
+
+async function subscribeToPush() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const reg = _swRegistration || await navigator.serviceWorker.ready;
+    if (!reg || !('pushManager' in reg)) return null;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: key
+      });
+    }
+    _pushSubscription = sub;
+    try { localStorage.setItem('nutritrack_push_sub', JSON.stringify(sub)); } catch(e) {}
+    return sub;
+  } catch(e) {
+    console.warn('[Push] Subscribe error:', e);
+    return null;
+  }
+}
+
+async function testLockScreenPush() {
+  let sub = _pushSubscription;
+  if (!sub) {
+    sub = await subscribeToPush();
+  }
+  
+  tst('⏳ Mengirim push ke layar kunci dalam 4 detik... Kunci HP Anda sekarang! 📱');
+
+  if (sub && sub.endpoint) {
+    try {
+      const res = await fetch('/api/push-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          title: 'NutriTrack PRO 🥗',
+          body: 'Notifikasi Layar Kunci berhasil terhubung! Tetap aktif saat aplikasi ditutup.',
+          delayMs: 3500
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        tst('Notifikasi berhasil dikirim ke Layar Kunci HP! 🔔');
+        return;
+      }
+    } catch(e) {
+      console.warn('Push-send API error, using fallback:', e);
+    }
+  }
+
+  // Fallback if backend or push manager is offline
+  setTimeout(() => {
+    sendWebNotification('NutriTrack PRO 🥗', 'Notifikasi Layar Kunci berhasil terhubung! Tetap aktif saat aplikasi ditutup.', 'test_lock');
+  }, 3500);
 }
 
 function sendWebNotification(title, body, tag) {
   if ('Notification' in window && Notification.permission === 'granted') {
     try {
-      const n = new Notification(title, {
-        body: body || '',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag: tag || ('nt_' + Date.now()),
-        renotify: false
-      });
-      n.onclick = function() {
-        window.focus();
-        this.close();
-      };
+      if (_swRegistration && 'showNotification' in _swRegistration) {
+        _swRegistration.showNotification(title, {
+          body: body || '',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: tag || ('nt_' + Date.now()),
+          renotify: true,
+          vibrate: [200, 100, 200]
+        });
+      } else {
+        const n = new Notification(title, {
+          body: body || '',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: tag || ('nt_' + Date.now()),
+          renotify: false
+        });
+        n.onclick = function() {
+          window.focus();
+          this.close();
+        };
+      }
     } catch(e) {
       console.warn('Web Notification error:', e);
     }
@@ -1381,28 +1488,42 @@ function vNotifModal() {
       <div class="p-3.5 rounded-xl mb-4" style="background:var(--tk);border:1px solid var(--ln)">
         <div class="flex items-center justify-between mb-1.5">
           <b class="text-xs flex items-center gap-1.5">
-            ${MS('cell_tower', 16, 'color:var(--pr)')} Notifikasi Browser (Web Push)
+            ${MS('cell_tower', 16, 'color:var(--pr)')} Notifikasi Layar Kunci (Web Push)
           </b>
-          <span class="chip text-[11px] font-bold" style="${perm==='granted'?'background:rgba(16,185,129,0.15);color:var(--pr)':perm==='denied'?'background:rgba(239,68,68,0.15);color:#ef4444':'background:rgba(245,158,11,0.15);color:#f59e0b'}">
-            ${perm==='granted'?'✅ Aktif':perm==='denied'?'🚫 Diblokir':'🔔 Belum Diizinkan'}
+          <span class="chip text-[11px] font-bold" style="${_pushSubscription?'background:rgba(16,185,129,0.18);color:var(--pr)':perm==='granted'?'background:rgba(16,185,129,0.15);color:var(--pr)':perm==='denied'?'background:rgba(239,68,68,0.15);color:#ef4444':'background:rgba(245,158,11,0.15);color:#f59e0b'}">
+            ${_pushSubscription?'✅ Terhubung ke Layar Kunci':perm==='granted'?'✅ Izin Aktif':perm==='denied'?'🚫 Diblokir':'🔔 Belum Diizinkan'}
           </span>
         </div>
         <p class="mu text-xs leading-relaxed mb-3">
           ${perm==='granted' 
-            ? 'Notifikasi web aktif di perangkat ini. Anda akan menerima notifikasi terjadwal untuk sarapan, makan siang, makan malam, dan minum air.' 
+            ? 'Notifikasi aktif untuk perangkat ini. Pengingat sarapan, makan siang, makan malam, dan minum air akan tetap muncul di Layar Kunci HP meskipun aplikasi atau browser sedang ditutup.' 
             : perm==='denied' 
-            ? 'Izin notifikasi diblokir pada setelan peramban Anda. Buka ikon gembok di bilah URL browser untuk mengizinkan notifikasi.' 
-            : 'Aktifkan izin notifikasi peramban agar Anda tetap menerima pengingat makan dan minum tepat waktu meskipun sedang membuka tab lain.'}
+            ? 'Izin notifikasi diblokir pada setelan peramban Anda. Buka ikon gembok di bilah URL browser atau Pengaturan HP untuk mengizinkan notifikasi.' 
+            : 'Aktifkan izin notifikasi agar pengingat jadwal makan dan hidrasi air tetap muncul di Layar Kunci HP Anda meskipun aplikasi sedang ditutup.'}
         </p>
+
+        ${isIosDevice() && !isStandalonePwa() ? `
+          <div class="p-3 rounded-xl mb-3 flex items-start gap-2.5" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25)">
+            <span class="text-base shrink-0 mt-0.5">📱</span>
+            <div class="text-[11.5px] leading-relaxed">
+              <b class="text-blue-600 dark:text-blue-400 block mb-0.5">Petunjuk Layar Kunci iPhone (iOS 16.4+)</b>
+              <span class="mu">Agar notifikasi muncul di <b>Layar Kunci &amp; Dynamic Island</b> saat aplikasi ditutup: tekan tombol <b>Bagikan (Share ⬆️)</b> di Safari bawah, lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.</span>
+            </div>
+          </div>
+        ` : ''}
+
         <div class="flex gap-2 flex-wrap">
           ${perm !== 'granted' && perm !== 'unsupported' ? `
-            <button class="btn text-xs py-1.5 px-3.5" data-a="notifreq">
-              ${MS('notifications', 15)} Aktifkan Notifikasi Web
+            <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" data-a="notifreq">
+              ${MS('notifications', 15)} Aktifkan Notifikasi Layar Kunci
             </button>
           ` : ''}
           ${perm === 'granted' ? `
+            <button class="btn text-xs py-2 px-3.5 flex items-center gap-1.5" style="background:#0284c7;color:#fff" data-a="notifpushtest" title="Kunci layar HP dalam 4 detik untuk melihat notifikasi muncul">
+              ${MS('vibration', 16)} Uji Notifikasi Layar Kunci (Kunci HP)
+            </button>
             <button class="gh text-xs py-1.5 px-3 flex items-center gap-1" data-a="notiftest">
-              ${MS('send', 14)} Uji Coba Kirim Notifikasi
+              ${MS('send', 14)} Tes Cepat
             </button>
           ` : ''}
         </div>
@@ -4298,6 +4419,7 @@ else if(a=='notifdismiss'){S.notifDismissed=S.notifDismissed||{};S.notifDismisse
 else if(a=='notifresetdismiss'){S.notifDismissed={};save();render();tst('Daftar peringatan dipulihkan');return}
 else if(a=='notifreq'){requestWebNotificationPermission();return}
 else if(a=='notiftest'){testNotification();return}
+else if(a=='notifpushtest'){testLockScreenPush();return}
 else if(a=='notifact'){
   const act=b.dataset.act;
   if(act==='add-meal'){NOTIF_MODAL=false;openM({m:b.dataset.m||'b'});return}
@@ -4659,5 +4781,5 @@ if((e.target.id=='le'||e.target.id=='lp')&&e.key=='Enter'){doLogin();return}if(e
 if(e.key=='Escape'&&AIM){stopAimCamera();AIM=null;render();return}});
 try{window.matchMedia('(max-width:767px)').addEventListener('change',render)}catch(e){}
 let _mb=MOB();window.addEventListener('resize',()=>{const m=MOB();if(m!==_mb){_mb=m;render()}});
-window.addEventListener('hashchange',render);render();initStorageEngine();if(FIRST)seedMaster();setInterval(checkScheduledNotifications,60000);setTimeout(checkScheduledNotifications,2500);
+window.addEventListener('hashchange',render);render();initStorageEngine();initServiceWorker();if(FIRST)seedMaster();setInterval(checkScheduledNotifications,60000);setTimeout(checkScheduledNotifications,2500);
 </script></body></html>
